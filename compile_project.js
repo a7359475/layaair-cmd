@@ -66,8 +66,7 @@ class LayaProjectCompiler extends EventEmitter
 			var arg = `${proj_config_file};iflash=false;windowshow=false;chromerun=false`;
 
 			let sp = spawn(layajs, [arg]);
-			sp.stdout.on("data", printQuotation);
-			sp.stderr.on("data", printErr);
+			sp.stdout.on("data", function(data){});
 			sp.on("close", (data) =>
 			{
 				if (data == 0)

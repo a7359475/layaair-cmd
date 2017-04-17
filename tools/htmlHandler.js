@@ -56,7 +56,6 @@ function layacopyDirFile(from, to)
 
 	function mkdirsSyncLaya(dirname, mode)
 	{
-		console.log(dirname);
 		if (fs.existsSync(dirname))
 		{
 			return true;
@@ -82,7 +81,6 @@ function layacopyDirFile(from, to)
 }
 exports.indexHmtl = function(configuration)
 {
-	console.log("开始拷贝项目")
 	var type=""
 	layacopyDirFile(path.join(configuration.workspacePath, "bin"), path.join(configuration.workspacePath, "release", "layaweb", (configuration.publishversion || "1.0.0")));
 	if (fs.existsSync(path.join(configuration.workspacePath, "jsconfig.json")))
@@ -166,5 +164,5 @@ exports.indexHmtl = function(configuration)
 			}
 		}, 10)
 	}
-
+	console.log("发布完成");
 }

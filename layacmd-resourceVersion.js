@@ -1,7 +1,7 @@
 const path = require("path");
 const program = require("commander");
-const fs = require("fs");
 const spawn = require("child_process").spawn;
+const os = require("os");
 const
 {
 	printOk,
@@ -12,24 +12,12 @@ const
 
 program
 	.version("0.0.2")
-	.usage('[.laya_file]')
 	.option('-i --input <input>', tr("resource directory."))
 	.option('-o --output <output>', tr("output directory."))
 	.option('-n --versionName <version name>', tr("version name, default is numbers start from 1000."))
 	.parse(process.argv);
 
-let resource_dir;
-
-// specify resource directory via -p
-if (program.input)
-	resource_dir = program.input;
-// specify project directory as positional argument
-else if (program.args.length == 1)
-	resource_dir = program.args[0];
-
-resource_dir = path.resolve(resource_dir);
-
-if (!resource_dir)
+if (!program.input)
 {
 	printErr("You must specify resource directory");
 	process.exit(1);
@@ -45,15 +33,32 @@ if (!program.output)
 //////////////////////////////////////////////////
 var args = [];
 
-args.push(resource_dir);
+args.push(program.input);
 args.push("-o");
 args.push(program.output);
 
 if (program.versionName)
 	args.push("-n", program.versionName);
 
+let executable;
+switch (os.platform())
+{
+	case "win32":
+		executable = "web-resource-manager.exe";
+		break;
+	// case "linux":
+	// 	executable = "guetzli_linux_x86-64";
+	// 	break;
+	// case "guetzli_linux_x86-64":
+	// 	executable = "guetzli_darwin_x86-64";
+	// 	break;
+	default:
+		printErr("Platform does not support.");
+		exit(1);
+}
+
 var sp = spawn(
-	path.join(__dirname, "tools", "web-resource-manager"),
+	path.join(__dirname, "tools", "resource-manager", executable),
 	args);
 
 sp.stdout.on("data", (data) =>

@@ -17,7 +17,11 @@
   "author": "survivor",
   "license": "MIT",
   "dependencies": {
+    "anywhere": "^1.4.0",
     "colors": "^1.1.2",
-    "commander": "^2.9.0"
+    "commander": "^2.9.0",
+    "iconv-lite": "^0.4.15",
+    "uglify-js": "^2.8.22",
+    "xmldom": "^0.1.27"
   }
 }
