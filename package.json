@@ -1,0 +1,23 @@
+{
+  "name": "layacmd",
+  "version": "1.0.0",
+  "description": "layaair command line tool.",
+  "main": "layacmd.js",
+  "scripts": {
+    "test": "layacmd --help"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Surviver/layacmd.git"
+  },
+  "keywords": [
+    "layacmd",
+    "layaair"
+  ],
+  "author": "survivor",
+  "license": "MIT",
+  "dependencies": {
+    "colors": "^1.1.2",
+    "commander": "^2.9.0"
+  }
+}
