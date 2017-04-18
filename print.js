@@ -17,7 +17,7 @@ let tr_list = [
 	["Detected", "检测到"],
 	["project", "项目"],
 	["Do nothing", "无需编译"],
-	["Compress options. Empty for no processing, 'c' for compress, 'cc' for compress and concat.", "压缩选项。留空不处理，'c'表示压缩，'cc'表示压缩并合并"],
+	["Compress options. 'no' for no processing, 'c' for compress, 'cc' for compress and concat.", "压缩选项。留空不处理，'c'表示压缩，'cc'表示压缩并合并"],
 	["finish.", "完成"],
 	["clear will delete old UI code file.", "clear会删除旧的UI代码文件"],
 	["'normal' or 'release', specify 'release' will generate UI code files exclude unused resources.", "'normal'或者'release'，指定'release'会生成除未使用资源外的UI代码文件"],
