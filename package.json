@@ -1,18 +1,15 @@
 {
   "name": "layacmd",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "description": "layaair command line tool.",
   "main": "layacmd.js",
-  "bin":
-  {
-  	"layacmd":"./layacmd.js"
+  "bin": {
+    "layacmd": "./layacmd.js"
   },
-  "scripts":
-  {
+  "scripts": {
     "test": "layacmd --help"
   },
-  "repository":
-  {
+  "repository": {
     "type": "git",
     "url": "https://github.com/Surviver/layacmd.git"
   },
@@ -20,14 +17,12 @@
     "layacmd",
     "layaair"
   ],
-  "bugs":
-  {
+  "bugs": {
     "url": "https://github.com/Surviver/layacmd/issues"
   },
   "author": "survivor",
   "license": "MIT",
-  "dependencies":
-  {
+  "dependencies": {
     "anywhere": "^1.4.0",
     "colors": "^1.1.2",
     "commander": "^2.9.0",
