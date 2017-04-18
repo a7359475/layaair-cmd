@@ -326,6 +326,8 @@ $ layacmd atlas --config atlasConfig
 
 **guetzli**的压缩过程很慢，而且占用资源大，所以可能要等待些时间。
 
+最好在**资源版本控制**生成的文件夹中使用**guetzli**压缩，这可以保证不会重复压缩一张图。
+
 ```shell
 $ layacmd guetzli -h
 
