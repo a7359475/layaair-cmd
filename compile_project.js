@@ -71,7 +71,7 @@ class LayaProjectCompiler extends EventEmitter
 			{
 				if (data == 0)
 				{
-					printOk(tr("Compile compelet."));
+					printOk(tr("Compile completed."));
 					this.emit("compileCompleted");
 				}
 			});

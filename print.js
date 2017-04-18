@@ -61,10 +61,12 @@ function tr(content)
 	for (var i = tr_list.length - 1; i >= 0; i--)
 	{
 		var tr_item = tr_list[i];
-		if (content == tr_item)
-			return tr_item[0];
+		if (content == tr_item[0])
+			return tr_item[1];
 	}
+	return content;
 }
+
 
 exports.printQuotation = function(data)
 {
