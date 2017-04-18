@@ -1,6 +1,7 @@
 const path = require("path");
 const program = require("commander");
 const spawn = require("child_process").spawn;
+const fs = require("fs");
 const
 {
 	printOk,
