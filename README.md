@@ -355,16 +355,35 @@ $ layacmd guetzli -i input_dir -q 95
 ## 打开静态文件服务器
 
 ```shell
-$ layacmd open -h
+$ layacmd open --help
 
   Usage: layacmd-open [port] [args]
 
   Options:
 
-    -h, --help     output usage information
-    -V, --version  output the version number
-    -p <port>      resource directory.
-    -s             don't open browser
+    -h, --help      output usage information
+    -V, --version   output the version number
+    -p <port>       resource directory.
+    -s              don't open browser
+    -h <hostname>   with hostname, such as layacmd open -h localhost
+    -d <directory>  with folder
+    -f              enable html5 history
 ```
 
-该命令需要在与**layaair**项目拥有同样结构的目录中使用。对于**ActionScript**项目，它会在*./bin/h5*开启静态文件服务器；对于**JavaScript**和**TypeScript**项目，它会在**./bin**开启静态文件服务器；
+#####  使用
+
+```shell
+$ layacmd open
+# 带端口号
+$ anywhere -p 8000
+# 静默启动（不打开浏览器）
+$ anywhere -s
+# 使用hostname打开
+$ anywhere -h localhost -p 8888
+# 指定根目录
+$ anywhere -d ~/git/anywhere
+# enable html5 history
+$ anywhere -f /index.html
+```
+
+`layacmd open`是通过**anywhere**建立静态文件服务器。如果报错了，请尝试换个端口。

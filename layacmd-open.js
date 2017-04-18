@@ -15,11 +15,10 @@ program
 	.usage("[port] [args]")
 	.option('-p <port>', tr("resource directory."))
 	.option('-s', tr("don't open browser"))
+	.option('-h <hostname>', tr("with hostname, such as layacmd open -h localhost"))
+	.option('-d <directory>', tr("with folder"))
+	.option('-f', tr("enable html5 history"))
 	.parse(process.argv);
-
-let cwd = path.resolve(process.cwd(), "bin");
-if(!fs.existsSync(path.resolve(cwd, "index.html")))
-	cwd = path.resolve(cwd, "h5");
 
 let args = process.argv.slice(2);
 args.unshift(path.resolve(__dirname, 'node_modules', 'anywhere', 'bin', 'anywhere'));
@@ -27,7 +26,7 @@ var sp = require("child_process").spawn(
 	"node",
 	args,
 	{
-		cwd: cwd
+		cwd: process.cwd()
 	});
 
 sp.stdout.on('data', function(data)
