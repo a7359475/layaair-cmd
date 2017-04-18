@@ -1,5 +1,6 @@
 const path = require("path");
-const fs = require("fs");
+const program = require("commander");
+const spawn = require("child_process").spawn;
 const
 {
 	printOk,
@@ -7,6 +8,13 @@ const
 	printQuotation,
 	tr
 } = require("./print.js");
+
+program
+	.version("0.0.2")
+	.usage("[port] [args]")
+	.option('-p <port>', tr("resource directory."))
+	.option('-s', tr("don't open browser"))
+	.parse(process.argv);
 
 let cwd = path.resolve(process.cwd(), "bin");
 if(!fs.existsSync(path.resolve(cwd, "index.html")))

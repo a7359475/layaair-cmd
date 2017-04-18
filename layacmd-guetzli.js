@@ -13,9 +13,8 @@ const
 
 program
 	.version("0.0.2")
-	.usage('[.laya_file]')
 	.option('-i --input <input>', tr("resource directory."))
-	.option('-q --quality <quality>', tr("quality"))
+	.option('-q --quality <quality>', tr("quality, more than 84."))
 	.parse(process.argv);
 
 let resource_dir;
@@ -145,9 +144,9 @@ function encode(f_in, f_out, onclose)
 	// {
 	// 	printQuotation(data.toString());
 	// });
-	// sp.stderr.on("data", (data) =>
-	// {
-	// 	printErr(data);
-	// });
+	sp.stderr.on("data", (data) =>
+	{
+		printErr(data.toString());
+	});
 	sp.on("close", onclose);
 }

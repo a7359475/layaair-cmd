@@ -20,7 +20,7 @@ let tr_list = [
 	["Compress options. Empty for no processing, 'c' for compress, 'cc' for compress and concat.", "压缩选项。留空不处理，'c'表示压缩，'cc'表示压缩并合并"],
 	["finish.", "完成"],
 	["clear will delete old UI code file.", "clear会删除旧的UI代码文件"],
-	["'normal' or 'release', specify 'release' will generate UI code files beside unused resources.", "'normal'或者'release'，指定'release'会生成除未使用资源外的UI代码文件"],
+	["'normal' or 'release', specify 'release' will generate UI code files exclude unused resources.", "'normal'或者'release'，指定'release'会生成除未使用资源外的UI代码文件"],
 	["project directory(include projectName.laya), if not specify, it will be current work directory.", '项目目录（包含projectName.laya的文件夹），如果不指定，会使用当前工作目录作为项目目录。'],
 	["Input directory, if not specify, it will be '{cwd}/laya/assets'", "输入目录，如果不指定，'{cwd}/laya/assets'"],
 	["export UI code files.", "生成UI代码文件"],
@@ -45,7 +45,8 @@ let tr_list = [
 	["If source sprites should be cropped to their transparency bounds to pack them even tighter.", "是否裁减掉图片的透明区域"],
 	["Choose the texture format. Support png32 and png8 now.", '默认"png32"，还可选为"png8"'],
 	["wrong arguments, refenerce to help message.", "参数错误，参考帮助信息"],
-	["Generate config file.", "创建默认配置文件"]
+	["Generate config file.", "创建默认配置文件"],
+	["quality, more than 84.", "压缩率，大于84"]
 ];
 
 /**

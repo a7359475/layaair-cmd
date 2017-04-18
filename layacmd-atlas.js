@@ -17,7 +17,7 @@ program
 	.option('-d --input <input directory>',				tr("Input directory, if not specify, it will be ${cwd}/laya/assets'"))
 	.option('--init',									tr("Generate config file."))
 	.option('--config [config file]',					tr("use options define in config file. Ignore all other options if this option is on. If the input directory containes laya project, you don't need to specify config file, otherwise, you need pass a config file path."))
-	.option('-o --outputDir <output directory>',		tr("output directory."))
+	.option('-o --output <output directory>',		tr("output directory."))
 	.option('-r --resDir <resource directory>',			tr("The folder to storage unpacked assets."))
 	.option('-E --extrudeList <extrude list>',			tr("This list storage pictures which need extrude, split by ','"))
 	.option('-W --maxAtlasWidth <max atlas width>',		tr("The max sprite sheet width that allowed. 2048 default."))
@@ -55,8 +55,8 @@ else
 {
 	if(program.input)
 		args.push("--inputDir", program.input);
-	if(program.outputDir)
-		args.push("--outputDir", program.outputDir);
+	if(program.output)
+		args.push("--output", program.output);
 	if(program.resDir)
 		args.push("--resDir", program.resDir);
 	if(program.extrudeList)

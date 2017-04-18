@@ -13,7 +13,7 @@ const
 program
 	.version("0.0.2")
 	.option('-c --clear', tr('clear will delete old ui code file.'))
-	.option('-m --mode <mode>', tr("'normal' or 'release', specify 'release' will generate UI code files beside unused resources."))
+	.option('-m --mode <mode>', tr("'normal' or 'release', specify 'release' will generate UI code files exclude unused resources."))
 	.parse(process.argv);
 
 let clear = program.clear || true,
