@@ -375,15 +375,15 @@ $ layacmd open --help
 ```shell
 $ layacmd open
 # 带端口号
-$ anywhere -p 8000
+$ layacmd open -p 8000
 # 静默启动（不打开浏览器）
-$ anywhere -s
+$ layacmd open -s
 # 使用hostname打开
-$ anywhere -h localhost -p 8888
+$ layacmd open -h localhost -p 8888
 # 指定根目录
-$ anywhere -d ~/git/anywhere
+$ layacmd open -d ~/git/anywhere
 # enable html5 history
-$ anywhere -f /index.html
+$ layacmd open -f /index.html
 ```
 
 `layacmd open`是通过**anywhere**建立静态文件服务器。如果报错了，请尝试换个端口。
