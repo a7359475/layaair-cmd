@@ -18,7 +18,7 @@
 ##  安装
 
 ```shell
-$ npm install layacmd -g
+$ npm install layacmd --save
 ```
 
 
@@ -79,7 +79,7 @@ $ layacmd copmile
 ##  发布
 
 ```shell
-$ layacmd publish --help
+$ layacmd publish -h
 
   Usage: layacmd-publish [options]
 
@@ -87,7 +87,7 @@ $ layacmd publish --help
 
     -h, --help                      output usage information
     -V, --version                   output the version number
-    -o --compressOptions <options>  Compress options. 'no' for no processing, 'c' for compress, 'cc' for compress and concat.
+    -o --compressOptions <options>  压缩选项。留空不处理，'c'表示压缩，'cc'表示压缩并合并
 ```
 
 如果当前目录有**layaair**项目，该命令会生成发布后的**JavaScript**文件，发布的文件夹名为*release，*可以对文件进行合并压缩。
@@ -103,7 +103,7 @@ $ layacmd publish -o cc # 指定了压缩选项为合并并压缩
 ## 导出UI
 
 ```shell
-$ layacmdui -h
+$ layacmd ui -h
 
   Usage: layacmd-ui [options]
 
@@ -112,7 +112,7 @@ $ layacmdui -h
     -h, --help        output usage information
     -V, --version     output the version number
     -c --clear        clear will delete old ui code file.
-    -m --mode <mode>  'normal' or 'release', specify 'release' will generate UI code files exclude unused resources.
+    -m --mode <mode>  'normal'或者'release'，指定'release'会生成除未使用资源外的UI代码文件
 ```
 
 如果当前目录有**layaair**项目，该命令为UI页面导出代码。
@@ -140,9 +140,9 @@ $ layacmd resourceVersion -h
 
     -h, --help                       output usage information
     -V, --version                    output the version number
-    -i --input <input>               resource directory.
-    -o --output <output>             output directory.
-    -n --versionName <version name>  version name, default is numbers start from 1000.
+    -i --input <input>               资源目录
+    -o --output <output>             导出目录
+    -n --versionName <version name>  版本名称，默认是从1000开始递增的数字
 ```
 
 该命令不需要当前目录包含**layaair**项目，取而代之的是，你需要指定输入目录。
@@ -355,35 +355,16 @@ $ layacmd guetzli -i input_dir -q 95
 ## 打开静态文件服务器
 
 ```shell
-$ layacmd open --help
+$ layacmd open -h
 
   Usage: layacmd-open [port] [args]
 
   Options:
 
-    -h, --help      output usage information
-    -V, --version   output the version number
-    -p <port>       resource directory.
-    -s              don't open browser
-    -h <hostname>   with hostname, such as layacmd open -h localhost
-    -d <directory>  with folder
-    -f              enable html5 history
+    -h, --help     output usage information
+    -V, --version  output the version number
+    -p <port>      resource directory.
+    -s             don't open browser
 ```
 
-#####  使用
-
-```shell
-$ layacmd open
-# 带端口号
-$ layacmd open -p 8000
-# 静默启动（不打开浏览器）
-$ layacmd open -s
-# 使用hostname打开
-$ layacmd open -h localhost -p 8888
-# 指定根目录
-$ layacmd open -d ~/git/anywhere
-# enable html5 history
-$ layacmd open -f /index.html
-```
-
-`layacmd open`是通过**anywhere**建立静态文件服务器。如果报错了，请尝试换个端口。
+该命令需要在与**layaair**项目拥有同样结构的目录中使用。对于**ActionScript**项目，它会在*./bin/h5*开启静态文件服务器；对于**JavaScript**和**TypeScript**项目，它会在**./bin**开启静态文件服务器；
