@@ -18,7 +18,7 @@
 ##  安装
 
 ```shell
-$ npm install layacmd --save
+$ npm install layacmd -g
 ```
 
 
