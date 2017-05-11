@@ -1,6 +1,6 @@
 {
   "name": "layacmd",
-  "version": "2.1.7",
+  "version": "2.1.8",
   "description": "layaair command line tool.",
   "main": "layacmd.js",
   "bin": {
@@ -27,6 +27,7 @@
     "colors": "^1.1.2",
     "commander": "^2.9.0",
     "iconv-lite": "^0.4.15",
+    "layanative": "^1.1.3",
     "uglify-js": "^2.8.22",
     "xmldom": "^0.1.27"
   }
