@@ -1,22 +1,62 @@
 const path = require("path");
-const spawn = require("child_process").spawn;
+const fs = require("fs");
+const
+{
+	spawn,
+	exec
+} = require("child_process");
 const
 {
 	printOk,
 	printErr,
 	printQuotation,
+	printWarning,
 	tr
 } = require("./print.js");
 
+let argv;
+if (process.argc == 2)
+	argv = "--help";
+else
+	argv = process.argv.slice(2)
+
 let exe = path.join(__dirname, "node_modules", "layanative", "out", "main.js");
-let args = [exe];
-args.push(process.argv.slice(2));
-let cp = spawn("node", args);
-cp.stdout.on('data', function(data)
+
+if (fs.existsSync(exe) && argv[0] != "update")
 {
-	printQuotation(data.toString());
-})
-cp.stderr.on('data', function(data)
+	run();
+}
+else
 {
-	printErr(data.toString());
-})
+	printWarning(tr("LayaNative not found. Waiting for downloading..."));
+	let cp = exec("npm install layanative",
+	{
+		cwd: __dirname
+	}, function(error, stdout, stderr)
+	{
+		if(error)
+			printErr(error);
+
+		if(stderr)
+			printErr(stderr);
+
+		printQuotation(stdout);
+	});
+
+	cp.on('close', run);
+}
+
+function run()
+{
+	let args = [exe];
+	args = args.concat(argv);
+	let cp = spawn("node", args);
+	cp.stdout.on('data', function(data)
+	{
+		printQuotation(data.toString());
+	});
+	cp.stderr.on('data', function(data)
+	{
+		printErr(data.toString());
+	});
+}

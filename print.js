@@ -46,7 +46,8 @@ let tr_list = [
 	["Choose the texture format. Support png32 and png8 now.", '默认"png32"，还可选为"png8"'],
 	["wrong arguments, refenerce to help message.", "参数错误，参考帮助信息"],
 	["Generate config file.", "创建默认配置文件"],
-	["quality, more than 84.", "压缩率，大于84"]
+	["quality, more than 84.", "压缩率，大于84"],
+	["LayaNative not found. Waiting for downloading...", "未找到LayaNative，等待下载……"]
 ];
 
 /**
