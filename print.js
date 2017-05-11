@@ -47,7 +47,8 @@ let tr_list = [
 	["wrong arguments, refenerce to help message.", "参数错误，参考帮助信息"],
 	["Generate config file.", "创建默认配置文件"],
 	["quality, more than 84.", "压缩率，大于84"],
-	["LayaNative not found. Waiting for downloading...", "未找到LayaNative，等待下载……"]
+	["LayaNative not found. Waiting for downloading...", "未找到LayaNative，等待下载……"],
+	["Update LayaNative. Waiting for updateing...", "正在更新LayaNative，等待更新……"]
 ];
 
 /**

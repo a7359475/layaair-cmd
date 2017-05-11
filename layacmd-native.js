@@ -22,14 +22,26 @@ else
 
 let exe = path.join(__dirname, "node_modules", "layanative", "out", "main.js");
 
-if (fs.existsSync(exe) && argv[0] != "update")
+if (!fs.existsSync(exe))
 {
-	run();
+	printWarning(tr("LayaNative not found. Waiting for downloading..."));
+	execNpmCommand("npm install layanative");
+}
+else if(argv[0] == "update")
+{
+	printWarning(tr("Update LayaNative. Waiting for updateing..."));
+	execNpmCommand("npm update layanative");
+	
+	argv = ["--help"];
 }
 else
 {
-	printWarning(tr("LayaNative not found. Waiting for downloading..."));
-	let cp = exec("npm install layanative",
+	run();
+}
+
+function execNpmCommand(command)
+{
+	let cp = exec(command,
 	{
 		cwd: __dirname
 	}, function(error, stdout, stderr)
