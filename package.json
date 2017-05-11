@@ -1,6 +1,6 @@
 {
   "name": "layacmd",
-  "version": "2.1.11",
+  "version": "2.1.12",
   "description": "layaair command line tool.",
   "main": "layacmd.js",
   "bin": {
