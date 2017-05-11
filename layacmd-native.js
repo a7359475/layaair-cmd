@@ -8,7 +8,7 @@ const
 	tr
 } = require("./print.js");
 
-let exe = path.join("node_modules/layanative/out/main.js");
+let exe = path.join(__dirname, "node_modules", "layanative", "out", "main.js");
 let args = [exe];
 args.push(process.argv.slice(2));
 let cp = spawn("node", args);
