@@ -20,6 +20,7 @@ program
 	.command('atlas', 'generate atlas.')
 	.command('guetzli', 'google\'s perceptual JPEG encoder')
 	.command('open', 'open in browser.')
+	.command('native', 'placeholder')
 	.parse(process.argv);
 
 let arg0 = program.args[0];
