@@ -1,12 +1,22 @@
 const colors = require('colors');
 const execSync = require("child_process").execSync;
+const os = require("os");
 
-let code_page = execSync("chcp",
+let language;
+if (os.platform() == "win32")
 {
-	encoding: "utf-8"
-}).replace(/\D/g, '');
-// 1 is chinese, 0 is english
-let language = code_page == "936" ? 1 : 0;
+	let code_page = execSync("chcp",
+	{
+		encoding: "utf-8"
+	}).replace(/\D/g, '');
+	// 1 is chinese, 0 is english
+	language = code_page == "936" ? 1 : 0;
+}
+else
+{
+	let lang = execSync("echo $LANG");
+	language = lang.indexOf("zh_CN") > -1 ? 1 : 0;
+}
 
 let tr_list = [
 	["Invalid directory, file name ends with '.laya' is no found, no project here.", "无效目录，未找到后缀名为 '.laya' 的文件，此处没有项目"],
@@ -32,7 +42,7 @@ let tr_list = [
 	["You must specify input directory.", "必须指定输入目录"],
 	["print help message.", "打印帮助信息"],
 	["The folder to storage unpacked assets.", "无法被打包的文件的输出目录"],
-	["This list storage pictures which need extrude, split by ','","需要像素扩展的图片列表，逗号分隔"],
+	["This list storage pictures which need extrude, split by ','", "需要像素扩展的图片列表，逗号分隔"],
 	["The max sprite sheet width that allowed. 2048 default.", "允许的图集最大宽度，默认2048"],
 	["The max sprite sheet height that allowed. 2048 default.", "允许的图集最大高度，默认2048"],
 	["The width limit for packing. Image will be copy to unpackDir directly if size overflowed. 512 default.", "允许被打包的图片的最大宽度。如果尺寸超出该值，图片会被复制到资源目录。默认512"],

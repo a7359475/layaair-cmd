@@ -26,13 +26,13 @@ if (program.input)
 else if (program.args.length == 1)
 	resource_dir = program.args[0];
 
-resource_dir = path.resolve(resource_dir);
-
 if (!resource_dir)
 {
 	printErr("You must specify resource directory");
 	process.exit(1);
 }
+
+resource_dir = path.resolve(resource_dir);
 
 //////////////////////////////
 // traverse input directory //
@@ -129,7 +129,7 @@ function encode(f_in, f_out, onclose)
 		case "linux":
 			executable = "guetzli_linux_x86-64";
 			break;
-		case "guetzli_linux_x86-64":
+		case "darwin":
 			executable = "guetzli_darwin_x86-64";
 			break;
 		default:
