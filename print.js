@@ -19,7 +19,7 @@ else
 }
 
 let tr_list = [
-	["Invalid directory, file name ends with '.laya' is no found, no project here.", "无效目录，未找到后缀名为 '.laya' 的文件，此处没有项目"],
+	["Invalid directory, missing asconfig.json | jsconfig.json | tsconfig.json.", "无效目录，缺少asconfig.json | jsconfig.json | tsconfig.json。"],
 	["Start  compile...", "开始编译……"],
 	["Compile completed.", "编译完成"],
 	["Error: No FlashDevelop or FlashBuilder project file.", "错误：不存在FlashDevelop或FlashBuilder的项目文件"],

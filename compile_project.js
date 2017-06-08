@@ -36,7 +36,7 @@ class LayaProjectCompiler extends EventEmitter
 		}
 		else
 		{
-			printErr(tr("Invalid directory, file name ends with '.laya' is no found, no project here."));
+			printErr(tr("Invalid directory, missing asconfig.json | jsconfig.json | tsconfig.json."));
 			process.exit(1);
 		}
 	}
