@@ -50,7 +50,7 @@ class LayaProjectCompiler extends EventEmitter
 			is_fb_proj = fs.existsSync(fb_config_file);
 
 		// retrieve ActionScript project config file.
-		if (is_fb_proj && is_fb_proj)
+		if (is_fd_proj && is_fb_proj)
 			printWarning(tr("There are both FlashDevelop and FlashBuilder project file. Ignore FlashBuilder project"));
 		if (is_fd_proj)
 			proj_config_file = fd_config_file;
