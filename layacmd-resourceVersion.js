@@ -11,7 +11,7 @@ const
 } = require("./print.js");
 
 program
-	.version("0.0.3")
+	.version("0.0.4")
 	.option('-i --input <input>', tr("resource directory."))
 	.option('-o --output <output>', tr("output directory."))
 	.option('-n --versionName <version name>', tr("version name, default is numbers start from 1000."))
