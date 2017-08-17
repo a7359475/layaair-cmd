@@ -1,7 +1,6 @@
 const path = require("path");
 const program = require("commander");
 const fs = require("fs");
-const spawn = require("child_process").spawn;
 const
 {
 	printOk,
@@ -13,34 +12,31 @@ const
 program
 	.version("0.0.2")
 	.option('-c --clear', tr('clear will delete old ui code file.'))
+	.option('-a --atlas', tr('generate atlas'))
+	.option('-d --code', tr('generate ui code files'))
 	.option('-m --mode <mode>', tr("'normal' or 'release', specify 'release' will generate UI code files exclude unused resources."))
 	.parse(process.argv);
 
-let clear = program.clear || true,
-	mode  = program.mode || 'normal';
+let clear = program.clear || false,
+	mode  = program.mode || 'normal',
+	code  = program.code || false,
+	atlas = program.atlas || false;
 
 /////////////////////////////////////////////////////////////
 // Call external interface define in LayaAirCmdTool.max.js //
 /////////////////////////////////////////////////////////////
 var args = [];
-args.push(path.join(__dirname, "ProjectExportTools", "LayaAirCmdTool.max.js"));
+let exe = path.join(__dirname, "ProjectExportTools", "LayaAirCmdTool.max.js");
 args.push(path.resolve("laya", ".laya"));
 args.push(`clear=${clear}`);
 args.push(`releasemode=${mode}`);
-args.push(`exportUICode=true`);
-args.push(`exportRes=false`);
+args.push(`exportUICode=${code}`);
+args.push(`exportRes=${atlas}`);
 
-var sp = spawn("node", args);
+var sp = require("child_process").fork(exe, args);
 
-sp.stdout.on("data", (data) =>
-{
-	printQuotation(data.toString());
-});
-sp.stderr.on("data", (data) =>
-{
-	printErr(data.toString());
-});
 sp.on("close", (data) =>
 {
 	printOk(tr("finish."));
+	process.exit();
 });

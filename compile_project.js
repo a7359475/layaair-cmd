@@ -16,7 +16,12 @@ class LayaProjectCompiler extends EventEmitter
 	constructor(project_dir)
 	{
 		super();
+		if(project_dir)
+			this.compile(project_dir);
+	}
 
+	compile(project_dir)
+	{
 		this.project_dir = project_dir;
 
 		if (fs.existsSync(path.join(project_dir, "jsconfig.json")))
@@ -43,24 +48,38 @@ class LayaProjectCompiler extends EventEmitter
 
 	compileAsProject()
 	{
+		// retreve the config file of FlashBuild or FlashDevelop.
+		// by read and parse tasks.json under ${workspace}/.laya/tasks.json.
 		let proj_config_file;
-		let fd_config_file = path.join(this.project_dir, "LayaUISample.as3proj"),
-			fb_config_file = path.join(this.project_dir, ".actionScriptProperties"),
-			is_fd_proj = fs.existsSync(fd_config_file),
-			is_fb_proj = fs.existsSync(fb_config_file);
+		let taskFile = JSON.parse(fs.readFileSync(path.resolve(".laya", "tasks.json")).toString().replace(/\/\/.*/g, ''));
+		let taskArg = taskFile.args[0];
+		let is_fd_proj, is_fb_proj;
 
-		// retrieve ActionScript project config file.
-		if (is_fd_proj && is_fb_proj)
-			printWarning(tr("There are both FlashDevelop and FlashBuilder project file. Ignore FlashBuilder project"));
-		if (is_fd_proj)
-			proj_config_file = fd_config_file;
-		else if (is_fb_proj)
-			proj_config_file = fb_config_file;
+		if(taskArg.indexOf(".actionScriptProperties") > -1)
+		{
+			proj_config_file = ".actionScriptProperties";
+			is_fb_proj = true;
+		}
 		else
-			printErr(tr("Error: No FlashDevelop or FlashBuilder project file."));
+		{
+			// check if it is FlashDevelop project
+			let result = /(?:\/|\\)(.*?\.as3proj)/.exec(taskArg);
+			if(result && result[1])
+			{
+				proj_config_file = result[1];
+				is_fd_proj = true;
+			}
+		}
+
+		if(!is_fb_proj && !is_fd_proj)
+		{
+			printErr(tr("Unable to retrieve ActionScript project config file(FlashBuilder | FlashDevelop). Check if ./bin/.laya/tasks.json is valid."));
+			return;
+		}
+		proj_config_file = path.join(this.project_dir, proj_config_file);
 
 		// call layajs to compile project if project is exsit.
-		if (proj_config_file)
+		if (fs.existsSync(proj_config_file))
 		{
 			let layajs = path.join(__dirname, "./tools/layajs/layajs");
 			var arg = `${proj_config_file};iflash=false;windowshow=false;chromerun=false`;
@@ -76,12 +95,27 @@ class LayaProjectCompiler extends EventEmitter
 				}
 			});
 		}
+		else
+		{
+			printErr(`${proj_config_file} ` + tr("not exist."));
+		}
 	}
 
 	compileTsProject()
 	{
 		let tsc = process.platform === "win32" ? "tsc.cmd" : "tsc";
-		let sp = spawn(tsc, ["-p", ".", "--outDir", "bin/js"]);
+		switch(process.platform)
+		{
+			case "win32":
+				tsc = "tsc.cmd";
+				break;
+			default:
+				tsc = "tsc";
+				break;
+		}
+		let sp = spawn(tsc, ["-p", ".", "--outDir", "bin/js"], {
+			env: { PATH: "/usr/local/bin:" + process.env.PATH}
+		});
 
 		printOk(tr("Start  compile..."));
 

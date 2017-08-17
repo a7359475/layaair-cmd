@@ -1,2 +1,2 @@
-Project configuration:C:\Users\99047\Desktop\as\LayaUISample.as3proj.
+Project configuration:C:\Users\survivor\Desktop\t5\.actionScriptProperties.
 ******************************************************************************

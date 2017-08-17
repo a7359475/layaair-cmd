@@ -1,109 +1,50 @@
 var fs = require("fs");
 var path = require("path");
-var  UglifyJS = require("uglify-js")
-function mkdirsSyncLaya(dirname, mode)
-{
-	if (fs.existsSync(dirname))
-	{
-		return true;
-	}
-	else
-	{
-		if (mkdirsSyncLaya(path.dirname(dirname), mode))
-		{
-			fs.mkdirSync(dirname, mode);
-			return true;
-		}
-	}
-}
+var UglifyJS = require("uglify-js")
+const fse = require('fs-extra');
 
-function layacopyDirFile(from, to)
-{
-	var readDir = fs.readdirSync;
-	var stat = fs.statSync;
-	if (stat(from).isFile())
-	{
-		mkdirsSyncLaya(to);
-		fs.writeFileSync(to + path.sep + path.basename(from), fs.readFileSync(from));
-		return
-	}
-	var copDir = function(src, dst)
-	{
-		var paths = fs.readdirSync(src);
-		paths.forEach(function(pathLaya)
-		{
-			var _src = src + path.sep + pathLaya;
-			var _dst = dst + path.sep + pathLaya;
-			var isDir = stat(_src);
-			if (isDir.isFile())
-			{
-				if (path.extname(_src) == ".map")
-				{
-
-				}
-				else
-				{
-					fs.writeFileSync(_dst, fs.readFileSync(_src));
-				}
-
-			}
-			else
-			{
-				exists(_src, _dst, copDir);
-			}
-		})
-	}
-
-	function mkdirsSyncLaya(dirname, mode)
-	{
-		if (fs.existsSync(dirname))
-		{
-			return true;
-		}
-		else
-		{
-			if (mkdirsSyncLaya(path.dirname(dirname), mode))
-			{
-				fs.mkdirSync(dirname, mode);
-				return true;
-			}
-		}
-	}
-
-	// 在复制目录前需要判断该目录是否存在，不存在需要先创建目录
-	var exists = function(src, dst, callback)
-	{
-		mkdirsSyncLaya(dst);
-		callback(src, dst);
-	};
-	// 复制目录
-	exists(from, to, copDir);
-}
 exports.indexHmtl = function(configuration)
 {
-	var type=""
-	layacopyDirFile(path.join(configuration.workspacePath, "bin"), path.join(configuration.workspacePath, "release", "layaweb", (configuration.publishversion || "1.0.0")));
-	if (fs.existsSync(path.join(configuration.workspacePath, "jsconfig.json")))
+	var workspace = configuration.workspacePath;
+	var versionName = configuration.publishversion || "1.0.0";
+	var type = "";
+
+	var copyOption = {
+		filter: function(src, dest)
+		{
+			return !(src.endsWith(".map"));
+		}
+	};
+	// copy bin to release directory
+	fse.copySync(
+		path.join(workspace, "bin"),
+		path.join(workspace, "release", "layaweb", versionName),
+		copyOption
+	);
+
+	const isJsProj = fs.existsSync(path.join(workspace, "jsconfig.json"));
+	const isTsProj = fs.existsSync(path.join(workspace, "tsconfig.json"));
+	if (isJsProj || isTsProj)
 	{
-		layacopyDirFile(path.join(configuration.workspacePath, "src"), path.join(configuration.workspacePath, "release", "layaweb", (configuration.publishversion || "1.0.0"), "js"));
-		var data = fs.readFileSync(path.join(configuration.workspacePath, "release", "layaweb", (configuration.publishversion || "1.0.0"), "index.html"), "utf-8");
-		data = data.replace(/..\/src\//g, "js\/");
-		data = data.replace(/\blibs\/(laya\.\w+)\.js/g, "libs/min/$1.min.js");
-	}
-	else if (fs.existsSync(path.join(configuration.workspacePath, "tsconfig.json")))
-	{
-		var data = fs.readFileSync(path.join(configuration.workspacePath, "release", "layaweb", (configuration.publishversion || "1.0.0"), "index.html"), "utf-8");
+		// if using js, copy 'src' to directory 'js'
+		if (isJsProj)
+			fse.copySync(
+				path.join(workspace, "src"), 
+				path.join(workspace, "release", "layaweb", (versionName), "js")
+				copyOption);
+
+		var data = fs.readFileSync(path.join(workspace, "release", "layaweb", (versionName), "index.html"), "utf-8");
 		data = data.replace(/..\/src\//g, "js\/");
 		data = data.replace(/\blibs\/(laya\.\w+)\.js/g, "libs/min/$1.min.js");
 	}
 	else
 	{
 		type = "as"
-		var data = fs.readFileSync(path.join(configuration.workspacePath, "release", "layaweb", (configuration.publishversion || "1.0.0"), "h5", "index.html"), "utf-8");
+		var data = fs.readFileSync(path.join(workspace, "release", "layaweb", (versionName), "h5", "index.html"), "utf-8");
 	}
-	if(configuration.versionmode==0)
+	if (configuration.versionmode == 0)
 	{
-		return 
+		return
 	}
 	var execResult = null;
 	var jsFileString = data.substr(data.indexOf("<!--jsfile--startTag-->"));
@@ -116,9 +57,9 @@ exports.indexHmtl = function(configuration)
 	var filecontent = "";
 	for (var i = 0; i < fileAllJS.length; i++)
 	{
-		filecontent += fs.readFileSync(path.join(configuration.workspacePath, "release", "layaweb", (configuration.publishversion || "1.0.0"), fileAllJS[i]), "utf-8") + "\n";
+		filecontent += fs.readFileSync(path.join(workspace, "release", "layaweb", (versionName), fileAllJS[i]), "utf-8") + "\n";
 	}
-	if (type != "as") fs.writeFileSync(path.join(configuration.workspacePath, "release", "layaweb", (configuration.publishversion || "1.0.0"), "main.min.js"), filecontent);
+	if (type != "as") fs.writeFileSync(path.join(workspace, "release", "layaweb", (versionName), "main.min.js"), filecontent);
 	var jsscript = /<!--jsfile--startTag-->((?:.|(?:\r?\n))*)<!--jsfile--endTag-->/;
 	var mainjsscript = /<!--jsfile--Main-->((?:.|(?:\r?\n))*)<!--jsfile--Main-->/;
 	var alljs = jsscript.exec(data);
@@ -132,37 +73,36 @@ exports.indexHmtl = function(configuration)
 	{
 		data = data.replace(alljs[0], '<script type="text/javascript" src="main.min.js"></script>');
 	}
-	if (type != "as") fs.writeFileSync(path.join(configuration.workspacePath, "release", "layaweb", (configuration.publishversion || "1.0.0"), "index.html"), data);
-	else fs.writeFileSync(path.join(configuration.workspacePath, "release", "layaweb", (configuration.publishversion || "1.0.0"), "h5/index.html"), data);
+	if (type != "as") fs.writeFileSync(path.join(workspace, "release", "layaweb", (versionName), "index.html"), data);
+	else fs.writeFileSync(path.join(workspace, "release", "layaweb", (versionName), "h5/index.html"), data);
 
 
-	if(configuration.versionmode==1)
+	if (configuration.versionmode == 1)
 	{
-		return 
+		return
 	}
 
 	if (type != "as")
 	{
 		setTimeout(function()
 		{
-			var result = UglifyJS.minify([path.join(configuration.workspacePath, "release", "layaweb", (configuration.publishversion || "1.0.0"), "main.min.js")]);
-			fs.writeFileSync(path.join(configuration.workspacePath, "release", "layaweb", (configuration.publishversion || "1.0.0"), "main.min.js"), result.code);
+			var result = UglifyJS.minify([path.join(workspace, "release", "layaweb", (versionName), "main.min.js")]);
+			fs.writeFileSync(path.join(workspace, "release", "layaweb", (versionName), "main.min.js"), result.code);
 		}, 10)
 	}
 	else
 	{
 		setTimeout(function()
 		{
-			var fileList = fs.readdirSync(path.join(configuration.workspacePath, "release", "layaweb", (configuration.publishversion || "1.0.0"), "h5"));
+			var fileList = fs.readdirSync(path.join(workspace, "release", "layaweb", (versionName), "h5"));
 			for (var k = 0; k < fileList.length; k++)
 			{
 				if (fileList[k].indexOf(".max.js") != -1)
 				{
-					var result = UglifyJS.minify([path.join(configuration.workspacePath, "release", "layaweb", (configuration.publishversion || "1.0.0"), "h5", fileList[k])]);
-					fs.writeFileSync(path.join(configuration.workspacePath, "release", "layaweb", (configuration.publishversion || "1.0.0"), "h5", fileList[k]), result.code);
+					var result = UglifyJS.minify([path.join(workspace, "release", "layaweb", (versionName), "h5", fileList[k])]);
+					fs.writeFileSync(path.join(workspace, "release", "layaweb", (versionName), "h5", fileList[k]), result.code);
 				}
 			}
 		}, 10)
 	}
-	console.log("发布完成");
 }

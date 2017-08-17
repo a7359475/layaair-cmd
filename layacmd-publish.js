@@ -1,6 +1,10 @@
 const path = require("path");
 const program = require("commander");
 const fs = require("fs");
+const fse = require("fs-extra");
+const UglifyJS = require("uglify-js");
+const child_process = require("child_process");
+
 const
 {
 	printErr,
@@ -10,11 +14,15 @@ const
 program
 	.version("0.0.2")
 	.option('-o --compressOptions <options>', tr("Compress options. 'no' for no processing, 'c' for compress, 'cc' for compress and concat."), getCompressOptions)
+	.option('-n --versionName <name>', tr("version name"))
+	.option('--noCompile', tr("do not compile project"))
+	.option('--noUi', tr("do not generate ui files"))
+	.option('--noAtlas', tr("do not generate atlas"))
 	.parse(process.argv);
 
-let LayaProjectCompiler = require("./compile_project.js").LayaProjectCompiler;
-new LayaProjectCompiler(path.resolve())
-	.on("compileCompleted", onCompiled);
+var workspace = path.resolve();
+
+var versionName = program.versionName || Date.now() + "";
 
 function getCompressOptions(options)
 {
@@ -26,14 +34,133 @@ function getCompressOptions(options)
 		return 2;
 }
 
-function onCompiled()
-{
-	let indexHmtl = require("./tools/htmlHandler.js");
+program.ui = !program.noUi;
+program.atlas = !program.noAtlas;
 
-	indexHmtl.indexHmtl(
+// publish ui source file and atlas
+if (program.ui || program.atlas)
+{
+	let args = ["-c"];
+	args[0] += program.ui ? "d" : "";
+	args[0] += program.atlas ? "a" : "";
+	args[0] += 'm';
+	args.push('normal');
+	var layacmdUI = child_process.fork(path.join(__dirname, "layacmd-ui.js"), args);
+	layacmdUI.on("close", compileProject);
+}
+else
+{
+	compileProject();
+}
+
+function compileProject()
+{
+	if (!program.noCompile)
 	{
-		workspacePath: path.resolve(),
-		publishversion: Date.now() + '',
-		versionmode: program.compressOptions
-	});
+		let LayaProjectCompiler = require("./compile_project.js").LayaProjectCompiler;
+		let c = new LayaProjectCompiler();
+		c.on("compileCompleted", compressJsFiles);
+		c.compile(workspace);
+	}
+	else
+	{
+		compressJsFiles();
+	}
+}
+
+function compressJsFiles()
+{
+	var copyOption = {
+		filter: function(src, dest)
+		{
+			return !(src.endsWith(".map"));
+		}
+	};
+
+	const isJsProj = fs.existsSync(path.join(workspace, "jsconfig.json"));
+	const isTsProj = fs.existsSync(path.join(workspace, "tsconfig.json"));
+	const isAsProj = fs.existsSync(path.join(workspace, "asconfig.json"));
+
+	// copy bin to release directory
+	console.log("copy files");
+	fse.copySync(
+		path.join(workspace, "bin", (isAsProj ? "h5" : "")),
+		path.join(workspace, "release", "layaweb", versionName),
+		copyOption
+	);
+
+	var indexHtmlContent = fs.readFileSync(path.join(workspace, "release", "layaweb", versionName, "index.html"), "utf-8");
+	if (isJsProj || isTsProj)
+	{
+		// if using js, copy 'src' to directory 'js'
+		if (isJsProj)
+			fse.copySync(
+				path.join(workspace, "src"),
+				path.join(workspace, "release", "layaweb", versionName, "js"), copyOption);
+
+		indexHtmlContent = indexHtmlContent
+			.replace(/..\/src\//g, "js\/") // replace src path
+			.replace(/\blibs\/(laya\.\w+)\.js/g, "libs/min/$1.min.js"); // use min libs
+	}
+
+	// no compress & no concat
+	if (!program.compressOptions)
+		return;
+
+	console.log("concat files");
+	var execResult = null;
+	var jsFileString = indexHtmlContent.substr(indexHtmlContent.indexOf("<!--jsfile--startTag-->"));
+	var execPattern = /(?:[^-])<script.*?src="(.*?)"(?:><\/script>|\/>)/g;
+	var jsFiles = [];
+	while ((execResult = execPattern.exec(jsFileString)) != null)
+	{
+		jsFiles.push(execResult[1]);
+	}
+	var filecontent = "";
+	for (var i = 0; i < jsFiles.length; i++)
+	{
+		var file = path.join(workspace, "release", "layaweb", versionName, jsFiles[i]);
+		console.log(file);
+		filecontent += fs.readFileSync(file, "utf-8") + "\n";
+	}
+	if (!isAsProj) fs.writeFileSync(path.join(workspace, "release", "layaweb", versionName, "main.min.js"), filecontent);
+	var jsscript = /<!--jsfile--startTag-->((?:.|(?:\r?\n))*)<!--jsfile--endTag-->/;
+	var mainjsscript = /<!--jsfile--Main-->((?:.|(?:\r?\n))*)<!--jsfile--Main-->/;
+	var alljs = jsscript.exec(indexHtmlContent);
+	var mainjs = mainjsscript.exec(indexHtmlContent);
+	if (mainjs)
+	{
+		indexHtmlContent = indexHtmlContent.replace(alljs[0], '');
+		indexHtmlContent = indexHtmlContent.replace(mainjs[0], '<script type="text/javascript" src="main.min.js"></script>')
+	}
+	else if (alljs)
+	{
+		indexHtmlContent = indexHtmlContent.replace(alljs[0], '<script type="text/javascript" src="main.min.js"></script>');
+	}
+	if (!isAsProj) fs.writeFileSync(path.join(workspace, "release", "layaweb", versionName, "index.html"), indexHtmlContent);
+	else fs.writeFileSync(path.join(workspace, "release", "layaweb", versionName, "index.html"), indexHtmlContent);
+
+	if (program.compressOptions == 1)
+		return;
+
+	console.log("compress files")
+	if (!isAsProj)
+	{
+		var result = UglifyJS.minify([path.join(workspace, "release", "layaweb", versionName, "main.min.js")]);
+		fs.writeFileSync(path.join(workspace, "release", "layaweb", versionName, "main.min.js"), result.code);
+	}
+	else
+	{
+		var fileList = fs.readdirSync(path.join(workspace, "release", "layaweb", versionName));
+		for (var k = 0; k < fileList.length; k++)
+		{
+			if (fileList[k].indexOf(".max.js") != -1)
+			{
+				var result = UglifyJS.minify([path.join(workspace, "release", "layaweb", versionName, fileList[k])]);
+				fs.writeFileSync(path.join(workspace, "release", "layaweb", versionName, fileList[k]), result.code);
+			}
+		}
+	}
+
+	process.exit();
 }

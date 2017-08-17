@@ -196,8 +196,8 @@ var Laya=window.Laya=(function(window,document){
 (function(window,document,Laya){
 	var __un=Laya.un,__uns=Laya.uns,__static=Laya.static,__class=Laya.class,__getset=Laya.getset,__newvec=Laya.__newvec;
 	Laya.interface('laya.ui.IItem');
-	Laya.interface('laya.ui.ISelect');
 	Laya.interface('laya.ui.IRender');
+	Laya.interface('laya.ui.ISelect');
 	Laya.interface('laya.ui.IComponent');
 	Laya.interface('laya.runtime.IMarket');
 	Laya.interface('laya.filters.IFilter');
@@ -208,7 +208,6 @@ var Laya=window.Laya=(function(window,document){
 	Laya.interface('laya.editor.core.IContent');
 	Laya.interface('laya.filters.IFilterAction');
 	Laya.interface('laya.runtime.ICPlatformClass');
-	Laya.interface('laya.resource.ICreateResource');
 	Laya.interface('as3analyser.parser.struct.ICodePiece');
 	Laya.interface('laya.editor.core.Wraps.xml.IXMLElement');
 	Laya.interface('laya.ui.IBox','laya.ui.IComponent');
@@ -235,7 +234,7 @@ var Laya=window.Laya=(function(window,document){
 				var ctx=Browser.context;
 				var backingStore=ctx.backingStorePixelRatio || ctx.webkitBackingStorePixelRatio || ctx.mozBackingStorePixelRatio || ctx.msBackingStorePixelRatio || ctx.oBackingStorePixelRatio || ctx.backingStorePixelRatio || 1;
 				RunDriver.pixelRatio=(Browser.window.devicePixelRatio || 1)/ backingStore;
-				if(RunDriver.pixelRatio<1)RunDriver.pixelRatio=1;
+				if (RunDriver.pixelRatio < 1)RunDriver.pixelRatio=1;
 			}
 			return RunDriver.pixelRatio;
 		}
@@ -261,6 +260,9 @@ var Laya=window.Laya=(function(window,document){
 			if (isChinese)RunDriver.fontMap[font]=r;
 			return r;
 		}
+
+		RunDriver.getWebGLContext=function(canvas){
+		};
 
 		RunDriver.beginFlush=function(){
 		};
@@ -348,6 +350,7 @@ var Laya=window.Laya=(function(window,document){
 		Laya.init=function(width,height,__plugins){
 			var plugins=[];for(var i=2,sz=arguments.length;i<sz;i++)plugins.push(arguments[i]);
 			if (Laya._isinit)return;
+			ArrayBuffer.prototype.slice || (ArrayBuffer.prototype.slice=Laya._arrayBufferSlice);
 			Laya._isinit=true;
 			Browser.__init__();
 			Context.__init__();
@@ -378,10 +381,18 @@ var Laya=window.Laya=(function(window,document){
 			return Render.canvas;
 		}
 
+		Laya._arrayBufferSlice=function(start,end){
+			var arr=this;
+			var arrU8List=new Uint8Array(arr,start,end-start);
+			var newU8List=new Uint8Array(arrU8List.length);
+			newU8List.set(arrU8List);
+			return newU8List.buffer;
+		}
+
 		Laya.stage=null;
 		Laya.timer=null;
 		Laya.loader=null;
-		Laya.version="1.7.2beta";
+		Laya.version="1.7.8beta";
 		Laya.render=null
 		Laya._currentStage=null
 		Laya._isinit=false;
@@ -399,7 +410,7 @@ var Laya=window.Laya=(function(window,document){
 	//class LayaAirCmdTool
 	var LayaAirCmdTool=(function(){
 		function LayaAirCmdTool(){
-			this.tarProject=null;
+			this.tarProject="E:/wangwei/bugProjects/testjj/test/laya/.laya";
 			this.releasemode="normal";
 			this.appPath=null;
 			this.clear="false";
@@ -424,8 +435,8 @@ var Laya=window.Laya=(function(window,document){
 			this.appPath=this.getAbsPath("./");
 			OSInfo.init();
 			Browser.userAgent=OSInfo.type;
-			FileTools.tempApp=FileManager.getPath(OSInfo.env["APPDATA"],"LayaAirIDE");
-			Device.dataPath=FileManager.getPath(OSInfo.env["APPDATA"],"LayaAirIDE");
+			FileTools.tempApp=FileManager.getPath(OSInfo.env["APPDATA"]||OSInfo.env["HOME"],"LayaAirIDE");
+			Device.dataPath=FileTools.tempApp;
 			SystemSetting.appPath=this.appPath;
 			SystemSetting.tempPath=FileManager.getAppPath("data");
 			console.log("appPath:",this.appPath);
@@ -494,6 +505,7 @@ var Laya=window.Laya=(function(window,document){
 			ResFileManager.setPath(SystemSetting.assetsPath);
 			ResStyleManager.init();
 			PageStyleManager.init();
+			this.addCustomConfig(FileManager.getWorkPath("laya/custom"));
 			ExportManager.packingEndHandler=Utils.bind(this.packingEnd,this);
 			ExportManager.clearRes=false;
 			var ifExportCode=false;
@@ -582,7 +594,7 @@ var Laya=window.Laya=(function(window,document){
 		Config.animationInterval=50;
 		Config.isAntialias=false;
 		Config.isAlpha=false;
-		Config.premultipliedAlpha=false;
+		Config.premultipliedAlpha=true;
 		Config.isStencil=true;
 		Config.preserveDrawingBuffer=false;
 		return Config;
@@ -614,8 +626,7 @@ var Laya=window.Laya=(function(window,document){
 		/**
 		*派发事件。
 		*@param type 事件类型。
-		*@param data 回调数据。
-		*<b>注意：</b>如果是需要传递多个参数 p1,p2,p3,...可以使用数组结构如：[p1,p2,p3,...] ；如果需要回调单个参数 p 是一个数组，则需要使用结构如：[p]，其他的单个参数 p ，可以直接传入参数 p。
+		*@param data （可选）回调数据。<b>注意：</b>如果是需要传递多个参数 p1,p2,p3,...可以使用数组结构如：[p1,p2,p3,...] ；如果需要回调单个参数 p ，且 p 是一个数组，则需要使用结构如：[p]，其他的单个参数 p ，可以直接传入参数 p。
 		*@return 此事件类型是否有侦听者，如果有侦听者则值为 true，否则值为 false。
 		*/
 		__proto.event=function(type,data){
@@ -646,7 +657,7 @@ var Laya=window.Laya=(function(window,document){
 		*@param type 事件的类型。
 		*@param caller 事件侦听函数的执行域。
 		*@param listener 事件侦听函数。
-		*@param args 事件侦听函数的回调参数。
+		*@param args （可选）事件侦听函数的回调参数。
 		*@return 此 EventDispatcher 对象。
 		*/
 		__proto.on=function(type,caller,listener,args){
@@ -658,7 +669,7 @@ var Laya=window.Laya=(function(window,document){
 		*@param type 事件的类型。
 		*@param caller 事件侦听函数的执行域。
 		*@param listener 事件侦听函数。
-		*@param args 事件侦听函数的回调参数。
+		*@param args （可选）事件侦听函数的回调参数。
 		*@return 此 EventDispatcher 对象。
 		*/
 		__proto.once=function(type,caller,listener,args){
@@ -685,7 +696,7 @@ var Laya=window.Laya=(function(window,document){
 		*@param type 事件的类型。
 		*@param caller 事件侦听函数的执行域。
 		*@param listener 事件侦听函数。
-		*@param onceOnly 如果值为 true ,则只移除通过 once 方法添加的侦听器。
+		*@param onceOnly （可选）如果值为 true ,则只移除通过 once 方法添加的侦听器。
 		*@return 此 EventDispatcher 对象。
 		*/
 		__proto.off=function(type,caller,listener,onceOnly){
@@ -716,7 +727,7 @@ var Laya=window.Laya=(function(window,document){
 
 		/**
 		*从 EventDispatcher 对象中删除指定事件类型的所有侦听器。
-		*@param type 事件类型，如果值为 null，则移除本对象所有类型的侦听器。
+		*@param type （可选）事件类型，如果值为 null，则移除本对象所有类型的侦听器。
 		*@return 此 EventDispatcher 对象。
 		*/
 		__proto.offAll=function(type){
@@ -790,7 +801,7 @@ var Laya=window.Laya=(function(window,document){
 
 	/**
 	*<p><code>Handler</code> 是事件处理器类。</p>
-	*<p>推荐使用 Handler.create()方法从对象池创建，减少对象创建消耗。</p>
+	*<p>推荐使用 Handler.create()方法从对象池创建，减少对象创建消耗。创建的 Handler 对象不再使用后，可以使用 Handler.recover()将其回收到对象池，回收后不要再使用此对象，否则会导致不可预料的错误。</p>
 	*<p><b>注意：</b>由于鼠标事件也用本对象池，不正确的回收及调用，可能会影响鼠标事件的执行。</p>
 	*/
 	//class laya.utils.Handler
@@ -905,9 +916,9 @@ var Laya=window.Laya=(function(window,document){
 		__class(BitmapFont,'laya.display.BitmapFont');
 		var __proto=BitmapFont.prototype;
 		/**
-		*通过指定位图字体文件路径，加载位图字体文件。
+		*通过指定位图字体文件路径，加载位图字体文件，加载完成后会自动解析。
 		*@param path 位图字体文件的路径。
-		*@param complete 加载完成的回调，通知上层字体文件已经完成加载并解析。
+		*@param complete 加载并解析完成的回调。
 		*/
 		__proto.loadFont=function(path,complete){
 			this._path=path;
@@ -1432,10 +1443,8 @@ var Laya=window.Laya=(function(window,document){
 			//this._sp=null;
 			this._one=null;
 			this._cmds=null;
-			//this._temp=null;
-			//this._bounds=null;
-			//this._rstBoundPoints=null;
 			//this._vectorgraphArray=null;
+			//this._graphicBounds=null;
 			this._render=this._renderEmpty;
 			if (Render.isConchNode){
 				this._nativeObj=new _conchGraphics();;
@@ -1450,9 +1459,8 @@ var Laya=window.Laya=(function(window,document){
 		*/
 		__proto.destroy=function(){
 			this.clear();
-			this._temp=null;
-			this._bounds=null;
-			this._rstBoundPoints=null;
+			if (this._graphicBounds)this._graphicBounds.destroy();
+			this._graphicBounds=null;
 			this._vectorgraphArray=null;
 			this._sp && (this._sp._renderType=0);
 			this._sp=null;
@@ -1460,20 +1468,53 @@ var Laya=window.Laya=(function(window,document){
 
 		/**
 		*<p>清空绘制命令。</p>
+		*@param recoverCmds 是否回收绘图指令
 		*/
-		__proto.clear=function(){
+		__proto.clear=function(recoverCmds){
+			(recoverCmds===void 0)&& (recoverCmds=false);
+			if (recoverCmds){
+				var tCmd=this._one;
+				if (this._cmds){
+					var i=0,len=this._cmds.length;
+					for (i=0;i < len;i++){
+						tCmd=this._cmds[i];
+						if (tCmd && (tCmd.callee===Render._context._drawTexture || tCmd.callee===Render._context._drawTextureWithTransform)){
+							tCmd[0]=null;
+							Graphics._cache.push(tCmd);
+						}
+					}
+					this._cmds.length=0;
+					}else if (tCmd){
+					if (tCmd && (tCmd.callee===Render._context._drawTexture || tCmd.callee===Render._context._drawTextureWithTransform)){
+						tCmd[0]=null;
+						Graphics._cache.push(tCmd);
+					}
+				}
+				}else {
+				this._cmds=null;
+			}
 			this._one=null;
 			this._render=this._renderEmpty;
-			this._cmds=null;
-			this._temp && (this._temp.length=0);
-			this._sp && (this._sp._renderType &=~0x01);
-			this._sp && (this._sp._renderType &=~0x200);
+			this._sp && (this._sp._renderType &=~0x01 & ~0x200);
 			this._repaint();
 			if (this._vectorgraphArray){
-				for (var i=0,n=this._vectorgraphArray.length;i < n;i++){
+				for (i=0,len=this._vectorgraphArray.length;i < len;i++){
 					VectorGraphManager.getInstance().deleteShape(this._vectorgraphArray[i]);
 				}
 				this._vectorgraphArray.length=0;
+			}
+		}
+
+		/**@private */
+		__proto._clearBoundsCache=function(){
+			if (this._graphicBounds)this._graphicBounds.reset();
+		}
+
+		/**@private */
+		__proto._initGraphicBounds=function(){
+			if (!this._graphicBounds){
+				this._graphicBounds=new GraphicsBounds();
+				this._graphicBounds._graphics=this;
 			}
 		}
 
@@ -1482,7 +1523,7 @@ var Laya=window.Laya=(function(window,document){
 		*重绘此对象。
 		*/
 		__proto._repaint=function(){
-			this._temp && (this._temp.length=0);
+			this._clearBoundsCache();
 			this._sp && this._sp.repaint();
 		}
 
@@ -1492,24 +1533,25 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*获取位置及宽高信息矩阵(比较耗，尽量少用)。
+		*获取位置及宽高信息矩阵(比较耗CPU，频繁使用会造成卡顿，尽量少用)。
+		*@param realSize （可选）使用图片的真实大小，默认为false
 		*@return 位置与宽高组成的 一个 Rectangle 对象。
 		*/
-		__proto.getBounds=function(){
-			if (!this._bounds || !this._temp || this._temp.length < 1){
-				this._bounds=Rectangle._getWrapRec(this.getBoundPoints(),this._bounds)
-			}
-			return this._bounds;
+		__proto.getBounds=function(realSize){
+			(realSize===void 0)&& (realSize=false);
+			this._initGraphicBounds();
+			return this._graphicBounds.getBounds(realSize);
 		}
 
 		/**
 		*@private
+		*@param realSize （可选）使用图片的真实大小，默认为false
 		*获取端点列表。
 		*/
-		__proto.getBoundPoints=function(){
-			if (!this._temp || this._temp.length < 1)
-				this._temp=this._getCmdPoints();
-			return this._rstBoundPoints=Utils.copyArray(this._rstBoundPoints,this._temp);
+		__proto.getBoundPoints=function(realSize){
+			(realSize===void 0)&& (realSize=false);
+			this._initGraphicBounds();
+			return this._graphicBounds.getBoundPoints(realSize);
 		}
 
 		__proto._addCmd=function(a){
@@ -1518,176 +1560,15 @@ var Laya=window.Laya=(function(window,document){
 			this._cmds.push(a);
 		}
 
-		__proto._getCmdPoints=function(){
-			var context=Render._context;
-			var cmds=this._cmds;
-			var rst;
-			rst=this._temp || (this._temp=[]);
-			rst.length=0;
-			if (!cmds && this._one !=null){
-				Graphics._tempCmds.length=0;
-				Graphics._tempCmds.push(this._one);
-				cmds=Graphics._tempCmds;
-			}
-			if (!cmds)
-				return rst;
-			var matrixs;
-			matrixs=Graphics._tempMatrixArrays;
-			matrixs.length=0;
-			var tMatrix=Graphics._initMatrix;
-			tMatrix.identity();
-			var tempMatrix=Graphics._tempMatrix;
-			var cmd;
-			var tex
-			for (var i=0,n=cmds.length;i < n;i++){
-				cmd=cmds[i];
-				switch (cmd.callee){
-					case context._save:
-					case 7:
-						matrixs.push(tMatrix);
-						tMatrix=tMatrix.clone();
-						break ;
-					case context._restore:
-					case 8:
-						tMatrix=matrixs.pop();
-						break ;
-					case context._scale:
-					case 5:
-						tempMatrix.identity();
-						tempMatrix.translate(-cmd[2],-cmd[3]);
-						tempMatrix.scale(cmd[0],cmd[1]);
-						tempMatrix.translate(cmd[2],cmd[3]);
-						this._switchMatrix(tMatrix,tempMatrix);
-						break ;
-					case context._rotate:
-					case 3:
-						tempMatrix.identity();
-						tempMatrix.translate(-cmd[1],-cmd[2]);
-						tempMatrix.rotate(cmd[0]);
-						tempMatrix.translate(cmd[1],cmd[2]);
-						this._switchMatrix(tMatrix,tempMatrix);
-						break ;
-					case context._translate:
-					case 6:
-						tempMatrix.identity();
-						tempMatrix.translate(cmd[0],cmd[1]);
-						this._switchMatrix(tMatrix,tempMatrix);
-						break ;
-					case context._transform:
-					case 4:
-						tempMatrix.identity();
-						tempMatrix.translate(-cmd[1],-cmd[2]);
-						tempMatrix.concat(cmd[0]);
-						tempMatrix.translate(cmd[1],cmd[2]);
-						this._switchMatrix(tMatrix,tempMatrix);
-						break ;
-					case 16:
-					case 24:
-						Graphics._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[0],cmd[1],cmd[2],cmd[3]),tMatrix);
-						break ;
-					case 17:
-						tMatrix.copyTo(tempMatrix);
-						tempMatrix.concat(cmd[4]);
-						Graphics._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[0],cmd[1],cmd[2],cmd[3]),tempMatrix);
-						break ;
-					case context._drawTexture:
-						tex=cmd[0];
-						var offX=tex.offsetX>0?tex.offsetX:0;
-						var offY=tex.offsetY>0?tex.offsetY:0;
-						if (cmd[3] && cmd[4]){
-							Graphics._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[1]-offX,cmd[2]-offY,cmd[3]+tex.sourceWidth-tex.width,cmd[4]+tex.sourceHeight-tex.height),tMatrix);
-							}else {
-							Graphics._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[1]-offX,cmd[2]-offY,tex.width+tex.sourceWidth-tex.width,tex.height+tex.sourceHeight-tex.height),tMatrix);
-						}
-						break ;
-					case context._fillTexture:
-						if (cmd[3] && cmd[4]){
-							Graphics._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[1],cmd[2],cmd[3],cmd[4]),tMatrix);
-							}else {
-							tex=cmd[0];
-							Graphics._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[1],cmd[2],tex.width,tex.height),tMatrix);
-						}
-						break ;
-					case context._drawTextureWithTransform:;
-						var drawMatrix;
-						if (cmd[5]){
-							tMatrix.copyTo(tempMatrix);
-							tempMatrix.concat(cmd[5]);
-							drawMatrix=tempMatrix;
-							}else {
-							drawMatrix=tMatrix;
-						}
-						tex=cmd[0];
-						offX=tex.offsetX>0?tex.offsetX:0;
-						offY=tex.offsetY>0?tex.offsetY:0;
-						if (cmd[3] && cmd[4]){
-							Graphics._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[1]-offX,cmd[2]-offY,cmd[3]+tex.sourceWidth-tex.width,cmd[4]+tex.sourceHeight-tex.height),tMatrix);
-							}else {
-							Graphics._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[1]-offX,cmd[2]-offY,tex.width+tex.sourceWidth-tex.width,tex.height+tex.sourceHeight-tex.height),tMatrix);
-						}
-						break ;
-					case context._drawRect:
-					case 13:
-						Graphics._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[0],cmd[1],cmd[2],cmd[3]),tMatrix);
-						break ;
-					case context._drawCircle:
-					case context._fillCircle:
-					case 14:
-						Graphics._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[0]-cmd[2],cmd[1]-cmd[2],cmd[2]+cmd[2],cmd[2]+cmd[2]),tMatrix);
-						break ;
-					case context._drawLine:
-					case 20:
-						Graphics._tempPoints.length=0;
-						var lineWidth=NaN;
-						lineWidth=cmd[5] *0.5;
-						if (cmd[0]==cmd[2]){
-							Graphics._tempPoints.push(cmd[0]+lineWidth,cmd[1],cmd[2]+lineWidth,cmd[3],cmd[0]-lineWidth,cmd[1],cmd[2]-lineWidth,cmd[3]);
-							}else if (cmd[1]==cmd[3]){
-							Graphics._tempPoints.push(cmd[0],cmd[1]+lineWidth,cmd[2],cmd[3]+lineWidth,cmd[0],cmd[1]-lineWidth,cmd[2],cmd[3]-lineWidth);
-							}else {
-							Graphics._tempPoints.push(cmd[0],cmd[1],cmd[2],cmd[3]);
-						}
-						Graphics._addPointArrToRst(rst,Graphics._tempPoints,tMatrix);
-						break ;
-					case context._drawCurves:
-					case 22:
-						Graphics._addPointArrToRst(rst,Bezier.I.getBezierPoints(cmd[2]),tMatrix,cmd[0],cmd[1]);
-						break ;
-					case context._drawPoly:
-					case context._drawLines:
-					case 18:
-						Graphics._addPointArrToRst(rst,cmd[2],tMatrix,cmd[0],cmd[1]);
-						break ;
-					case context._drawPath:
-					case 19:
-						Graphics._addPointArrToRst(rst,this._getPathPoints(cmd[2]),tMatrix,cmd[0],cmd[1]);
-						break ;
-					case context._drawPie:
-					case 15:
-						Graphics._addPointArrToRst(rst,this._getPiePoints(cmd[0],cmd[1],cmd[2],cmd[3],cmd[4]),tMatrix);
-						break ;
-					}
-			}
-			if (rst.length > 200){
-				rst=Utils.copyArray(rst,Rectangle._getWrapRec(rst)._getBoundPoints());
-			}else if (rst.length > 8)
-			rst=GrahamScan.scanPList(rst);
-			return rst;
-		}
-
-		__proto._switchMatrix=function(tMatix,tempMatrix){
-			tempMatrix.concat(tMatix);
-			tempMatrix.copyTo(tMatix);
-		}
-
 		/**
 		*绘制纹理。
 		*@param tex 纹理。
-		*@param x X 轴偏移量。
-		*@param y Y 轴偏移量。
-		*@param width 宽度。
-		*@param height 高度。
-		*@param m 矩阵信息。
+		*@param x （可选）X轴偏移量。
+		*@param y （可选）Y轴偏移量。
+		*@param width （可选）宽度。
+		*@param height （可选）高度。
+		*@param m （可选）矩阵信息。
+		*@param alpha （可选）透明度。
 		*/
 		__proto.drawTexture=function(tex,x,y,width,height,m,alpha){
 			(x===void 0)&& (x=0);
@@ -1695,16 +1576,29 @@ var Laya=window.Laya=(function(window,document){
 			(width===void 0)&& (width=0);
 			(height===void 0)&& (height=0);
 			(alpha===void 0)&& (alpha=1);
-			if (!tex)return;
+			if (!tex || alpha < 0.01)return null;
 			if (!width)width=tex.sourceWidth;
 			if (!height)height=tex.sourceHeight;
-			width=width-tex.sourceWidth+tex.width;
-			height=height-tex.sourceHeight+tex.height;
-			if (tex.loaded && (width <=0 || height <=0))return;
-			x+=tex.offsetX;
-			y+=tex.offsetY;
+			var wRate=width / tex.sourceWidth;
+			var hRate=height / tex.sourceHeight;
+			width=tex.width *wRate;
+			height=tex.height *hRate;
+			if (tex.loaded && (width <=0 || height <=0))return null;
+			x+=tex.offsetX *wRate;
+			y+=tex.offsetY *hRate;
 			this._sp && (this._sp._renderType |=0x200);
-			var args=[tex,x,y,width,height,m,alpha];
+			if (Graphics._cache.length){
+				var args=Graphics._cache.pop();
+				args[0]=tex;
+				args[1]=x;
+				args[2]=y;
+				args[3]=width;
+				args[4]=height;
+				args[5]=m;
+				args[6]=alpha;
+				}else {
+				args=[tex,x,y,width,height,m,alpha];
+			}
 			args.callee=(m || alpha !=1)? Render._context._drawTextureWithTransform :Render._context._drawTexture;
 			if (this._one==null && !m && alpha==1){
 				this._one=args;
@@ -1716,6 +1610,7 @@ var Laya=window.Laya=(function(window,document){
 				tex.once("loaded",this,this._textureLoaded,[tex,args]);
 			}
 			this._repaint();
+			return args;
 		}
 
 		/**
@@ -1729,10 +1624,12 @@ var Laya=window.Laya=(function(window,document){
 			if (this._one && this._render===this._renderOneImg){
 				if (!width)width=tex.sourceWidth;
 				if (!height)height=tex.sourceHeight;
-				width=width-tex.sourceWidth+tex.width;
-				height=height-tex.sourceHeight+tex.height;
-				x+=tex.offsetX;
-				y+=tex.offsetY;
+				var wRate=width / tex.sourceWidth;
+				var hRate=height / tex.sourceHeight;
+				width=tex.width *wRate;
+				height=tex.height *hRate;
+				x+=tex.offsetX *wRate;
+				y+=tex.offsetY *hRate;
 				this._one[0]=tex;
 				this._one[1]=x;
 				this._one[2]=y;
@@ -1755,14 +1652,14 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*用texture填充
+		*用texture填充。
 		*@param tex 纹理。
-		*@param x X 轴偏移量。
-		*@param y Y 轴偏移量。
-		*@param width 宽度。
-		*@param height 高度。
-		*@param type 填充类型 repeat|repeat-x|repeat-y|no-repeat
-		*@param offset 贴图纹理偏移
+		*@param x X轴偏移量。
+		*@param y Y轴偏移量。
+		*@param width （可选）宽度。
+		*@param height （可选）高度。
+		*@param type （可选）填充类型 repeat|repeat-x|repeat-y|no-repeat
+		*@param offset （可选）贴图纹理偏移
 		*
 		*/
 		__proto.fillTexture=function(tex,x,y,width,height,type,offset){
@@ -1799,7 +1696,6 @@ var Laya=window.Laya=(function(window,document){
 				this._cmds.push(args);
 			}
 			args.callee=fun;
-			this._temp && (this._temp.length=0);
 			this._repaint();
 			return args;
 		}
@@ -1866,10 +1762,18 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
+		*设置当前透明度。
+		*@param value 透明度。
+		*/
+		__proto.setAlpha=function(value){
+			this._saveToCmd(Render._context._setAlpha,[value]);
+		}
+
+		/**
 		*替换绘图的当前转换矩阵。
 		*@param mat 矩阵。
-		*@param pivotX 水平方向轴心点坐标。
-		*@param pivotY 垂直方向轴心点坐标。
+		*@param pivotX （可选）水平方向轴心点坐标。
+		*@param pivotY （可选）垂直方向轴心点坐标。
 		*/
 		__proto.transform=function(matrix,pivotX,pivotY){
 			(pivotX===void 0)&& (pivotX=0);
@@ -1880,8 +1784,8 @@ var Laya=window.Laya=(function(window,document){
 		/**
 		*旋转当前绘图。(推荐使用transform，性能更高)
 		*@param angle 旋转角度，以弧度计。
-		*@param pivotX 水平方向轴心点坐标。
-		*@param pivotY 垂直方向轴心点坐标。
+		*@param pivotX （可选）水平方向轴心点坐标。
+		*@param pivotY （可选）垂直方向轴心点坐标。
 		*/
 		__proto.rotate=function(angle,pivotX,pivotY){
 			(pivotX===void 0)&& (pivotX=0);
@@ -1893,8 +1797,8 @@ var Laya=window.Laya=(function(window,document){
 		*缩放当前绘图至更大或更小。(推荐使用transform，性能更高)
 		*@param scaleX 水平方向缩放值。
 		*@param scaleY 垂直方向缩放值。
-		*@param pivotX 水平方向轴心点坐标。
-		*@param pivotY 垂直方向轴心点坐标。
+		*@param pivotX （可选）水平方向轴心点坐标。
+		*@param pivotY （可选）垂直方向轴心点坐标。
 		*/
 		__proto.scale=function(scaleX,scaleY,pivotX,pivotY){
 			(pivotX===void 0)&& (pivotX=0);
@@ -1983,11 +1887,11 @@ var Laya=window.Laya=(function(window,document){
 		/**
 		*加载并显示一个图片。
 		*@param url 图片地址。
-		*@param x 显示图片的x位置。
-		*@param y 显示图片的y位置。
-		*@param width 显示图片的宽度，设置为0表示使用图片默认宽度。
-		*@param height 显示图片的高度，设置为0表示使用图片默认高度。
-		*@param complete 加载完成回调。
+		*@param x （可选）显示图片的x位置。
+		*@param y （可选）显示图片的y位置。
+		*@param width （可选）显示图片的宽度，设置为0表示使用图片默认宽度。
+		*@param height （可选）显示图片的高度，设置为0表示使用图片默认高度。
+		*@param complete （可选）加载完成回调。
 		*/
 		__proto.loadImage=function(url,x,y,width,height,complete){
 			var _$this=this;
@@ -2039,12 +1943,12 @@ var Laya=window.Laya=(function(window,document){
 
 		/**
 		*绘制一条线。
-		*@param fromX X 轴开始位置。
-		*@param fromY Y 轴开始位置。
-		*@param toX X 轴结束位置。
-		*@param toY Y 轴结束位置。
+		*@param fromX X轴开始位置。
+		*@param fromY Y轴开始位置。
+		*@param toX X轴结束位置。
+		*@param toY Y轴结束位置。
 		*@param lineColor 颜色。
-		*@param lineWidth 线条宽度。
+		*@param lineWidth （可选）线条宽度。
 		*/
 		__proto.drawLine=function(fromX,fromY,toX,toY,lineColor,lineWidth){
 			(lineWidth===void 0)&& (lineWidth=1);
@@ -2061,15 +1965,16 @@ var Laya=window.Laya=(function(window,document){
 
 		/**
 		*绘制一系列线段。
-		*@param x 开始绘制的 X 轴位置。
-		*@param y 开始绘制的 Y 轴位置。
+		*@param x 开始绘制的X轴位置。
+		*@param y 开始绘制的Y轴位置。
 		*@param points 线段的点集合。格式:[x1,y1,x2,y2,x3,y3...]。
 		*@param lineColor 线段颜色，或者填充绘图的渐变对象。
-		*@param lineWidth 线段宽度。
+		*@param lineWidth （可选）线段宽度。
 		*/
 		__proto.drawLines=function(x,y,points,lineColor,lineWidth){
 			(lineWidth===void 0)&& (lineWidth=1);
 			var tId=0;
+			if (!points || points.length < 4)return;
 			if (Render.isWebGL){
 				tId=VectorGraphManager.getInstance().getId();
 				if (this._vectorgraphArray==null)this._vectorgraphArray=[];
@@ -2086,7 +1991,7 @@ var Laya=window.Laya=(function(window,document){
 		*@param y 开始绘制的 Y 轴位置。
 		*@param points 线段的点集合，格式[startx,starty,ctrx,ctry,startx,starty...]。
 		*@param lineColor 线段颜色，或者填充绘图的渐变对象。
-		*@param lineWidth 线段宽度。
+		*@param lineWidth （可选）线段宽度。
 		*/
 		__proto.drawCurves=function(x,y,points,lineColor,lineWidth){
 			(lineWidth===void 0)&& (lineWidth=1);
@@ -2101,8 +2006,8 @@ var Laya=window.Laya=(function(window,document){
 		*@param width 矩形宽度。
 		*@param height 矩形高度。
 		*@param fillColor 填充颜色，或者填充绘图的渐变对象。
-		*@param lineColor 边框颜色，或者填充绘图的渐变对象。
-		*@param lineWidth 边框宽度。
+		*@param lineColor （可选）边框颜色，或者填充绘图的渐变对象。
+		*@param lineWidth （可选）边框宽度。
 		*/
 		__proto.drawRect=function(x,y,width,height,fillColor,lineColor,lineWidth){
 			(lineWidth===void 0)&& (lineWidth=1);
@@ -2118,8 +2023,8 @@ var Laya=window.Laya=(function(window,document){
 		*@param y 圆点Y 轴位置。
 		*@param radius 半径。
 		*@param fillColor 填充颜色，或者填充绘图的渐变对象。
-		*@param lineColor 边框颜色，或者填充绘图的渐变对象。
-		*@param lineWidth 边框宽度。
+		*@param lineColor （可选）边框颜色，或者填充绘图的渐变对象。
+		*@param lineWidth （可选）边框宽度。
 		*/
 		__proto.drawCircle=function(x,y,radius,fillColor,lineColor,lineWidth){
 			(lineWidth===void 0)&& (lineWidth=1);
@@ -2142,8 +2047,8 @@ var Laya=window.Laya=(function(window,document){
 		*@param startAngle 开始角度。
 		*@param endAngle 结束角度。
 		*@param fillColor 填充颜色，或者填充绘图的渐变对象。
-		*@param lineColor 边框颜色，或者填充绘图的渐变对象。
-		*@param lineWidth 边框宽度。
+		*@param lineColor （可选）边框颜色，或者填充绘图的渐变对象。
+		*@param lineWidth （可选）边框宽度。
 		*/
 		__proto.drawPie=function(x,y,radius,startAngle,endAngle,fillColor,lineColor,lineWidth){
 			(lineWidth===void 0)&& (lineWidth=1);
@@ -2161,29 +2066,14 @@ var Laya=window.Laya=(function(window,document){
 			this._saveToCmd(Render._context._drawPie,arr);
 		}
 
-		__proto._getPiePoints=function(x,y,radius,startAngle,endAngle){
-			var rst=Graphics._tempPoints;
-			Graphics._tempPoints.length=0;
-			rst.push(x,y);
-			var dP=Math.PI / 10;
-			var i=NaN;
-			for (i=startAngle;i < endAngle;i+=dP){
-				rst.push(x+radius *Math.cos(i),y+radius *Math.sin(i));
-			}
-			if (endAngle !=i){
-				rst.push(x+radius *Math.cos(endAngle),y+radius *Math.sin(endAngle));
-			}
-			return rst;
-		}
-
 		/**
 		*绘制多边形。
 		*@param x 开始绘制的 X 轴位置。
 		*@param y 开始绘制的 Y 轴位置。
 		*@param points 多边形的点集合。
 		*@param fillColor 填充颜色，或者填充绘图的渐变对象。
-		*@param lineColor 边框颜色，或者填充绘图的渐变对象。
-		*@param lineWidth 边框宽度。
+		*@param lineColor （可选）边框颜色，或者填充绘图的渐变对象。
+		*@param lineWidth （可选）边框宽度。
 		*/
 		__proto.drawPoly=function(x,y,points,fillColor,lineColor,lineWidth){
 			(lineWidth===void 0)&& (lineWidth=1);
@@ -2204,31 +2094,13 @@ var Laya=window.Laya=(function(window,document){
 			this._saveToCmd(Render._context._drawPoly,arr);
 		}
 
-		__proto._getPathPoints=function(paths){
-			var i=0,len=0;
-			var rst=Graphics._tempPoints;
-			rst.length=0;
-			len=paths.length;
-			var tCMD;
-			for (i=0;i < len;i++){
-				tCMD=paths[i];
-				if (tCMD.length > 1){
-					rst.push(tCMD[1],tCMD[2]);
-					if (tCMD.length > 3){
-						rst.push(tCMD[3],tCMD[4]);
-					}
-				}
-			}
-			return rst;
-		}
-
 		/**
 		*绘制路径。
 		*@param x 开始绘制的 X 轴位置。
 		*@param y 开始绘制的 Y 轴位置。
-		*@param paths 路径集合，路径支持以下格式：[["moveTo",x,y],["lineTo",x,y,x,y,x,y],["arcTo",x1,y1,x2,y2,r],["closePath"]]。
-		*@param brush 刷子定义，支持以下设置{fillStyle}。
-		*@param pen 画笔定义，支持以下设置{strokeStyle,lineWidth,lineJoin,lineCap,miterLimit}。
+		*@param paths 路径集合，路径支持以下格式：[["moveTo",x,y],["lineTo",x,y],["arcTo",x1,y1,x2,y2,r],["closePath"]]。
+		*@param brush （可选）刷子定义，支持以下设置{fillStyle:"#FF0000"}。
+		*@param pen （可选）画笔定义，支持以下设置{strokeStyle,lineWidth,lineJoin:"bevel|round|miter",lineCap:"butt|round|square",miterLimit}。
 		*/
 		__proto.drawPath=function(x,y,paths,brush,pen){
 			var arr=[x,y,paths,brush,pen];
@@ -2292,7 +2164,7 @@ var Laya=window.Laya=(function(window,document){
 					x+=tex.offsetX;
 					y+=tex.offsetY;
 					var uv=tex.uv,w=tex.bitmap.width,h=tex.bitmap.height;
-					this.drawImageM(tex.bitmap.source,uv[0] *w,uv[1] *h,(uv[2]-uv[0])*w,(uv[5]-uv[3])*h,x,y,width,height,m);
+					this.drawImageM(tex.bitmap.source,uv[0] *w,uv[1] *h,(uv[2]-uv[0])*w,(uv[5]-uv[3])*h,x,y,width,height,m,alpha);
 					this._repaint();
 				}
 				from.fillTexture=function (tex,x,y,width,height,type,offset){
@@ -2322,35 +2194,318 @@ var Laya=window.Laya=(function(window,document){
 			}
 		}
 
-		Graphics._addPointArrToRst=function(rst,points,matrix,dx,dy){
+		Graphics._cache=[];
+		return Graphics;
+	})()
+
+
+	/**
+	*@private
+	*Graphic bounds数据类
+	*/
+	//class laya.display.GraphicsBounds
+	var GraphicsBounds=(function(){
+		function GraphicsBounds(){
+			//this._temp=null;
+			//this._bounds=null;
+			//this._rstBoundPoints=null;
+			this._cacheBoundsType=false;
+			//this._graphics=null;
+		}
+
+		__class(GraphicsBounds,'laya.display.GraphicsBounds');
+		var __proto=GraphicsBounds.prototype;
+		/**
+		*销毁
+		*/
+		__proto.destroy=function(){
+			this._graphics=null;
+			this._temp=null;
+			this._rstBoundPoints=null;
+			this._bounds=null;
+		}
+
+		/**
+		*重置数据
+		*/
+		__proto.reset=function(){
+			this._temp && (this._temp.length=0);
+		}
+
+		/**
+		*获取位置及宽高信息矩阵(比较耗CPU，频繁使用会造成卡顿，尽量少用)。
+		*@param realSize （可选）使用图片的真实大小，默认为false
+		*@return 位置与宽高组成的 一个 Rectangle 对象。
+		*/
+		__proto.getBounds=function(realSize){
+			(realSize===void 0)&& (realSize=false);
+			if (!this._bounds || !this._temp || this._temp.length < 1 || realSize !=this._cacheBoundsType){
+				this._bounds=Rectangle._getWrapRec(this.getBoundPoints(realSize),this._bounds)
+			}
+			this._cacheBoundsType=realSize;
+			return this._bounds;
+		}
+
+		/**
+		*@private
+		*@param realSize （可选）使用图片的真实大小，默认为false
+		*获取端点列表。
+		*/
+		__proto.getBoundPoints=function(realSize){
+			(realSize===void 0)&& (realSize=false);
+			if (!this._temp || this._temp.length < 1 || realSize !=this._cacheBoundsType)
+				this._temp=this._getCmdPoints(realSize);
+			this._cacheBoundsType=realSize;
+			return this._rstBoundPoints=Utils.copyArray(this._rstBoundPoints,this._temp);
+		}
+
+		__proto._getCmdPoints=function(realSize){
+			(realSize===void 0)&& (realSize=false);
+			var context=Render._context;
+			var cmds=this._graphics.cmds;
+			var rst;
+			rst=this._temp || (this._temp=[]);
+			rst.length=0;
+			if (!cmds && this._graphics._one !=null){
+				GraphicsBounds._tempCmds.length=0;
+				GraphicsBounds._tempCmds.push(this._graphics._one);
+				cmds=GraphicsBounds._tempCmds;
+			}
+			if (!cmds)
+				return rst;
+			var matrixs;
+			matrixs=GraphicsBounds._tempMatrixArrays;
+			matrixs.length=0;
+			var tMatrix=GraphicsBounds._initMatrix;
+			tMatrix.identity();
+			var tempMatrix=GraphicsBounds._tempMatrix;
+			var cmd;
+			var tex;
+			for (var i=0,n=cmds.length;i < n;i++){
+				cmd=cmds[i];
+				switch (cmd.callee){
+					case context._save:
+					case 7:
+						matrixs.push(tMatrix);
+						tMatrix=tMatrix.clone();
+						break ;
+					case context._restore:
+					case 8:
+						tMatrix=matrixs.pop();
+						break ;
+					case context._scale:
+					case 5:
+						tempMatrix.identity();
+						tempMatrix.translate(-cmd[2],-cmd[3]);
+						tempMatrix.scale(cmd[0],cmd[1]);
+						tempMatrix.translate(cmd[2],cmd[3]);
+						this._switchMatrix(tMatrix,tempMatrix);
+						break ;
+					case context._rotate:
+					case 3:
+						tempMatrix.identity();
+						tempMatrix.translate(-cmd[1],-cmd[2]);
+						tempMatrix.rotate(cmd[0]);
+						tempMatrix.translate(cmd[1],cmd[2]);
+						this._switchMatrix(tMatrix,tempMatrix);
+						break ;
+					case context._translate:
+					case 6:
+						tempMatrix.identity();
+						tempMatrix.translate(cmd[0],cmd[1]);
+						this._switchMatrix(tMatrix,tempMatrix);
+						break ;
+					case context._transform:
+					case 4:
+						tempMatrix.identity();
+						tempMatrix.translate(-cmd[1],-cmd[2]);
+						tempMatrix.concat(cmd[0]);
+						tempMatrix.translate(cmd[1],cmd[2]);
+						this._switchMatrix(tMatrix,tempMatrix);
+						break ;
+					case 16:
+					case 24:
+						GraphicsBounds._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[0],cmd[1],cmd[2],cmd[3]),tMatrix);
+						break ;
+					case 17:
+						tMatrix.copyTo(tempMatrix);
+						tempMatrix.concat(cmd[4]);
+						GraphicsBounds._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[0],cmd[1],cmd[2],cmd[3]),tempMatrix);
+						break ;
+					case context._drawTexture:
+						tex=cmd[0];
+						if (realSize){
+							if (cmd[3] && cmd[4]){
+								GraphicsBounds._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[1],cmd[2],cmd[3],cmd[4]),tMatrix);
+								}else {
+								tex=cmd[0];
+								GraphicsBounds._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[1],cmd[2],tex.width,tex.height),tMatrix);
+							}
+							}else {
+							var wRate=(cmd[3] || tex.sourceWidth)/ tex.width;
+							var hRate=(cmd[4] || tex.sourceHeight)/ tex.height;
+							var oWidth=wRate *tex.sourceWidth;
+							var oHeight=hRate *tex.sourceHeight;
+							var offX=tex.offsetX > 0 ? tex.offsetX :0;
+							var offY=tex.offsetY > 0 ? tex.offsetY :0;
+							offX *=wRate;
+							offY *=hRate;
+							GraphicsBounds._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[1]-offX,cmd[2]-offY,oWidth,oHeight),tMatrix);
+						}
+						break ;
+					case context._fillTexture:
+						if (cmd[3] && cmd[4]){
+							GraphicsBounds._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[1],cmd[2],cmd[3],cmd[4]),tMatrix);
+							}else {
+							tex=cmd[0];
+							GraphicsBounds._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[1],cmd[2],tex.width,tex.height),tMatrix);
+						}
+						break ;
+					case context._drawTextureWithTransform:;
+						var drawMatrix;
+						if (cmd[5]){
+							tMatrix.copyTo(tempMatrix);
+							tempMatrix.concat(cmd[5]);
+							drawMatrix=tempMatrix;
+							}else {
+							drawMatrix=tMatrix;
+						}
+						if (realSize){
+							if (cmd[3] && cmd[4]){
+								GraphicsBounds._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[1],cmd[2],cmd[3],cmd[4]),drawMatrix);
+								}else {
+								tex=cmd[0];
+								GraphicsBounds._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[1],cmd[2],tex.width,tex.height),drawMatrix);
+							}
+							}else {
+							tex=cmd[0];
+							wRate=(cmd[3] || tex.sourceWidth)/ tex.width;
+							hRate=(cmd[4] || tex.sourceHeight)/ tex.height;
+							oWidth=wRate *tex.sourceWidth;
+							oHeight=hRate *tex.sourceHeight;
+							offX=tex.offsetX > 0 ? tex.offsetX :0;
+							offY=tex.offsetY > 0 ? tex.offsetY :0;
+							offX *=wRate;
+							offY *=hRate;
+							GraphicsBounds._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[1]-offX,cmd[2]-offY,oWidth,oHeight),drawMatrix);
+						}
+						break ;
+					case context._drawRect:
+					case 13:
+						GraphicsBounds._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[0],cmd[1],cmd[2],cmd[3]),tMatrix);
+						break ;
+					case context._drawCircle:
+					case context._fillCircle:
+					case 14:
+						GraphicsBounds._addPointArrToRst(rst,Rectangle._getBoundPointS(cmd[0]-cmd[2],cmd[1]-cmd[2],cmd[2]+cmd[2],cmd[2]+cmd[2]),tMatrix);
+						break ;
+					case context._drawLine:
+					case 20:
+						GraphicsBounds._tempPoints.length=0;
+						var lineWidth=NaN;
+						lineWidth=cmd[5] *0.5;
+						if (cmd[0]==cmd[2]){
+							GraphicsBounds._tempPoints.push(cmd[0]+lineWidth,cmd[1],cmd[2]+lineWidth,cmd[3],cmd[0]-lineWidth,cmd[1],cmd[2]-lineWidth,cmd[3]);
+							}else if (cmd[1]==cmd[3]){
+							GraphicsBounds._tempPoints.push(cmd[0],cmd[1]+lineWidth,cmd[2],cmd[3]+lineWidth,cmd[0],cmd[1]-lineWidth,cmd[2],cmd[3]-lineWidth);
+							}else {
+							GraphicsBounds._tempPoints.push(cmd[0],cmd[1],cmd[2],cmd[3]);
+						}
+						GraphicsBounds._addPointArrToRst(rst,GraphicsBounds._tempPoints,tMatrix);
+						break ;
+					case context._drawCurves:
+					case 22:
+						GraphicsBounds._addPointArrToRst(rst,Bezier.I.getBezierPoints(cmd[2]),tMatrix,cmd[0],cmd[1]);
+						break ;
+					case context._drawPoly:
+					case context._drawLines:
+					case 18:
+						GraphicsBounds._addPointArrToRst(rst,cmd[2],tMatrix,cmd[0],cmd[1]);
+						break ;
+					case context._drawPath:
+					case 19:
+						GraphicsBounds._addPointArrToRst(rst,this._getPathPoints(cmd[2]),tMatrix,cmd[0],cmd[1]);
+						break ;
+					case context._drawPie:
+					case 15:
+						GraphicsBounds._addPointArrToRst(rst,this._getPiePoints(cmd[0],cmd[1],cmd[2],cmd[3],cmd[4]),tMatrix);
+						break ;
+					}
+			}
+			if (rst.length > 200){
+				rst=Utils.copyArray(rst,Rectangle._getWrapRec(rst)._getBoundPoints());
+			}else if (rst.length > 8)
+			rst=GrahamScan.scanPList(rst);
+			return rst;
+		}
+
+		__proto._switchMatrix=function(tMatix,tempMatrix){
+			tempMatrix.concat(tMatix);
+			tempMatrix.copyTo(tMatix);
+		}
+
+		__proto._getPiePoints=function(x,y,radius,startAngle,endAngle){
+			var rst=GraphicsBounds._tempPoints;
+			GraphicsBounds._tempPoints.length=0;
+			rst.push(x,y);
+			var dP=Math.PI / 10;
+			var i=NaN;
+			for (i=startAngle;i < endAngle;i+=dP){
+				rst.push(x+radius *Math.cos(i),y+radius *Math.sin(i));
+			}
+			if (endAngle !=i){
+				rst.push(x+radius *Math.cos(endAngle),y+radius *Math.sin(endAngle));
+			}
+			return rst;
+		}
+
+		__proto._getPathPoints=function(paths){
+			var i=0,len=0;
+			var rst=GraphicsBounds._tempPoints;
+			rst.length=0;
+			len=paths.length;
+			var tCMD;
+			for (i=0;i < len;i++){
+				tCMD=paths[i];
+				if (tCMD.length > 1){
+					rst.push(tCMD[1],tCMD[2]);
+					if (tCMD.length > 3){
+						rst.push(tCMD[3],tCMD[4]);
+					}
+				}
+			}
+			return rst;
+		}
+
+		GraphicsBounds._addPointArrToRst=function(rst,points,matrix,dx,dy){
 			(dx===void 0)&& (dx=0);
 			(dy===void 0)&& (dy=0);
 			var i=0,len=0;
 			len=points.length;
 			for (i=0;i < len;i+=2){
-				Graphics._addPointToRst(rst,points[i]+dx,points[i+1]+dy,matrix);
+				GraphicsBounds._addPointToRst(rst,points[i]+dx,points[i+1]+dy,matrix);
 			}
 		}
 
-		Graphics._addPointToRst=function(rst,x,y,matrix){
+		GraphicsBounds._addPointToRst=function(rst,x,y,matrix){
 			var _tempPoint=Point.TEMP;
 			_tempPoint.setTo(x ? x :0,y ? y :0);
 			matrix.transformPoint(_tempPoint);
 			rst.push(_tempPoint.x,_tempPoint.y);
 		}
 
-		Graphics._tempPoints=[];
-		Graphics._tempMatrixArrays=[];
-		Graphics._tempCmds=[];
-		__static(Graphics,
+		GraphicsBounds._tempPoints=[];
+		GraphicsBounds._tempMatrixArrays=[];
+		GraphicsBounds._tempCmds=[];
+		__static(GraphicsBounds,
 		['_tempMatrix',function(){return this._tempMatrix=new Matrix();},'_initMatrix',function(){return this._initMatrix=new Matrix();}
 		]);
-		return Graphics;
+		return GraphicsBounds;
 	})()
 
 
 	/**
-	*<code>Event</code> 是事件类型的集合。
+	*<code>Event</code> 是事件类型的集合。一般当发生事件时，<code>Event</code> 对象将作为参数传递给事件侦听器。
 	*/
 	//class laya.events.Event
 	var Event=(function(){
@@ -2382,7 +2537,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*防止对事件流中当前节点的后续节点中的所有事件侦听器进行处理。
+		*阻止对事件流中当前节点的后续节点中的所有事件侦听器进行处理。此方法不会影响当前节点 (currentTarget)中的任何事件侦听器。
 		*/
 		__proto.stopPropagation=function(){
 			this._stoped=true;
@@ -2635,10 +2790,8 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*<p><code>KeyBoardManager</code> 是键盘事件管理类。</p>
-	*<p>该类从浏览器中接收键盘事件，并派发该事件。
-	*派发事件时若 Stage.focus 为空则只从 Stage 上派发该事件，否则将从 Stage.focus 对象开始一直冒泡派发该事件。
-	*所以在 Laya.stage 上监听键盘事件一定能够收到，如果在其他地方监听，则必须处在Stage.focus的冒泡链上才能收到该事件。</p>
+	*<p><code>KeyBoardManager</code> 是键盘事件管理类。该类从浏览器中接收键盘事件，并派发该事件。</p>
+	*<p>派发事件时若 Stage.focus 为空则只从 Stage 上派发该事件，否则将从 Stage.focus 对象开始一直冒泡派发该事件。所以在 Laya.stage 上监听键盘事件一定能够收到，如果在其他地方监听，则必须处在Stage.focus的冒泡链上才能收到该事件。</p>
 	*<p>用户可以通过代码 Laya.stage.focus=someNode 的方式来设置focus对象。</p>
 	*<p>用户可统一的根据事件对象中 e.keyCode 来判断按键类型，该属性兼容了不同浏览器的实现。</p>
 	*/
@@ -2665,7 +2818,7 @@ var Laya=window.Laya=(function(window,document){
 			KeyBoardManager._event.keyCode=e.keyCode || e.which || e.charCode;
 			if (type==="keydown")KeyBoardManager._pressKeys[KeyBoardManager._event.keyCode]=true;
 			else if (type==="keyup")KeyBoardManager._pressKeys[KeyBoardManager._event.keyCode]=null;
-			var target=(Laya.stage.focus && (Laya.stage.focus.event !=null)&&Laya.stage.focus.displayedInStage)? Laya.stage.focus :Laya.stage;
+			var target=(Laya.stage.focus && (Laya.stage.focus.event !=null)&& Laya.stage.focus.displayedInStage)? Laya.stage.focus :Laya.stage;
 			var ct=target;
 			while (ct){
 				ct.event(type,KeyBoardManager._event.setTo(type,ct,target));
@@ -2687,7 +2840,11 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*<code>MouseManager</code> 是鼠标、触摸交互管理器。
+	*<p><code>MouseManager</code> 是鼠标、触摸交互管理器。</p>
+	*<p>鼠标事件流包括捕获阶段、目标阶段、冒泡阶段。<br/>
+	*捕获阶段：此阶段引擎会从stage开始递归检测stage及其子对象，直到找到命中的目标对象或者未命中任何对象；<br/>
+	*目标阶段：找到命中的目标对象；<br/>
+	*冒泡阶段：事件离开目标对象，按节点层级向上逐层通知，直到到达舞台的过程。</p>
 	*/
 	//class laya.events.MouseManager
 	var MouseManager=(function(){
@@ -2699,22 +2856,18 @@ var Laya=window.Laya=(function(window,document){
 			this.mouseMoveAccuracy=2;
 			this._stage=null;
 			this._target=null;
-			this._lastOvers=[];
-			this._currOvers=[];
-			this._lastClickTimer=0;
 			this._lastMoveTimer=0;
-			this._isDoubleClick=false;
 			this._isLeftMouse=false;
 			this._eventList=[];
 			this._touchIDs={};
 			this._id=1;
-			this.bodyLeft=0;
-			this.bodyTop=0;
+			this._tTouchID=0;
 			this._event=new Event();
 			this._matrix=new Matrix();
 			this._point=new Point();
 			this._rect=new Rectangle();
 			this._prePoint=new Point();
+			this._curTouchID=NaN;
 		}
 
 		__class(MouseManager,'laya.events.MouseManager');
@@ -2732,7 +2885,7 @@ var Laya=window.Laya=(function(window,document){
 			}
 			canvas.addEventListener('mousedown',function(e){
 				if (MouseManager.enabled){
-					e.preventDefault();
+					if(!Browser.onIE)e.preventDefault();
 					list.push(e);
 					_this.mouseDownTime=Browser.now();
 				}
@@ -2779,6 +2932,12 @@ var Laya=window.Laya=(function(window,document){
 					list.push(e);
 				}
 			},true);
+			canvas.addEventListener("touchcancel",function(e){
+				if (MouseManager.enabled){
+					e.preventDefault();
+					list.push(e);
+				}
+			},true);
 			canvas.addEventListener('mousewheel',function(e){
 				if (MouseManager.enabled)list.push(e);
 			});
@@ -2792,105 +2951,47 @@ var Laya=window.Laya=(function(window,document){
 			_this._event._stoped=false;
 			_this._event.nativeEvent=nativeEvent || e;
 			_this._target=null;
-			if (nativeEvent&&(nativeEvent.type=="touchstart"||nativeEvent.type=="mousedown")){
-				debugger;
-				DebugTxt.dTrace(e.clientX,e.clientY);
-				DebugTxt.dTrace(e.clientX-this.bodyLeft,e.clientY-this.bodyTop);
-			}
-			this._point.setTo(e.clientX-this.bodyLeft,e.clientY-this.bodyTop);
+			this._point.setTo(e.pageX || e.clientX,e.pageY || e.clientY);
 			this._stage._canvasTransform.invertTransformPoint(this._point);
 			_this.mouseX=this._point.x;
 			_this.mouseY=this._point.y;
 			_this._event.touchId=e.identifier || 0;
+			this._tTouchID=_this._event.touchId;
+			var evt;
+			evt=TouchManager.I._event;
+			evt._stoped=false;
+			evt.nativeEvent=_this._event.nativeEvent;
+			evt.touchId=_this._event.touchId;
 		}
 
 		__proto.checkMouseWheel=function(e){
 			this._event.delta=e.wheelDelta ? e.wheelDelta *0.025 :-e.detail;
-			for (var i=0,n=this._lastOvers.length;i < n;i++){
-				var ele=this._lastOvers[i];
+			var _lastOvers=TouchManager.I.getLastOvers();
+			for (var i=0,n=_lastOvers.length;i < n;i++){
+				var ele=_lastOvers[i];
 				ele.event("mousewheel",this._event.setTo("mousewheel",ele,this._target));
 			}
-			this._stage.event("mousewheel",this._event.setTo("mousewheel",this._stage,this._target));
 		}
 
-		__proto.checkMouseOut=function(){
-			if (this.disableMouseEvent)return;
-			for (var i=0,n=this._lastOvers.length;i < n;i++){
-				var ele=this._lastOvers[i];
-				if (!ele.destroyed && this._currOvers.indexOf(ele)< 0){
-					ele._set$P("$_MOUSEOVER",false);
-					ele.event("mouseout",this._event.setTo("mouseout",ele,ele));
-				}
-			};
-			var temp=this._lastOvers;
-			this._lastOvers=this._currOvers;
-			this._currOvers=temp;
-			this._currOvers.length=0;
-		}
-
+		// _stage.event(Event.MOUSE_WHEEL,_event.setTo(Event.MOUSE_WHEEL,_stage,_target));
 		__proto.onMouseMove=function(ele){
-			this.sendMouseMove(ele);
-			this._event._stoped=false;
-			this.sendMouseOver(this._target);
-		}
-
-		__proto.sendMouseMove=function(ele){
-			ele.event("mousemove",this._event.setTo("mousemove",ele,this._target));
-			!this._event._stoped && ele.parent && this.sendMouseMove(ele.parent);
-		}
-
-		__proto.sendMouseOver=function(ele){
-			if (ele.parent || ele===this._stage){
-				if (!ele._get$P("$_MOUSEOVER")){
-					ele._set$P("$_MOUSEOVER",true);
-					ele.event("mouseover",this._event.setTo("mouseover",ele,this._target));
-				}
-				this._currOvers.push(ele);
-			}
-			!this._event._stoped && ele.parent && this.sendMouseOver(ele.parent);
+			TouchManager.I.onMouseMove(ele,this._tTouchID);
 		}
 
 		__proto.onMouseDown=function(ele){
 			if (Input.isInputting && Laya.stage.focus && Laya.stage.focus["focus"] && !Laya.stage.focus.contains(this._target)){
-				Laya.stage.focus["focus"]=false;
+				var pre_input=Laya.stage.focus['_tf'] || Laya.stage.focus;
+				var new_input=ele['_tf'] || ele;
+				if ((new_input instanceof laya.display.Input )&& new_input.multiline==pre_input.multiline)
+					pre_input['_focusOut']();
+				else
+				pre_input.focus=false;
 			}
-			this._onMouseDown(ele);
-		}
-
-		__proto._onMouseDown=function(ele){
-			if (this._isLeftMouse){
-				ele._set$P("$_MOUSEDOWN",this._touchIDs[this._event.touchId]);
-				ele.event("mousedown",this._event.setTo("mousedown",ele,this._target));
-				}else {
-				ele._set$P("$_RIGHTMOUSEDOWN",this._touchIDs[this._event.touchId]);
-				ele.event("rightmousedown",this._event.setTo("rightmousedown",ele,this._target));
-			}
-			!this._event._stoped && ele.parent && this.onMouseDown(ele.parent);
+			TouchManager.I.onMouseDown(ele,this._tTouchID,this._isLeftMouse);
 		}
 
 		__proto.onMouseUp=function(ele){
-			var type=this._isLeftMouse ? "mouseup" :"rightmouseup";
-			this.sendMouseUp(ele,type);
-			this._event._stoped=false;
-			this.sendClick(this._target,type);
-		}
-
-		__proto.sendMouseUp=function(ele,type){
-			ele.event(type,this._event.setTo(type,ele,this._target));
-			!this._event._stoped && ele.parent && this.sendMouseUp(ele.parent,type);
-		}
-
-		__proto.sendClick=function(ele,type){
-			if (ele.destroyed)return;
-			if (type==="mouseup" && ele._get$P("$_MOUSEDOWN")===this._touchIDs[this._event.touchId]){
-				ele._set$P("$_MOUSEDOWN",-1);
-				ele.event("click",this._event.setTo("click",ele,this._target));
-				this._isDoubleClick && ele.event("doubleclick",this._event.setTo("doubleclick",ele,this._target));
-				}else if (type==="rightmouseup" && ele._get$P("$_RIGHTMOUSEDOWN")===this._touchIDs[this._event.touchId]){
-				ele._set$P("$_RIGHTMOUSEDOWN",-1);
-				ele.event("rightclick",this._event.setTo("rightclick",ele,this._target));
-			}
-			!this._event._stoped && ele.parent && this.sendClick(ele.parent,type);
+			TouchManager.I.onMouseUp(ele,this._tTouchID,this._isLeftMouse);
 		}
 
 		__proto.check=function(sp,mouseX,mouseY,callBack){
@@ -2901,23 +3002,20 @@ var Laya=window.Laya=(function(window,document){
 			var scrollRect=sp.scrollRect;
 			if (scrollRect){
 				this._rect.setTo(scrollRect.x,scrollRect.y,scrollRect.width,scrollRect.height);
-				var isHit=this._rect.contains(mouseX,mouseY);
-				if (!isHit)return false;
+				if (!this._rect.contains(mouseX,mouseY))return false;
 			}
 			if (!this.disableMouseEvent){
-				var flag=false;
 				if (sp.hitTestPrior && !sp.mouseThrough && !this.hitTest(sp,mouseX,mouseY)){
 					return false;
 				}
 				for (var i=sp._childs.length-1;i >-1;i--){
 					var child=sp._childs[i];
 					if (!child.destroyed && child.mouseEnabled && child.visible){
-						flag=this.check(child,mouseX ,mouseY ,callBack);
-						if (flag)return true;
+						if (this.check(child,mouseX,mouseY,callBack))return true;
 					}
 				}
-			}
-			isHit=this.hitTest(sp,scrollRect ? mouseX-scrollRect.x :mouseX,scrollRect ? mouseY-scrollRect.y :mouseY);
+			};
+			var isHit=(sp.hitTestPrior && !sp.mouseThrough && !this.disableMouseEvent)? true :this.hitTest(sp,mouseX,mouseY);
 			if (isHit){
 				this._target=sp;
 				callBack.call(this,sp);
@@ -2930,12 +3028,16 @@ var Laya=window.Laya=(function(window,document){
 
 		__proto.hitTest=function(sp,mouseX,mouseY){
 			var isHit=false;
+			if (sp.scrollRect){
+				mouseX-=sp.scrollRect.x;
+				mouseY-=sp.scrollRect.y;
+			}
 			if ((sp.hitArea instanceof laya.utils.HitArea )){
 				return sp.hitArea.isHit(mouseX,mouseY);
 			}
 			if (sp.width > 0 && sp.height > 0 || sp.mouseThrough || sp.hitArea){
-				var hitRect=this._rect;
 				if (!sp.mouseThrough){
+					var hitRect=this._rect;
 					if (sp.hitArea)hitRect=sp.hitArea;
 					else hitRect.setTo(0,0,sp.width,sp.height);
 					isHit=hitRect.contains(mouseX,mouseY);
@@ -2969,9 +3071,6 @@ var Laya=window.Laya=(function(window,document){
 						break ;
 					case 'mouseup':
 						_this._isLeftMouse=evt.button===0;
-						var now=Browser.now();
-						_this._isDoubleClick=(now-_this._lastClickTimer)< 300;
-						_this._lastClickTimer=now;
 						_this.initEvent(evt);
 						_this.check(_this._stage,_this.mouseX,_this.mouseY,_this.onMouseUp);
 						break ;
@@ -2981,7 +3080,6 @@ var Laya=window.Laya=(function(window,document){
 							this._prePoint.y=evt.clientY;
 							_this.initEvent(evt);
 							_this.check(_this._stage,_this.mouseX,_this.mouseY,_this.onMouseMove);
-							_this.checkMouseOut();
 						}
 						break ;
 					case "touchstart":
@@ -2990,31 +3088,42 @@ var Laya=window.Laya=(function(window,document){
 						var touches=evt.changedTouches;
 						for (var j=0,n=touches.length;j < n;j++){
 							var touch=touches[j];
-							if (this._id % 200===0)this._touchIDs={};
-							this._touchIDs[touch.identifier]=this._id++;
-							_this.initEvent(touch,evt);
-							_this.check(_this._stage,_this.mouseX,_this.mouseY,_this.onMouseDown);
+							if (MouseManager.multiTouchEnabled || isNaN(this._curTouchID)){
+								this._curTouchID=touch.identifier;
+								if (this._id % 200===0)this._touchIDs={};
+								this._touchIDs[touch.identifier]=this._id++;
+								_this.initEvent(touch,evt);
+								_this.check(_this._stage,_this.mouseX,_this.mouseY,_this.onMouseDown);
+							}
 						}
 						break ;
 					case "touchend":
+					case "touchcancel":
 						MouseManager._isTouchRespond=true;
 						_this._isLeftMouse=true;
-						now=Browser.now();
-						_this._isDoubleClick=(now-_this._lastClickTimer)< 300;
-						_this._lastClickTimer=now;
 						var touchends=evt.changedTouches;
 						for (j=0,n=touchends.length;j < n;j++){
-							_this.initEvent(touchends[j],evt);
-							_this.check(_this._stage,_this.mouseX,_this.mouseY,_this.onMouseUp);
+							touch=touchends[j];
+							if (MouseManager.multiTouchEnabled || touch.identifier==this._curTouchID){
+								this._curTouchID=NaN;
+								_this.initEvent(touch,evt);
+								var isChecked=false;
+								isChecked=_this.check(_this._stage,_this.mouseX,_this.mouseY,_this.onMouseUp);
+								if (!isChecked){
+									_this.onMouseUp(null);
+								}
+							}
 						}
 						break ;
 					case "touchmove":;
 						var touchemoves=evt.changedTouches;
 						for (j=0,n=touchemoves.length;j < n;j++){
-							_this.initEvent(touchemoves[j],evt);
-							_this.check(_this._stage,_this.mouseX,_this.mouseY,_this.onMouseMove);
+							touch=touchemoves[j];
+							if (MouseManager.multiTouchEnabled || touch.identifier==this._curTouchID){
+								_this.initEvent(touch,evt);
+								_this.check(_this._stage,_this.mouseX,_this.mouseY,_this.onMouseMove);
+							}
 						}
-						_this.checkMouseOut();
 						break ;
 					case "wheel":
 					case "mousewheel":
@@ -3034,11 +3143,316 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		MouseManager.enabled=true;
+		MouseManager.multiTouchEnabled=true;
 		MouseManager._isTouchRespond=false;
 		__static(MouseManager,
 		['instance',function(){return this.instance=new MouseManager();}
 		]);
 		return MouseManager;
+	})()
+
+
+	/**
+	*@private
+	*Touch事件管理类，处理多点触控下的鼠标事件
+	*/
+	//class laya.events.TouchManager
+	var TouchManager=(function(){
+		function TouchManager(){
+			this.preOvers=[];
+			this.preDowns=[];
+			this.preRightDowns=[];
+			this.enable=true;
+			this._lastClickTime=0;
+			this._event=new Event();
+		}
+
+		__class(TouchManager,'laya.events.TouchManager');
+		var __proto=TouchManager.prototype;
+		/**
+		*从touch表里查找对应touchID的数据
+		*@param touchID touch ID
+		*@param arr touch表
+		*@return
+		*
+		*/
+		__proto.getTouchFromArr=function(touchID,arr){
+			var i=0,len=0;
+			len=arr.length;
+			var tTouchO;
+			for (i=0;i < len;i++){
+				tTouchO=arr[i];
+				if (tTouchO.id==touchID){
+					return tTouchO;
+				}
+			}
+			return null;
+		}
+
+		/**
+		*从touch表里移除一个元素
+		*@param touchID touch ID
+		*@param arr touch表
+		*
+		*/
+		__proto.removeTouchFromArr=function(touchID,arr){
+			var i=0;
+			for (i=arr.length-1;i >=0;i--){
+				if (arr[i].id==touchID){
+					arr.splice(i,1);
+				}
+			}
+		}
+
+		/**
+		*创建一个touch数据
+		*@param ele 当前的根节点
+		*@param touchID touchID
+		*@return
+		*
+		*/
+		__proto.createTouchO=function(ele,touchID){
+			var rst;
+			rst=Pool.getItem("TouchData")|| {};
+			rst.id=touchID;
+			rst.tar=ele;
+			return rst;
+		}
+
+		/**
+		*处理touchStart
+		*@param ele 根节点
+		*@param touchID touchID
+		*@param isLeft （可选）是否为左键
+		*/
+		__proto.onMouseDown=function(ele,touchID,isLeft){
+			(isLeft===void 0)&& (isLeft=false);
+			if (!this.enable)
+				return;
+			var preO;
+			var tO;
+			var arrs;
+			preO=this.getTouchFromArr(touchID,this.preOvers);
+			arrs=this.getEles(ele,null,TouchManager._tEleArr);
+			if (!preO){
+				tO=this.createTouchO(ele,touchID);
+				this.preOvers.push(tO);
+				}else {
+				preO.tar=ele;
+			}
+			if (Browser.onMobile)
+				this.sendEvents(arrs,"mouseover",touchID);
+			var preDowns;
+			preDowns=isLeft ? this.preDowns :this.preRightDowns;
+			preO=this.getTouchFromArr(touchID,preDowns);
+			if (!preO){
+				tO=this.createTouchO(ele,touchID);
+				preDowns.push(tO);
+				}else {
+				preO.tar=ele;
+			}
+			this.sendEvents(arrs,isLeft ? "mousedown" :"rightmousedown",touchID);
+		}
+
+		/**
+		*派发事件。
+		*@param eles 对象列表。
+		*@param type 事件类型。
+		*@param touchID （可选）touchID，默认为0。
+		*/
+		__proto.sendEvents=function(eles,type,touchID){
+			(touchID===void 0)&& (touchID=0);
+			var i=0,len=0;
+			len=eles.length;
+			this._event._stoped=false;
+			var _target;
+			_target=eles[0];
+			var tE;
+			for (i=0;i < len;i++){
+				tE=eles[i];
+				if (tE.destroyed)return;
+				tE.event(type,this._event.setTo(type,tE,_target));
+				if (this._event._stoped)
+					break ;
+			}
+		}
+
+		/**
+		*获取对象列表。
+		*@param start 起始节点。
+		*@param end 结束节点。
+		*@param rst 返回值。如果此值不为空，则将其赋值为计算结果，从而避免创建新数组；如果此值为空，则创建新数组返回。
+		*@return Array 返回节点列表。
+		*/
+		__proto.getEles=function(start,end,rst){
+			if (!rst){
+				rst=[];
+				}else {
+				rst.length=0;
+			}
+			while (start && start !=end){
+				rst.push(start);
+				start=start.parent;
+			}
+			return rst;
+		}
+
+		/**
+		*touchMove时处理out事件和over时间。
+		*@param eleNew 新的根节点。
+		*@param elePre 旧的根节点。
+		*@param touchID （可选）touchID，默认为0。
+		*/
+		__proto.checkMouseOutAndOverOfMove=function(eleNew,elePre,touchID){
+			(touchID===void 0)&& (touchID=0);
+			if (elePre==eleNew)
+				return;
+			var tar;
+			var arrs;
+			var i=0,len=0;
+			if (elePre.contains(eleNew)){
+				arrs=this.getEles(eleNew,elePre,TouchManager._tEleArr);
+				this.sendEvents(arrs,"mouseover",touchID);
+				}else if (eleNew.contains(elePre)){
+				arrs=this.getEles(elePre,eleNew,TouchManager._tEleArr);
+				this.sendEvents(arrs,"mouseout",touchID);
+				}else {
+				arrs=TouchManager._tEleArr;
+				arrs.length=0;
+				var oldArr;
+				oldArr=this.getEles(elePre,null,TouchManager._oldArr);
+				var newArr;
+				newArr=this.getEles(eleNew,null,TouchManager._newArr);
+				len=oldArr.length;
+				var tIndex=0;
+				for (i=0;i < len;i++){
+					tar=oldArr[i];
+					tIndex=newArr.indexOf(tar);
+					if (tIndex >=0){
+						newArr.splice(tIndex,newArr.length-tIndex);
+						break ;
+						}else {
+						arrs.push(tar);
+					}
+				}
+				if (arrs.length > 0){
+					this.sendEvents(arrs,"mouseout",touchID);
+				}
+				if (newArr.length > 0){
+					this.sendEvents(newArr,"mouseover",touchID);
+				}
+			}
+		}
+
+		/**
+		*处理TouchMove事件
+		*@param ele 根节点
+		*@param touchID touchID
+		*
+		*/
+		__proto.onMouseMove=function(ele,touchID){
+			if (!this.enable)
+				return;
+			var preO;
+			preO=this.getTouchFromArr(touchID,this.preOvers);
+			var arrs;
+			var tO;
+			if (!preO){
+				arrs=this.getEles(ele,null,TouchManager._tEleArr);
+				this.sendEvents(arrs,"mouseover",touchID);
+				this.preOvers.push(this.createTouchO(ele,touchID));
+				}else {
+				this.checkMouseOutAndOverOfMove(ele,preO.tar);
+				preO.tar=ele;
+				arrs=this.getEles(ele,null,TouchManager._tEleArr);
+			}
+			this.sendEvents(arrs,"mousemove",touchID);
+		}
+
+		__proto.getLastOvers=function(){
+			TouchManager._tEleArr.length=0;
+			if (this.preOvers.length > 0 && this.preOvers[0].tar){
+				return this.getEles(this.preOvers[0].tar,null,TouchManager._tEleArr);
+			}
+			TouchManager._tEleArr.push(Laya.stage);
+			return TouchManager._tEleArr;
+		}
+
+		/**
+		*处理TouchEnd事件
+		*@param ele 根节点
+		*@param touchID touchID
+		*@param isLeft 是否为左键
+		*/
+		__proto.onMouseUp=function(ele,touchID,isLeft){
+			(isLeft===void 0)&& (isLeft=false);
+			if (!this.enable)
+				return;
+			var preO;
+			var tO;
+			var arrs;
+			var oldArr;
+			var i=0,len=0;
+			var tar;
+			var sendArr;
+			var onMobile=Browser.onMobile;
+			arrs=this.getEles(ele,null,TouchManager._tEleArr);
+			this.sendEvents(arrs,isLeft ? "mouseup" :"rightmouseup",touchID);
+			var preDowns;
+			preDowns=isLeft ? this.preDowns :this.preRightDowns;
+			preO=this.getTouchFromArr(touchID,preDowns);
+			if (!preO){
+				}else {
+				var isDouble=false;
+				var now=Browser.now();
+				isDouble=now-this._lastClickTime < 300;
+				this._lastClickTime=now;
+				if (ele==preO.tar){
+					sendArr=arrs;
+					}else {
+					oldArr=this.getEles(preO.tar,null,TouchManager._oldArr);
+					sendArr=TouchManager._newArr;
+					sendArr.length=0;
+					len=oldArr.length;
+					for (i=0;i < len;i++){
+						tar=oldArr[i];
+						if (arrs.indexOf(tar)>=0){
+							sendArr.push(tar);
+						}
+					}
+				}
+				if (sendArr.length > 0){
+					this.sendEvents(sendArr,isLeft ? "click" :"rightclick",touchID);
+				}
+				if (isLeft && isDouble){
+					this.sendEvents(sendArr,"doubleclick",touchID);
+				}
+				this.removeTouchFromArr(touchID,preDowns);
+				preO.tar=null;
+				Pool.recover("TouchData",preO);
+			}
+			preO=this.getTouchFromArr(touchID,this.preOvers);
+			if (!preO){
+				}else {
+				if (onMobile){
+					sendArr=this.getEles(preO.tar,null,sendArr);
+					if (sendArr && sendArr.length > 0){
+						this.sendEvents(sendArr,"mouseout",touchID);
+					}
+					this.removeTouchFromArr(touchID,this.preOvers);
+					preO.tar=null;
+					Pool.recover("TouchData",preO);
+				}
+			}
+		}
+
+		TouchManager._oldArr=[];
+		TouchManager._newArr=[];
+		TouchManager._tEleArr=[];
+		__static(TouchManager,
+		['I',function(){return this.I=new TouchManager();}
+		]);
+		return TouchManager;
 	})()
 
 
@@ -3077,6 +3491,7 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
+	*@private
 	*<code>ColorFilterAction</code> 是一个颜色滤镜应用类。
 	*/
 	//class laya.filters.ColorFilterAction
@@ -3221,7 +3636,7 @@ var Laya=window.Laya=(function(window,document){
 				default :
 					return [];
 				}
-			while(this._controlPoints.length<=count){
+			while (this._controlPoints.length <=count){
 				this._controlPoints.push(new Point());
 			}
 			for (i=0;i < count *2;i+=2){
@@ -3473,13 +3888,12 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*<code>Matrix</code> 类表示一个转换矩阵，它确定如何将点从一个坐标空间映射到另一个坐标空间。
+	*<p> <code>Matrix</code> 类表示一个转换矩阵，它确定如何将点从一个坐标空间映射到另一个坐标空间。</p>
+	*<p>您可以对一个显示对象执行不同的图形转换，方法是设置 Matrix 对象的属性，将该 Matrix 对象应用于 Transform 对象的 matrix 属性，然后应用该 Transform 对象作为显示对象的 transform 属性。这些转换函数包括平移（x 和 y 重新定位）、旋转、缩放和倾斜。</p>
 	*/
 	//class laya.maths.Matrix
 	var Matrix=(function(){
 		function Matrix(a,b,c,d,tx,ty){
-			this.cos=1;
-			this.sin=0;
 			//this.a=NaN;
 			//this.b=NaN;
 			//this.c=NaN;
@@ -3506,7 +3920,7 @@ var Laya=window.Laya=(function(window,document){
 		__class(Matrix,'laya.maths.Matrix');
 		var __proto=Matrix.prototype;
 		/**
-		*为每个矩阵属性设置一个值。
+		*将本矩阵设置为单位矩阵。
 		*@return 返回当前矩形。
 		*/
 		__proto.identity=function(){
@@ -3534,10 +3948,10 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*沿 x 和 y 轴平移矩阵，由 x 和 y 参数指定。
+		*沿 x 和 y 轴平移矩阵，平移的变化量由 x 和 y 参数指定。
 		*@param x 沿 x 轴向右移动的量（以像素为单位）。
 		*@param y 沿 y 轴向下移动的量（以像素为单位）。
-		*@return 返回此矩形。
+		*@return 返回此矩形对象。
 		*/
 		__proto.translate=function(x,y){
 			this.tx+=x;
@@ -3565,8 +3979,8 @@ var Laya=window.Laya=(function(window,document){
 		*@param angle 以弧度为单位的旋转角度。
 		*/
 		__proto.rotate=function(angle){
-			var cos=this.cos=Math.cos(angle);
-			var sin=this.sin=Math.sin(angle);
+			var cos=Math.cos(angle);
+			var sin=Math.sin(angle);
 			var a1=this.a;
 			var c1=this.c;
 			var tx1=this.tx;
@@ -3628,7 +4042,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*将 Matrix 对象表示的几何转换应用于指定点忽略tx ty。
+		*将 Matrix 对象表示的几何转换应用于指定点，忽略tx、ty。
 		*@param out 用来设定输出结果的点。
 		*@return 返回out
 		*/
@@ -3740,6 +4154,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
+		*@private
 		*对矩阵应用缩放转换。反向相乘
 		*@param x 用于沿 x 轴缩放对象的乘数。
 		*@param y 用于沿 y 轴缩放对象的乘数。
@@ -3751,8 +4166,7 @@ var Laya=window.Laya=(function(window,document){
 				this.b=x *bb;
 				this.c=y *bc;
 				this.d=y *bd;
-			}
-			else{
+				}else {
 				this.a=x *ba;
 				this.b=0 *bd;
 				this.c=0 *ba;
@@ -3762,6 +4176,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
+		*@private
 		*对 Matrix 对象应用旋转转换。反向相乘
 		*@param angle 以弧度为单位的旋转角度。
 		*/
@@ -3774,8 +4189,7 @@ var Laya=window.Laya=(function(window,document){
 				this.b=cos *bb+sin *bd;
 				this.c=-sin *ba+cos *bc;
 				this.d=-sin *bb+cos *bd;
-			}
-			else{
+				}else {
 				this.a=cos *ba;
 				this.b=sin *bd;
 				this.c=-sin *ba;
@@ -3785,12 +4199,11 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*返回一个新的 Matrix 对象，它是此矩阵的克隆，带有与所含对象完全相同的副本。
-		*@return 一个 Matrix 对象。
+		*返回此 Matrix 对象的副本。
+		*@return 与原始实例具有完全相同的属性的新 Matrix 实例。
 		*/
 		__proto.clone=function(){
-			var no=Matrix._cache;
-			var dec=!no._length ? (new Matrix()):no[--no._length];
+			var dec=Matrix.create();
 			dec.a=this.a;
 			dec.b=this.b;
 			dec.c=this.c;
@@ -3994,10 +4407,10 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*计算当前点和目标x，y点的距离
+		*计算当前点和目标点(x，y)的距离。
 		*@param x 水平坐标。
 		*@param y 垂直坐标。
-		*@return 返回之间的距离
+		*@return 返回当前点和目标点之间的距离。
 		*/
 		__proto.distance=function(x,y){
 			return Math.sqrt((this.x-x)*(this.x-x)+(this.y-y)*(this.y-y));
@@ -4009,7 +4422,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*标准化向量
+		*标准化向量。
 		*/
 		__proto.normalize=function(){
 			var d=Math.sqrt(this.x *this.x+this.y *this.y);
@@ -4027,7 +4440,8 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*<code>Rectangle</code> 对象是按其位置（由它左上角的点 (x,y)确定）以及宽度和高度定义的区域。
+	*<p><code>Rectangle</code> 对象是按其位置（由它左上角的点 (x,y)确定）以及宽度和高度定义的区域。</p>
+	*<p>Rectangle 类的 x、y、width 和 height 属性相互独立；更改一个属性的值不会影响其他属性。</p>
 	*/
 	//class laya.maths.Rectangle
 	var Rectangle=(function(){
@@ -4078,7 +4492,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*检测此矩形对象是否包含指定的点。
+		*确定由此 Rectangle 对象定义的矩形区域内是否包含指定的点。
 		*@param x 点的 X 轴坐标值（水平位置）。
 		*@param y 点的 Y 轴坐标值（垂直位置）。
 		*@return 如果 Rectangle 对象包含指定的点，则值为 true；否则为 false。
@@ -4094,7 +4508,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*检测传入的矩形对象是否与此对象相交。
+		*确定在 rect 参数中指定的对象是否与此 Rectangle 对象相交。此方法检查指定的 Rectangle 对象的 x、y、width 和 height 属性，以查看它是否与此 Rectangle 对象相交。
 		*@param rect Rectangle 对象。
 		*@return 如果传入的矩形对象与此对象相交，则返回 true 值，否则返回 false。
 		*/
@@ -4103,9 +4517,9 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*获取此对象与传入的矩形对象的相交区域。并将相交区域赋值给传入的输出矩形对象。
+		*如果在 rect 参数中指定的 Rectangle 对象与此 Rectangle 对象相交，则返回交集区域作为 Rectangle 对象。如果矩形不相交，则此方法返回null。
 		*@param rect 待比较的矩形区域。
-		*@param out 待输出的矩形区域。如果为空则创建一个新的。建议：尽量复用对象，减少对象创建消耗。
+		*@param out （可选）待输出的矩形区域。如果为空则创建一个新的。建议：尽量复用对象，减少对象创建消耗。
 		*@return 返回相交的矩形区域对象。
 		*/
 		__proto.intersection=function(rect,out){
@@ -4119,10 +4533,11 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*矩形联合，通过填充两个矩形之间的水平和垂直空间，将这两个矩形组合在一起以创建一个新的 Rectangle 对象。
-		*@param 目标矩形对象。
-		*@param out 待输出结果的矩形对象。如果为空则创建一个新的。建议：尽量复用对象，减少对象创建消耗。
-		*@return 两个矩形后联合的 Rectangle 对象 out 。
+		*<p>矩形联合，通过填充两个矩形之间的水平和垂直空间，将这两个矩形组合在一起以创建一个新的 Rectangle 对象。</p>
+		*<p>注意：union()方法忽略高度或宽度值为 0 的矩形，如：var rect2:Rectangle=new Rectangle(300,300,50,0);</p>
+		*@param 要添加到此 Rectangle 对象的 Rectangle 对象。
+		*@param out 用于存储输出结果的矩形对象。如果为空，则创建一个新的。建议：尽量复用对象，减少对象创建消耗。Rectangle.TEMP对象用于对象复用。
+		*@return 充当两个矩形的联合的新 Rectangle 对象。
 		*/
 		__proto.union=function(source,out){
 			out || (out=new Rectangle());
@@ -4135,8 +4550,8 @@ var Laya=window.Laya=(function(window,document){
 
 		/**
 		*返回一个 Rectangle 对象，其 x、y、width 和 height 属性的值与当前 Rectangle 对象的对应值相同。
-		*@param out 待输出的矩形对象。如果为空则创建一个新的。建议：尽量复用对象，减少对象创建消耗。
-		*@return Rectangle 对象 out ，其 x、y、width 和 height 属性的值与当前 Rectangle 对象的对应值相同。
+		*@param out （可选）用于存储结果的矩形对象。如果为空，则创建一个新的。建议：尽量复用对象，减少对象创建消耗。。Rectangle.TEMP对象用于对象复用。
+		*@return Rectangle 对象，其 x、y、width 和 height 属性的值与当前 Rectangle 对象的对应值相同。
 		*/
 		__proto.clone=function(out){
 			out || (out=new Rectangle());
@@ -4165,7 +4580,8 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*在当前矩形区域中加一个点。
+		*<p>为当前矩形对象加一个点，以使当前矩形扩展为包含当前矩形和此点的最小矩形。</p>
+		*<p>此方法会修改本对象。</p>
 		*@param x 点的 X 坐标。
 		*@param y 点的 Y 坐标。
 		*@return 返回此 Rectangle 对象。
@@ -4191,18 +4607,21 @@ var Laya=window.Laya=(function(window,document){
 			return rst;
 		}
 
-		/**确定此 Rectangle 对象是否为空。*/
+		/**
+		*确定此 Rectangle 对象是否为空。
+		*@return 如果 Rectangle 对象的宽度或高度小于等于 0，则返回 true 值，否则返回 false。
+		*/
 		__proto.isEmpty=function(){
 			if (this.width <=0 || this.height <=0)return true;
 			return false;
 		}
 
-		/**此矩形的右边距。 x 和 width 属性的和。*/
+		/**此矩形右侧的 X 轴坐标。 x 和 width 属性的和。*/
 		__getset(0,__proto,'right',function(){
 			return this.x+this.width;
 		});
 
-		/**此矩形的底边距。y 和 height 属性的和。*/
+		/**此矩形底端的 Y 轴坐标。y 和 height 属性的和。*/
 		__getset(0,__proto,'bottom',function(){
 			return this.y+this.height;
 		});
@@ -4241,20 +4660,19 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*<code>SoundManager</code> 是一个声音管理类。
+	*<code>SoundManager</code> 是一个声音管理类。提供了对背景音乐、音效的播放控制方法。
 	*/
 	//class laya.media.SoundManager
 	var SoundManager=(function(){
 		function SoundManager(){};
 		__class(SoundManager,'laya.media.SoundManager');
 		/**
-		*设置是否失去焦点后自动停止背景音乐。
-		*@param v Boolean 值。
+		*失去焦点后是否自动停止背景音乐。
+		*@param v Boolean 失去焦点后是否自动停止背景音乐。
 		*
 		*/
 		/**
-		*表示是否失去焦点后自动停止背景音乐。
-		*@return
+		*失去焦点后是否自动停止背景音乐。
 		*/
 		__getset(1,SoundManager,'autoStopMusic',function(){
 			return SoundManager._autoStopMusic;
@@ -4271,7 +4689,7 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*表示是否静音。
+		*背景音乐和所有音效是否静音。
 		*/
 		__getset(1,SoundManager,'muted',function(){
 			return SoundManager._muted;
@@ -4283,7 +4701,9 @@ var Laya=window.Laya=(function(window,document){
 			SoundManager._muted=value;
 		});
 
-		/**表示是否使背景音乐静音。*/
+		/**
+		*背景音乐（不包括音效）是否静音。
+		*/
 		__getset(1,SoundManager,'musicMuted',function(){
 			return SoundManager._musicMuted;
 			},function(value){
@@ -4299,7 +4719,9 @@ var Laya=window.Laya=(function(window,document){
 			}
 		});
 
-		/**表示是否使音效静音。*/
+		/**
+		*所有音效（不包括背景音乐）是否静音。
+		*/
 		__getset(1,SoundManager,'soundMuted',function(){
 			return SoundManager._soundMuted;
 			},function(value){
@@ -4320,15 +4742,26 @@ var Laya=window.Laya=(function(window,document){
 			}
 		}
 
+		SoundManager.disposeSoundIfNotUsed=function(url){
+			var i=0;
+			for (i=SoundManager._channels.length-1;i >=0;i--){
+				if (SoundManager._channels[i].url==url){
+					return;
+				}
+			}
+			SoundManager.destroySound(url);
+		}
+
 		SoundManager._visibilityChange=function(){
 			if (Laya.stage.isVisibility){
 				SoundManager._stageOnFocus();
-				}else{
+				}else {
 				SoundManager._stageOnBlur();
 			}
 		}
 
 		SoundManager._stageOnBlur=function(){
+			SoundManager._isActive=false;
 			if (SoundManager._musicChannel){
 				if (!SoundManager._musicChannel.isStopped){
 					SoundManager._blurPaused=true;
@@ -4339,9 +4772,11 @@ var Laya=window.Laya=(function(window,document){
 					Laya.stage.once("mousedown",null,SoundManager._stageOnFocus);
 				}
 			}
+			SoundManager.stopAllSound();
 		}
 
 		SoundManager._stageOnFocus=function(){
+			SoundManager._isActive=true;
 			Laya.stage.off("mousedown",null,SoundManager._stageOnFocus);
 			if (SoundManager._blurPaused){
 				if (SoundManager._tMusic){
@@ -4354,12 +4789,19 @@ var Laya=window.Laya=(function(window,document){
 		SoundManager.playSound=function(url,loops,complete,soundClass,startTime){
 			(loops===void 0)&& (loops=1);
 			(startTime===void 0)&& (startTime=0);
-			if (SoundManager._muted)
-				return null;
+			if (!SoundManager._isActive || !url)return null;
+			if (SoundManager._muted)return null;
 			url=URL.formatURL(url);
 			if (url==SoundManager._tMusic){
 				if (SoundManager._musicMuted)return null;
 				}else {
+				if (Render.isConchApp){
+					var ext=Utils.getFileExtension(url);
+					if (ext !="wav" && ext !="ogg"){
+						alert("The sound only supports wav or ogg format,for optimal performance reason,please refer to the official website document.");
+						return null;
+					}
+				}
 				if (SoundManager._soundMuted)return null;
 			};
 			var tSound=Laya.loader.getRes(url);
@@ -4371,6 +4813,7 @@ var Laya=window.Laya=(function(window,document){
 			};
 			var channel;
 			channel=tSound.play(startTime,loops);
+			if (!channel)return null;
 			channel.url=url;
 			channel.volume=(url==SoundManager._tMusic)? SoundManager.musicVolume :SoundManager.soundVolume;
 			channel.completeHandler=complete;
@@ -4390,9 +4833,8 @@ var Laya=window.Laya=(function(window,document){
 			(startTime===void 0)&& (startTime=0);
 			url=URL.formatURL(url);
 			SoundManager._tMusic=url;
-			if (SoundManager._musicChannel)
-				SoundManager._musicChannel.stop();
-			return SoundManager._musicChannel=SoundManager.playSound(url,loops,complete,null,startTime);
+			if (SoundManager._musicChannel)SoundManager._musicChannel.stop();
+			return SoundManager._musicChannel=SoundManager.playSound(url,loops,complete,AudioSound,startTime);
 		}
 
 		SoundManager.stopSound=function(url){
@@ -4429,9 +4871,8 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		SoundManager.stopMusic=function(){
+			if (SoundManager._musicChannel)SoundManager._musicChannel.stop();
 			SoundManager._tMusic=null;
-			if (SoundManager._musicChannel)
-				SoundManager._musicChannel.stop();
 		}
 
 		SoundManager.setSoundVolume=function(volume,url){
@@ -4457,6 +4898,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		SoundManager._setVolume=function(url,volume){
+			url=URL.formatURL(url);
 			var i=0;
 			var channel;
 			for (i=SoundManager._channels.length-1;i >=0;i--){
@@ -4478,10 +4920,12 @@ var Laya=window.Laya=(function(window,document){
 		SoundManager._channels=[];
 		SoundManager._autoStopMusic=false;
 		SoundManager._blurPaused=false;
+		SoundManager._isActive=true;
 		SoundManager._musicLoops=0;
 		SoundManager._musicPosition=0;
 		SoundManager._musicCompleteHandler=null;
 		SoundManager._soundClass=null
+		SoundManager.autoReleaseSound=true;
 		return SoundManager;
 	})()
 
@@ -4542,7 +4986,7 @@ var Laya=window.Laya=(function(window,document){
 					try {
 						Storage.support && Storage.items.setItem(key,value);
 						}catch (e){
-						console.log("set localStorage failed",e);
+						console.warn("set localStorage failed",e);
 					}
 				}
 				Storage.getItem=function(key){
@@ -4552,7 +4996,7 @@ var Laya=window.Laya=(function(window,document){
 					try {
 						Storage.support && Storage.items.setItem(key,JSON.stringify(value));
 						}catch (e){
-						console.log("set localStorage failed",e);
+						console.warn("set localStorage failed",e);
 					}
 				}
 				Storage.getJSON=function(key){
@@ -4565,7 +5009,7 @@ var Laya=window.Laya=(function(window,document){
 					Storage.support && Storage.items.clear();
 				}
 				Storage.items=null
-				Storage.support=true;
+				Storage.support=false;
 				return Storage;
 			})()
 		}
@@ -4599,30 +5043,31 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		URL.formatURL=function(url,base){
-			if (URL.customFormat !=null)url=URL.customFormat(url,base);
 			if (!url)return "null path";
-			if (url.indexOf("data:image")===0)return url;
-			if (Render.isConchApp==false){
-				URL.version[url] && (url+="?v="+URL.version[url]);
+			if (url.indexOf(":")> 0)return url;
+			if (URL.customFormat !=null)url=URL.customFormat(url,base);
+			var char1=url.charAt(0);
+			if (char1==="."){
+				return URL.formatRelativePath((base || URL.basePath)+url);
+				}else if (char1==='~'){
+				return URL.rootPath+url.substring(1);
+				}else if (char1==="d"){
+				if (url.indexOf("data:image")===0)return url;
+				}else if (char1==="/"){
+				return url;
 			}
-			if (url.charAt(0)=='~')return URL.rootPath+url.substring(1);
-			if (URL.isAbsolute(url))return url;
-			var retVal=(base || URL.basePath)+url;
-			return URL.formatRelativePath(retVal);
+			return (base || URL.basePath)+url;
 		}
 
 		URL.formatRelativePath=function(value){
-			if (value.indexOf("../")>-1){
-				var parts=value.split("/");
-				for (var i=0,len=parts.length;i < len;i++){
-					if (parts[i]=='..'){
-						parts.splice(i-1,2);
-						i-=2;
-					}
+			var parts=value.split("/");
+			for (var i=0,len=parts.length;i < len;i++){
+				if (parts[i]=='..'){
+					parts.splice(i-1,2);
+					i-=2;
 				}
-				return parts.join('/');
 			}
-			return value;
+			return parts.join('/');
 		}
 
 		URL.isAbsolute=function(url){
@@ -4642,7 +5087,12 @@ var Laya=window.Laya=(function(window,document){
 		URL.version={};
 		URL.basePath="";
 		URL.rootPath="";
-		URL.customFormat=null
+		URL.customFormat=function(url){
+			var newUrl=URL.version[url];
+			if (!Render.isConchApp && newUrl)url+="?v="+newUrl;
+			return url;
+		}
+
 		return URL;
 	})()
 
@@ -4659,14 +5109,12 @@ var Laya=window.Laya=(function(window,document){
 			style.position='absolute';
 			style.top=style.left="0px";
 			style.background="#000000";
-			Render._mainCanvas.source.id=Render._mainCanvas.source.id || "layaCanvas";
+			Render._mainCanvas.source.id="layaCanvas";
 			var isWebGl=laya.renders.Render.isWebGL;
 			Render._mainCanvas.source.width=width;
 			Render._mainCanvas.source.height=height;
 			isWebGl && Render.WebGL.init(Render._mainCanvas,width,height);
-			if (Render._mainCanvas.source.nodeName || laya.renders.Render.isConchApp){
-				Browser.container.appendChild(Render._mainCanvas.source);
-			}
+			Browser.container.appendChild(Render._mainCanvas.source);
 			Render._context=new RenderContext(width,height,isWebGl ? null :Render._mainCanvas);
 			Render._context.ctx.setIsMainContext();
 			Browser.window.requestAnimationFrame(loop);
@@ -4681,7 +5129,7 @@ var Laya=window.Laya=(function(window,document){
 		var __proto=Render.prototype;
 		/**@private */
 		__proto._onVisibilitychange=function(){
-			if (Laya.stage.isVisibility){
+			if (!Laya.stage.isVisibility){
 				this._timeId=Browser.window.setInterval(this._enterFrame,1000);
 				}else if (this._timeId !=0){
 				Browser.window.clearInterval(this._timeId);
@@ -5305,7 +5753,7 @@ var Laya=window.Laya=(function(window,document){
 				if (mask.numChildren > 0 || !mask.graphics._isOnlyOne()){
 					mask.cacheAsBitmap=true;
 				}
-				mask.render(context,x,y);
+				mask.render(context,x-sprite.pivotX,y-sprite.pivotY);
 			}
 			context.ctx.globalCompositeOperation="source-over";
 		}
@@ -5330,7 +5778,7 @@ var Laya=window.Laya=(function(window,document){
 		__proto._alpha=function(sprite,context,x,y){
 			var style=sprite._style;
 			var alpha;
-			if ((alpha=style.alpha)> 0.01){
+			if ((alpha=style.alpha)> 0.01 || sprite._needRepaint()){
 				var temp=context.ctx.globalAlpha;
 				context.ctx.globalAlpha *=alpha;
 				var next=this._next;
@@ -5350,10 +5798,11 @@ var Laya=window.Laya=(function(window,document){
 			_next._fun.call(_next,sprite,context,x,y);
 		}
 
-		__proto._childs=function(sprite,context,x,y){
+		__proto._childs_max=function(sprite,context,x,y){
 			var style=sprite._style;
-			x+=-style._tf.translateX+style.paddingLeft;
-			y+=-style._tf.translateY+style.paddingTop;
+			var tf=style._tf;
+			x=x-tf.translateX+style.paddingLeft;
+			y=y-tf.translateY+style.paddingTop;
 			if (style._calculation){
 				var words=sprite._getWords();
 				if (words){
@@ -5386,7 +5835,34 @@ var Laya=window.Laya=(function(window,document){
 			}
 		}
 
+		__proto._childs=function(sprite,context,x,y){
+			if (sprite._childRenderMax){
+				this._childs_max(sprite,context,x,y);
+				return;
+			};
+			var childs=sprite._childs,n=childs.length,ele;
+			for (var i=0;i < n;++i)
+			(ele=(childs [i]))._style.visible && ele.render(context,x,y);
+		}
+
 		__proto._canvas=function(sprite,context,x,y){
+			var _cacheCanvas=sprite._$P.cacheCanvas;
+			if (!_cacheCanvas){
+				this._next._fun.call(this._next,sprite,context,x,y);
+				return;
+			}
+			_cacheCanvas.type==='bitmap' ? (Stat.canvasBitmap++):(Stat.canvasNormal++);
+			var tx=_cacheCanvas.ctx;
+			if (sprite._needRepaint()|| !tx){
+				this._canvas_repaint(sprite,context,x,y);
+			}
+			else{
+				var tRec=_cacheCanvas._cacheRec;
+				context.drawCanvas(tx.canvas,x+tRec.x,y+tRec.y,tRec.width,tRec.height);
+			}
+		}
+
+		__proto._canvas_repaint=function(sprite,context,x,y){
 			var _cacheCanvas=sprite._$P.cacheCanvas;
 			var _next=this._next;
 			if (!_cacheCanvas){
@@ -5399,26 +5875,27 @@ var Laya=window.Laya=(function(window,document){
 			var left;
 			var top;
 			var tRec;
-			_cacheCanvas.type==='bitmap' ? (Stat.canvasBitmap++):(Stat.canvasNormal++);
+			var tCacheType=_cacheCanvas.type;
+			tCacheType==='bitmap' ? (Stat.canvasBitmap++):(Stat.canvasNormal++);
 			if (_repaint){
 				if (!_cacheCanvas._cacheRec)
 					_cacheCanvas._cacheRec=new Rectangle();
 				var w,h;
-				if (!Render.isWebGL || _cacheCanvas.type==="bitmap"){
+				if (!Render.isWebGL || tCacheType==="bitmap"){
 					tRec=sprite.getSelfBounds();
-					tRec.x-=sprite.pivotX;
-					tRec.y-=sprite.pivotY;
-					tRec.x-=16;
-					tRec.y-=16;
-					tRec.width+=32;
-					tRec.height+=32;
+					tRec.x=tRec.x-sprite.pivotX;
+					tRec.y=tRec.y-sprite.pivotY;
+					tRec.x=tRec.x-16;
+					tRec.y=tRec.y-16;
+					tRec.width=tRec.width+32;
+					tRec.height=tRec.height+32;
 					tRec.x=Math.floor(tRec.x+x)-x;
 					tRec.y=Math.floor(tRec.y+y)-y;
 					tRec.width=Math.floor(tRec.width);
 					tRec.height=Math.floor(tRec.height);
 					_cacheCanvas._cacheRec.copyFrom(tRec);
 					}else{
-					_cacheCanvas._cacheRec.setTo(0,0,1,1);
+					_cacheCanvas._cacheRec.setTo(-sprite.pivotX,-sprite.pivotY,1,1);
 				}
 				tRec=_cacheCanvas._cacheRec;
 				var scaleX=Render.isWebGL ? 1 :Browser.pixelRatio *Laya.stage.clientScaleX;
@@ -5441,12 +5918,17 @@ var Laya=window.Laya=(function(window,document){
 						if (chainScaleY > 1)scaleY *=chainScaleY;
 					}
 				}
+				if (sprite.scrollRect){
+					var scrollRect=sprite.scrollRect;
+					tRec.x-=scrollRect.x;
+					tRec.y-=scrollRect.y;
+				}
 				w=tRec.width *scaleX;
 				h=tRec.height *scaleY;
 				left=tRec.x;
 				top=tRec.y;
-				if (Render.isWebGL && _cacheCanvas.type==='bitmap' && (w > 2048 || h > 2048)){
-					console.log("cache bitmap size larger than 2048,cache ignored");
+				if (Render.isWebGL && tCacheType==='bitmap' && (w > 2048 || h > 2048)){
+					console.warn("cache bitmap size larger than 2048,cache ignored");
 					if (_cacheCanvas.ctx){
 						Pool.recover("RenderContext",_cacheCanvas.ctx);
 						_cacheCanvas.ctx.canvas.size(0,0);
@@ -5462,7 +5944,8 @@ var Laya=window.Laya=(function(window,document){
 				canvas=tx.canvas;
 				canvas.clear();
 				(canvas.width !=w || canvas.height !=h)&& canvas.size(w,h);
-				if (_cacheCanvas.type==='bitmap')canvas.context.asBitmap=true;
+				if (tCacheType==='bitmap')canvas.context.asBitmap=true;
+				else if(tCacheType==='normal')canvas.context.asBitmap=false;
 				var t;
 				if (scaleX !=1 || scaleY !=1){
 					var ctx=(tx).ctx;
@@ -5564,11 +6047,26 @@ var Laya=window.Laya=(function(window,document){
 
 		__class(Context,'laya.resource.Context');
 		var __proto=Context.prototype;
+		__proto.replaceReset=function(){
+			var i=0,len=0;
+			len=Context.replaceKeys.length;
+			var key;
+			for (i=0;i < len;i++){
+				key=Context.replaceKeys[i];
+				this[Context.newKeys[i]]=this[key];
+			}
+		}
+
+		__proto.replaceResotre=function(){
+			this.__restore();
+			this.__reset();
+		}
+
 		__proto.setIsMainContext=function(){}
 		__proto.drawTextures=function(tex,pos,tx,ty){
 			Stat.drawCall+=pos.length / 2;
-			var w=tex.bitmap.width;
-			var h=tex.bitmap.height;
+			var w=tex.width;
+			var h=tex.height;
 			for (var i=0,sz=pos.length;i < sz;i+=2){
 				this.drawTexture(tex,pos[i],pos[i+1],w,h,tx,ty);
 			}
@@ -5780,16 +6278,79 @@ var Laya=window.Laya=(function(window,document){
 			to.__strokeText=to.strokeText;
 			var funs=['drawTextures','fillWords','fillBorderWords','setIsMainContext','fillRect','strokeText','fillTexture','fillText','transformByMatrix','setTransformByMatrix','clipRect','drawTexture','drawTexture2','drawTextureWithTransform','flush','clear','destroy','drawCanvas','fillBorderText','drawCurves'];
 			funs.forEach(function(i){
-				to[i]=from[i] || to[i];
+				to[i]=from[i];
 			});
+			var canvasO=HTMLCanvasElement.prototype;
+			if (!Context.replaceCanvasGetSet(canvasO,"width"))return;
+			if (!Context.replaceCanvasGetSet(canvasO,"height"))return;
+			var i=0,len=0;
+			len=Context.replaceKeys.length;
+			for (i=0;i < len;i++){
+				if(!Context.replaceGetSet(to,Context.replaceKeys[i]))return;
+			}
+			to.__reset=from.replaceReset;
+			to.__restore=to.restore;
+			to.restore=from.replaceResotre;
+		}
+
+		Context.replaceCanvasGetSet=function(tar,key){
+			var oldO=Object.getOwnPropertyDescriptor(tar,key);
+			if (!oldO||!oldO.configurable)return false;
+			var newO={};
+			var tkey;
+			for (tkey in oldO){
+				if (tkey !="set"){
+					newO[tkey]=oldO[tkey];
+				}
+			};
+			var preFun=oldO["set"];
+			newO["set"]=function (v){
+				var _self=this;
+				preFun.call(_self,v);
+				var _ct=_self.getContext("2d");
+				if (_ct && "__reset" in _ct){
+					_ct.__reset();
+				}
+			}
+			Object.defineProperty(tar,key,newO);
+			return true;
+		}
+
+		Context.replaceGetSet=function(tar,key){
+			var oldO=Object.getOwnPropertyDescriptor(tar,key);
+			if (!oldO||!oldO.configurable)return false;
+			var newO={};
+			var tkey;
+			for (tkey in oldO){
+				if (tkey !="set"){
+					newO[tkey]=oldO[tkey];
+				}
+			};
+			var preFun=oldO["set"];
+			var dataKey="___"+key+"__";
+			Context.newKeys.push(dataKey);
+			newO["set"]=function (v){
+				var _self=this;
+				if (v !=_self[dataKey]){
+					_self[dataKey]=v;
+					preFun.call(_self,v);
+				}
+			}
+			Object.defineProperty(tar,key,newO);
+			return true;
 		}
 
 		Context._default=new Context();
+		Context.newKeys=[];
+		__static(Context,
+		['replaceKeys',function(){return this.replaceKeys=["font","fillStyle","textBaseline"];}
+		]);
 		return Context;
 	})()
 
 
 	/**
+	*@private
 	*<code>ResourceManager</code> 是资源管理类。它用于资源的载入、获取、销毁。
 	*/
 	//class laya.resource.ResourceManager
@@ -6083,72 +6644,6 @@ var Laya=window.Laya=(function(window,document){
 	})()
 
 
-	/**
-	*@private
-	*/
-	//class laya.resource.WXCanvas
-	var WXCanvas=(function(){
-		function WXCanvas(id){
-			this._ctx=null;
-			this._id=null;
-			this.style={};
-			this._id=id;
-		}
-
-		__class(WXCanvas,'laya.resource.WXCanvas');
-		var __proto=WXCanvas.prototype;
-		__proto.getContext=function(){
-			var wx=laya.resource.WXCanvas.wx;
-			var ctx=wx.createContext();
-			ctx.id=this._id;
-			ctx.fillRect=function (x,y,w,h){
-				this.rect(x,y,w,h);
-				this.fill();
-			}
-			ctx.strokeRect=function (x,y,w,h){
-				this.rect(x,y,w,h);
-				this.stroke();
-			}
-			ctx.___drawImage=ctx.drawImage;
-			ctx.drawImage=function (){
-				var img=arguments[0].tempFilePath;
-				if (img==null)return;
-				switch(arguments.length){
-					case 3:
-						this.___drawImage(img,arguments[1],arguments[2],arguments[0].width,arguments[0].height);
-						return;
-					case 5:
-						this.___drawImage(img,arguments[1],arguments[2],arguments[3],arguments[4]);
-						return;
-					case 9:
-						this.___drawImage(img,arguments[5],arguments[6],arguments[7],arguments[8]);
-						return;
-					}
-			}
-			Object.defineProperty(ctx,"strokeStyle",{set:function (value){this.setStrokeStyle(value)},enumerable:false });
-			Object.defineProperty(ctx,"fillStyle",{set:function (value){this.setFillStyle(value)},enumerable:false });
-			Object.defineProperty(ctx,"fontSize",{set:function (value){this.setFontSize(value)},enumerable:false });
-			Object.defineProperty(ctx,"lineWidth",{set:function (value){this.setLineWidth(value)},enumerable:false });
-			Context.__init__(ctx);
-			ctx.flush=function (){
-				wx.drawCanvas({canvasId:this.id,actions:this.getActions()});
-			}
-			return ctx;
-		}
-
-		__proto.oncontextmenu=function(e){}
-		__proto.addEventListener=function(){}
-		__getset(0,__proto,'id',function(){
-			return this._id;
-			},function(value){
-			this._id=value;
-		});
-
-		WXCanvas.wx=null;
-		return WXCanvas;
-	})()
-
-
 	SoundManager;
 	/**
 	*<code>Browser</code> 是浏览器代理类。封装浏览器及原生 js 提供的一些功能。
@@ -6164,13 +6659,16 @@ var Laya=window.Laya=(function(window,document){
 			return RunDriver.getPixelRatio();
 		});
 
-		/**浏览器物理高度。*/
+		/**浏览器窗口物理高度。考虑了设备像素比。*/
 		__getset(1,Browser,'height',function(){
 			Browser.__init__();
 			return ((Laya.stage && Laya.stage.canvasRotation)? Browser.clientWidth :Browser.clientHeight)*Browser.pixelRatio;
 		});
 
-		/**浏览器可视宽度。*/
+		/**
+		*浏览器窗口可视宽度。
+		*通过分析浏览器信息获得。浏览器多个属性值优先级为：window.innerWidth(包含滚动条宽度)> document.body.clientWidth(不包含滚动条宽度)，如果前者为0或为空，则选择后者。
+		*/
 		__getset(1,Browser,'clientWidth',function(){
 			Browser.__init__();
 			return Browser.window.innerWidth || Browser.document.body.clientWidth;
@@ -6182,13 +6680,16 @@ var Laya=window.Laya=(function(window,document){
 			return Browser._window;
 		});
 
-		/**浏览器可视高度。*/
+		/**
+		*浏览器窗口可视高度。
+		*通过分析浏览器信息获得。浏览器多个属性值优先级为：window.innerHeight(包含滚动条高度)> document.body.clientHeight(不包含滚动条高度)> document.documentElement.clientHeight(不包含滚动条高度)，如果前者为0或为空，则选择后者。
+		*/
 		__getset(1,Browser,'clientHeight',function(){
 			Browser.__init__();
 			return Browser.window.innerHeight || Browser.document.body.clientHeight || Browser.document.documentElement.clientHeight;
 		});
 
-		/**浏览器物理宽度，。*/
+		/**浏览器窗口物理宽度。考虑了设备像素比。*/
 		__getset(1,Browser,'width',function(){
 			Browser.__init__();
 			return ((Laya.stage && Laya.stage.canvasRotation)? Browser.clientHeight :Browser.clientWidth)*Browser.pixelRatio;
@@ -6238,6 +6739,7 @@ var Laya=window.Laya=(function(window,document){
 			Browser.onWP=/*[SAFE]*/ Browser.u.indexOf("Windows Phone")>-1;
 			Browser.onQQBrowser=/*[SAFE]*/ Browser.u.indexOf("QQBrowser")>-1;
 			Browser.onMQQBrowser=/*[SAFE]*/ Browser.u.indexOf("MQQBrowser")>-1;
+			Browser.onIE=/*[SAFE]*/ !!Browser.window.ActiveXObject || "ActiveXObject" in Browser.window;
 			Browser.onWeiXin=/*[SAFE]*/ Browser.u.indexOf('MicroMessenger')>-1;
 			Browser.onPC=/*[SAFE]*/ !Browser.onMobile;
 			Browser.onSafari=/*[SAFE]*/ !!Browser.u.match(/Version\/\d+\.\d\x20Mobile\/\S+\x20Safari/);
@@ -6249,36 +6751,7 @@ var Laya=window.Laya=(function(window,document){
 			Browser.enableTouch=(('ontouchstart' in window)|| window.DocumentTouch && document instanceof DocumentTouch);
 			window.focus();
 			SoundManager._soundClass=Sound;;
-			var MainCanvas=null;
-			if (Browser.window.MainCanvasID){
-				var _wx=wx;
-				if (_wx && !_wx.createContext)_wx=null;
-				if ((WXCanvas.wx=_wx)!=null){
-					MainCanvas=new WXCanvas(Browser.window.MainCanvasID);
-					var from=Context.prototype;
-					from.flush=null;
-					Browser.window.Image=function (){
-						this.setSrc=function (url){
-							this.__src=url;
-							var _this=this;
-							this.success();
-						}
-						this.success=function (res){
-							this.width=200;
-							this.height=200;
-							this.tempFilePath=res ? res.tempFilePath :this.__src;
-							this.onload && this.onload();
-						}
-						this.getSrc=function (){
-							return this.__src;
-						}
-						Object.defineProperty(this,"src",{get:this.getSrc,set:this.setSrc,enumerable:false });
-					}
-					}else {
-					MainCanvas=Browser.document.getElementById(Browser.window.MainCanvasID);
-				}
-			}
-			Render._mainCanvas=Render._mainCanvas || HTMLCanvas.create('2D',MainCanvas);
+			Render._mainCanvas=Render._mainCanvas || HTMLCanvas.create('2D');
 			if (Browser.canvas)return;
 			Browser.canvas=HTMLCanvas.create('2D');
 			Browser.context=Browser.canvas.getContext('2d');
@@ -6291,7 +6764,7 @@ var Laya=window.Laya=(function(window,document){
 				Browser.window.innerHeight=e.data.height;
 				Browser.window.__innerHeight=e.data.clientHeight;
 				if (!Browser.document.createEvent){
-					console.log("no document.createEvent");
+					console.warn("no document.createEvent");
 					return;
 				};
 				var evt=Browser.document.createEvent("HTMLEvents");
@@ -6329,10 +6802,12 @@ var Laya=window.Laya=(function(window,document){
 		Browser.onIPhone=false;
 		Browser.onIPad=false;
 		Browser.onAndriod=false;
+		Browser.onAndroid=false;
 		Browser.onWP=false;
 		Browser.onQQBrowser=false;
 		Browser.onMQQBrowser=false;
 		Browser.onSafari=false;
+		Browser.onIE=false;
 		Browser.onWeiXin=false;
 		Browser.onPC=false;
 		Browser.httpProtocol=false;
@@ -6351,6 +6826,563 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
+	*<p> <code>Byte</code> 类提供用于优化读取、写入以及处理二进制数据的方法和属性。</p>
+	*<p><b>注意：</b> <code>Byte</code> 类适用于需要在字节层访问数据的高级开发人员。</p>
+	*/
+	//class laya.utils.Byte
+	var Byte=(function(){
+		function Byte(data){
+			this._xd_=true;
+			this._allocated_=8;
+			//this._d_=null;
+			//this._u8d_=null;
+			this._pos_=0;
+			this._length=0;
+			if (data){
+				this._u8d_=new Uint8Array(data);
+				this._d_=new DataView(this._u8d_.buffer);
+				this._length=this._d_.byteLength;
+				}else {
+				this.___resizeBuffer(this._allocated_);
+			}
+		}
+
+		__class(Byte,'laya.utils.Byte');
+		var __proto=Byte.prototype;
+		/**@private */
+		__proto.___resizeBuffer=function(len){
+			try {
+				var newByteView=new Uint8Array(len);
+				if (this._u8d_ !=null){
+					if (this._u8d_.length <=len)newByteView.set(this._u8d_);
+					else newByteView.set(this._u8d_.subarray(0,len));
+				}
+				this._u8d_=newByteView;
+				this._d_=new DataView(newByteView.buffer);
+				}catch (err){
+				throw "___resizeBuffer err:"+len;
+			}
+		}
+
+		/**
+		*<p>常用于解析固定格式的字节流。</p>
+		*<p>先从字节流的当前字节偏移位置处读取一个 <code>Uint16</code> 值，然后以此值为长度，读取此长度的字符串。</p>
+		*@return 读取的字符串。
+		*/
+		__proto.getString=function(){
+			return this.rUTF(this.getUint16());
+		}
+
+		/**
+		*<p>从字节流中 <code>start</code> 参数指定的位置开始，读取 <code>len</code> 参数指定的字节数的数据，用于创建一个 <code>Float32Array</code> 对象并返回此对象。</p>
+		*<p><b>注意：</b>返回的 Float32Array 对象，在 JavaScript 环境下，是原生的 HTML5 Float32Array 对象，对此对象的读取操作都是基于运行此程序的当前主机字节序，此顺序可能与实际数据的字节序不同，如果使用此对象进行读取，需要用户知晓实际数据的字节序和当前主机字节序，如果相同，可正常读取，否则需要用户对实际数据(Float32Array.buffer)包装一层 DataView ，使用 DataView 对象可按照指定的字节序进行读取。</p>
+		*@param start 开始位置。
+		*@param len 需要读取的字节长度。如果要读取的长度超过可读取范围，则只返回可读范围内的值。
+		*@return 读取的 Float32Array 对象。
+		*/
+		__proto.getFloat32Array=function(start,len){
+			var end=start+len;
+			end=(end > this._length)? this._length :end;
+			var v=new Float32Array(this._d_.buffer.slice(start,end));
+			this._pos_=end;
+			return v;
+		}
+
+		/**
+		*从字节流中 <code>start</code> 参数指定的位置开始，读取 <code>len</code> 参数指定的字节数的数据，用于创建一个 <code>Uint8Array</code> 对象并返回此对象。
+		*@param start 开始位置。
+		*@param len 需要读取的字节长度。如果要读取的长度超过可读取范围，则只返回可读范围内的值。
+		*@return 读取的 Uint8Array 对象。
+		*/
+		__proto.getUint8Array=function(start,len){
+			var end=start+len;
+			end=(end > this._length)? this._length :end;
+			var v=new Uint8Array(this._d_.buffer.slice(start,end));
+			this._pos_=end;
+			return v;
+		}
+
+		/**
+		*<p>从字节流中 <code>start</code> 参数指定的位置开始，读取 <code>len</code> 参数指定的字节数的数据，用于创建一个 <code>Int16Array</code> 对象并返回此对象。</p>
+		*<p><b>注意：</b>返回的 Int16Array 对象，在 JavaScript 环境下，是原生的 HTML5 Int16Array 对象，对此对象的读取操作都是基于运行此程序的当前主机字节序，此顺序可能与实际数据的字节序不同，如果使用此对象进行读取，需要用户知晓实际数据的字节序和当前主机字节序，如果相同，可正常读取，否则需要用户对实际数据(Int16Array.buffer)包装一层 DataView ，使用 DataView 对象可按照指定的字节序进行读取。</p>
+		*@param start 开始读取的字节偏移量位置。
+		*@param len 需要读取的字节长度。如果要读取的长度超过可读取范围，则只返回可读范围内的值。
+		*@return 读取的 Int16Array 对象。
+		*/
+		__proto.getInt16Array=function(start,len){
+			var end=start+len;
+			end=(end > this._length)? this._length :end;
+			var v=new Int16Array(this._d_.buffer.slice(start,end));
+			this._pos_=end;
+			return v;
+		}
+
+		/**
+		*从字节流的当前字节偏移位置处读取一个 IEEE 754 单精度（32 位）浮点数。
+		*@return 单精度（32 位）浮点数。
+		*/
+		__proto.getFloat32=function(){
+			if (this._pos_+4 > this._length)throw "getFloat32 error - Out of bounds";
+			var v=this._d_.getFloat32(this._pos_,this._xd_);
+			this._pos_+=4;
+			return v;
+		}
+
+		/**
+		*从字节流的当前字节偏移量位置处读取一个 IEEE 754 双精度（64 位）浮点数。
+		*@return 双精度（64 位）浮点数。
+		*/
+		__proto.getFloat64=function(){
+			if (this._pos_+8 > this._length)throw "getFloat64 error - Out of bounds";
+			var v=this._d_.getFloat64(this._pos_,this._xd_);
+			this._pos_+=8;
+			return v;
+		}
+
+		/**
+		*在字节流的当前字节偏移量位置处写入一个 IEEE 754 单精度（32 位）浮点数。
+		*@param value 单精度（32 位）浮点数。
+		*/
+		__proto.writeFloat32=function(value){
+			this.ensureWrite(this._pos_+4);
+			this._d_.setFloat32(this._pos_,value,this._xd_);
+			this._pos_+=4;
+		}
+
+		/**
+		*在字节流的当前字节偏移量位置处写入一个 IEEE 754 双精度（64 位）浮点数。
+		*@param value 双精度（64 位）浮点数。
+		*/
+		__proto.writeFloat64=function(value){
+			this.ensureWrite(this._pos_+8);
+			this._d_.setFloat64(this._pos_,value,this._xd_);
+			this._pos_+=8;
+		}
+
+		/**
+		*从字节流的当前字节偏移量位置处读取一个 Int32 值。
+		*@return Int32 值。
+		*/
+		__proto.getInt32=function(){
+			if (this._pos_+4 > this._length)throw "getInt32 error - Out of bounds";
+			var float=this._d_.getInt32(this._pos_,this._xd_);
+			this._pos_+=4;
+			return float;
+		}
+
+		/**
+		*从字节流的当前字节偏移量位置处读取一个 Uint32 值。
+		*@return Uint32 值。
+		*/
+		__proto.getUint32=function(){
+			if (this._pos_+4 > this._length)throw "getUint32 error - Out of bounds";
+			var v=this._d_.getUint32(this._pos_,this._xd_);
+			this._pos_+=4;
+			return v;
+		}
+
+		/**
+		*在字节流的当前字节偏移量位置处写入指定的 Int32 值。
+		*@param value 需要写入的 Int32 值。
+		*/
+		__proto.writeInt32=function(value){
+			this.ensureWrite(this._pos_+4);
+			this._d_.setInt32(this._pos_,value,this._xd_);
+			this._pos_+=4;
+		}
+
+		/**
+		*在字节流的当前字节偏移量位置处写入 Uint32 值。
+		*@param value 需要写入的 Uint32 值。
+		*/
+		__proto.writeUint32=function(value){
+			this.ensureWrite(this._pos_+4);
+			this._d_.setUint32(this._pos_,value,this._xd_);
+			this._pos_+=4;
+		}
+
+		/**
+		*从字节流的当前字节偏移量位置处读取一个 Int16 值。
+		*@return Int16 值。
+		*/
+		__proto.getInt16=function(){
+			if (this._pos_+2 > this._length)throw "getInt16 error - Out of bounds";
+			var us=this._d_.getInt16(this._pos_,this._xd_);
+			this._pos_+=2;
+			return us;
+		}
+
+		/**
+		*从字节流的当前字节偏移量位置处读取一个 Uint16 值。
+		*@return Uint16 值。
+		*/
+		__proto.getUint16=function(){
+			if (this._pos_+2 > this._length)throw "getUint16 error - Out of bounds";
+			var us=this._d_.getUint16(this._pos_,this._xd_);
+			this._pos_+=2;
+			return us;
+		}
+
+		/**
+		*在字节流的当前字节偏移量位置处写入指定的 Uint16 值。
+		*@param value 需要写入的Uint16 值。
+		*/
+		__proto.writeUint16=function(value){
+			this.ensureWrite(this._pos_+2);
+			this._d_.setUint16(this._pos_,value,this._xd_);
+			this._pos_+=2;
+		}
+
+		/**
+		*在字节流的当前字节偏移量位置处写入指定的 Int16 值。
+		*@param value 需要写入的 Int16 值。
+		*/
+		__proto.writeInt16=function(value){
+			this.ensureWrite(this._pos_+2);
+			this._d_.setInt16(this._pos_,value,this._xd_);
+			this._pos_+=2;
+		}
+
+		/**
+		*从字节流的当前字节偏移量位置处读取一个 Uint8 值。
+		*@return Uint8 值。
+		*/
+		__proto.getUint8=function(){
+			if (this._pos_+1 > this._length)throw "getUint8 error - Out of bounds";
+			return this._d_.getUint8(this._pos_++);
+		}
+
+		/**
+		*在字节流的当前字节偏移量位置处写入指定的 Uint8 值。
+		*@param value 需要写入的 Uint8 值。
+		*/
+		__proto.writeUint8=function(value){
+			this.ensureWrite(this._pos_+1);
+			this._d_.setUint8(this._pos_,value);
+			this._pos_++;
+		}
+
+		/**
+		*@private
+		*从字节流的指定字节偏移量位置处读取一个 Uint8 值。
+		*@param pos 字节读取位置。
+		*@return Uint8 值。
+		*/
+		__proto._getUInt8=function(pos){
+			return this._d_.getUint8(pos);
+		}
+
+		/**
+		*@private
+		*从字节流的指定字节偏移量位置处读取一个 Uint16 值。
+		*@param pos 字节读取位置。
+		*@return Uint16 值。
+		*/
+		__proto._getUint16=function(pos){
+			return this._d_.getUint16(pos,this._xd_);
+		}
+
+		/**
+		*@private
+		*使用 getFloat32()读取6个值，用于创建并返回一个 Matrix 对象。
+		*@return Matrix 对象。
+		*/
+		__proto._getMatrix=function(){
+			var rst=new Matrix(this.getFloat32(),this.getFloat32(),this.getFloat32(),this.getFloat32(),this.getFloat32(),this.getFloat32());
+			return rst;
+		}
+
+		/**
+		*@private
+		*读取指定长度的 UTF 型字符串。
+		*@param len 需要读取的长度。
+		*@return 读取的字符串。
+		*/
+		__proto.rUTF=function(len){
+			var v="",max=this._pos_+len,c=0,c2=0,c3=0,f=String.fromCharCode;
+			var u=this._u8d_,i=0;
+			while (this._pos_ < max){
+				c=u[this._pos_++];
+				if (c < 0x80){
+					if (c !=0){
+						v+=f(c);
+					}
+					}else if (c < 0xE0){
+					v+=f(((c & 0x3F)<< 6)| (u[this._pos_++] & 0x7F));
+					}else if (c < 0xF0){
+					c2=u[this._pos_++];
+					v+=f(((c & 0x1F)<< 12)| ((c2 & 0x7F)<< 6)| (u[this._pos_++] & 0x7F));
+					}else {
+					c2=u[this._pos_++];
+					c3=u[this._pos_++];
+					v+=f(((c & 0x0F)<< 18)| ((c2 & 0x7F)<< 12)| ((c3 << 6)& 0x7F)| (u[this._pos_++] & 0x7F));
+				}
+				i++;
+			}
+			return v;
+		}
+
+		/**
+		*@private
+		*读取 <code>len</code> 参数指定的长度的字符串。
+		*@param len 要读取的字符串的长度。
+		*@return 指定长度的字符串。
+		*/
+		__proto.getCustomString=function(len){
+			var v="",ulen=0,c=0,c2=0,f=String.fromCharCode;
+			var u=this._u8d_,i=0;
+			while (len > 0){
+				c=u[this._pos_];
+				if (c < 0x80){
+					v+=f(c);
+					this._pos_++;
+					len--;
+					}else {
+					ulen=c-0x80;
+					this._pos_++;
+					len-=ulen;
+					while (ulen > 0){
+						c=u[this._pos_++];
+						c2=u[this._pos_++];
+						v+=f((c2 << 8)| c);
+						ulen--;
+					}
+				}
+			}
+			return v;
+		}
+
+		/**
+		*清除字节数组的内容，并将 length 和 pos 属性重置为 0。调用此方法将释放 Byte 实例占用的内存。
+		*/
+		__proto.clear=function(){
+			this._pos_=0;
+			this.length=0;
+		}
+
+		/**
+		*@private
+		*获取此对象的 ArrayBuffer 引用。
+		*@return
+		*/
+		__proto.__getBuffer=function(){
+			return this._d_.buffer;
+		}
+
+		/**
+		*<p>将 UTF-8 字符串写入字节流。类似于 writeUTF()方法，但 writeUTFBytes()不使用 16 位长度的字为字符串添加前缀。</p>
+		*<p>对应的读取方法为： getUTFBytes 。</p>
+		*@param value 要写入的字符串。
+		*/
+		__proto.writeUTFBytes=function(value){
+			value=value+"";
+			for (var i=0,sz=value.length;i < sz;i++){
+				var c=value.charCodeAt(i);
+				if (c <=0x7F){
+					this.writeByte(c);
+					}else if (c <=0x7FF){
+					this.ensureWrite(this._pos_+2);
+					this._u8d_.set([0xC0 | (c >> 6),0x80 | (c & 0x3F)],this._pos_);
+					this._pos_+=2;
+					}else if (c <=0xFFFF){
+					this.ensureWrite(this._pos_+3);
+					this._u8d_.set([0xE0 | (c >> 12),0x80 | ((c >> 6)& 0x3F),0x80 | (c & 0x3F)],this._pos_);
+					this._pos_+=3;
+					}else {
+					this.ensureWrite(this._pos_+4);
+					this._u8d_.set([0xF0 | (c >> 18),0x80 | ((c >> 12)& 0x3F),0x80 | ((c >> 6)& 0x3F),0x80 | (c & 0x3F)],this._pos_);
+					this._pos_+=4;
+				}
+			}
+		}
+
+		/**
+		*<p>将 UTF-8 字符串写入字节流。先写入以字节表示的 UTF-8 字符串长度（作为 16 位整数），然后写入表示字符串字符的字节。</p>
+		*<p>对应的读取方法为： getUTFString 。</p>
+		*@param value 要写入的字符串值。
+		*/
+		__proto.writeUTFString=function(value){
+			var tPos=this.pos;
+			this.writeUint16(1);
+			this.writeUTFBytes(value);
+			var dPos=this.pos-tPos-2;
+			if (dPos >=65536){
+				throw "writeUTFString byte len more than 65536";
+			}
+			this._d_.setUint16(tPos,dPos,this._xd_);
+		}
+
+		/**
+		*@private
+		*读取 UTF-8 字符串。
+		*@return 读取的字符串。
+		*/
+		__proto.readUTFString=function(){
+			return this.readUTFBytes(this.getUint16());
+		}
+
+		/**
+		*<p>从字节流中读取一个 UTF-8 字符串。假定字符串的前缀是一个无符号的短整型（以此字节表示要读取的长度）。</p>
+		*<p>对应的写入方法为： writeUTFString 。</p>
+		*@return 读取的字符串。
+		*/
+		__proto.getUTFString=function(){
+			return this.readUTFString();
+		}
+
+		/**
+		*@private
+		*读字符串，必须是 writeUTFBytes 方法写入的字符串。
+		*@param len 要读的buffer长度，默认将读取缓冲区全部数据。
+		*@return 读取的字符串。
+		*/
+		__proto.readUTFBytes=function(len){
+			(len===void 0)&& (len=-1);
+			if (len==0)return "";
+			var lastBytes=this.bytesAvailable;
+			if (len > lastBytes)throw "readUTFBytes error - Out of bounds";
+			len=len > 0 ? len :lastBytes;
+			return this.rUTF(len);
+		}
+
+		/**
+		*<p>从字节流中读取一个由 length 参数指定的长度的 UTF-8 字节序列，并返回一个字符串。</p>
+		*<p>一般读取的是由 writeUTFBytes 方法写入的字符串。</p>
+		*@param len 要读的buffer长度，默认将读取缓冲区全部数据。
+		*@return 读取的字符串。
+		*/
+		__proto.getUTFBytes=function(len){
+			(len===void 0)&& (len=-1);
+			return this.readUTFBytes(len);
+		}
+
+		/**
+		*<p>在字节流中写入一个字节。</p>
+		*<p>使用参数的低 8 位。忽略高 24 位。</p>
+		*@param value
+		*/
+		__proto.writeByte=function(value){
+			this.ensureWrite(this._pos_+1);
+			this._d_.setInt8(this._pos_,value);
+			this._pos_+=1;
+		}
+
+		/**
+		*@private
+		*从字节流中读取带符号的字节。
+		*/
+		__proto.readByte=function(){
+			if (this._pos_+1 > this._length)throw "readByte error - Out of bounds";
+			return this._d_.getInt8(this._pos_++);
+		}
+
+		/**
+		*<p>从字节流中读取带符号的字节。</p>
+		*<p>返回值的范围是从-128 到 127。</p>
+		*@return 介于-128 和 127 之间的整数。
+		*/
+		__proto.getByte=function(){
+			return this.readByte();
+		}
+
+		/**
+		*<p>保证该字节流的可用长度不小于 <code>lengthToEnsure</code> 参数指定的值。</p>
+		*@param lengthToEnsure 指定的长度。
+		*/
+		__proto.ensureWrite=function(lengthToEnsure){
+			if (this._length < lengthToEnsure)this._length=lengthToEnsure;
+			if (this._allocated_ < lengthToEnsure)this.length=lengthToEnsure;
+		}
+
+		/**
+		*<p>将指定 arraybuffer 对象中的以 offset 为起始偏移量， length 为长度的字节序列写入字节流。</p>
+		*<p>如果省略 length 参数，则使用默认长度 0，该方法将从 offset 开始写入整个缓冲区；如果还省略了 offset 参数，则写入整个缓冲区。</p>
+		*<p>如果 offset 或 length 小于0，本函数将抛出异常。</p>
+		*@param arraybuffer 需要写入的 Arraybuffer 对象。
+		*@param offset Arraybuffer 对象的索引的偏移量（以字节为单位）
+		*@param length 从 Arraybuffer 对象写入到 Byte 对象的长度（以字节为单位）
+		*/
+		__proto.writeArrayBuffer=function(arraybuffer,offset,length){
+			(offset===void 0)&& (offset=0);
+			(length===void 0)&& (length=0);
+			if (offset < 0 || length < 0)throw "writeArrayBuffer error - Out of bounds";
+			if (length==0)length=arraybuffer.byteLength-offset;
+			this.ensureWrite(this._pos_+length);
+			var uint8array=new Uint8Array(arraybuffer);
+			this._u8d_.set(uint8array.subarray(offset,offset+length),this._pos_);
+			this._pos_+=length;
+		}
+
+		/**
+		*获取此对象的 ArrayBuffer 数据，数据只包含有效数据部分。
+		*/
+		__getset(0,__proto,'buffer',function(){
+			var rstBuffer=this._d_.buffer;
+			if (rstBuffer.byteLength==this.length)return rstBuffer;
+			return rstBuffer.slice(0,this.length);
+		});
+
+		/**
+		*<p> <code>Byte</code> 实例的字节序。取值为：<code>BIG_ENDIAN</code> 或 <code>BIG_ENDIAN</code> 。</p>
+		*<p>主机字节序，是 CPU 存放数据的两种不同顺序，包括小端字节序和大端字节序。通过 <code>getSystemEndian</code> 可以获取当前系统的字节序。</p>
+		*<p> <code>BIG_ENDIAN</code> ：大端字节序，地址低位存储值的高位，地址高位存储值的低位。有时也称之为网络字节序。<br/>
+		*<code>LITTLE_ENDIAN</code> ：小端字节序，地址低位存储值的低位，地址高位存储值的高位。</p>
+		*/
+		__getset(0,__proto,'endian',function(){
+			return this._xd_ ? "littleEndian" :"bigEndian";
+			},function(endianStr){
+			this._xd_=(endianStr=="littleEndian");
+		});
+
+		/**
+		*<p> <code>Byte</code> 对象的长度（以字节为单位）。</p>
+		*<p>如果将长度设置为大于当前长度的值，则用零填充字节数组的右侧；如果将长度设置为小于当前长度的值，将会截断该字节数组。</p>
+		*<p>如果要设置的长度大于当前已分配的内存空间的字节长度，则重新分配内存空间，大小为以下两者较大者：要设置的长度、当前已分配的长度的2倍，并将原有数据拷贝到新的内存空间中；如果要设置的长度小于当前已分配的内存空间的字节长度，也会重新分配内存空间，大小为要设置的长度，并将原有数据从头截断为要设置的长度存入新的内存空间中。</p>
+		*/
+		__getset(0,__proto,'length',function(){
+			return this._length;
+			},function(value){
+			if (this._allocated_ < value)
+				this.___resizeBuffer(this._allocated_=Math.floor(Math.max(value,this._allocated_ *2)));
+			else if (this._allocated_ > value)
+			this.___resizeBuffer(this._allocated_=value);
+			this._length=value;
+		});
+
+		/**
+		*移动或返回 Byte 对象的读写指针的当前位置（以字节为单位）。下一次调用读取方法时将在此位置开始读取，或者下一次调用写入方法时将在此位置开始写入。
+		*/
+		__getset(0,__proto,'pos',function(){
+			return this._pos_;
+			},function(value){
+			this._pos_=value;
+		});
+
+		/**
+		*可从字节流的当前位置到末尾读取的数据的字节数。
+		*/
+		__getset(0,__proto,'bytesAvailable',function(){
+			return this._length-this._pos_;
+		});
+
+		Byte.getSystemEndian=function(){
+			if (!Byte._sysEndian){
+				var buffer=new ArrayBuffer(2);
+				new DataView(buffer).setInt16(0,256,true);
+				Byte._sysEndian=(new Int16Array(buffer))[0]===256 ? "littleEndian" :"bigEndian";
+			}
+			return Byte._sysEndian;
+		}
+
+		Byte.BIG_ENDIAN="bigEndian";
+		Byte.LITTLE_ENDIAN="littleEndian";
+		Byte._sysEndian=null;
+		return Byte;
+	})()
+
+
+	/**
+	*@private
 	*对象缓存统一管理类
 	*/
 	//class laya.utils.CacheManger
@@ -6360,10 +7392,7 @@ var Laya=window.Laya=(function(window,document){
 		CacheManger.regCacheByFunction=function(disposeFunction,getCacheListFunction){
 			CacheManger.unRegCacheByFunction(disposeFunction,getCacheListFunction);
 			var cache;
-			cache={
-				tryDispose:disposeFunction,
-				getCacheList:getCacheListFunction
-			};
+			cache={tryDispose:disposeFunction,getCacheList:getCacheListFunction};
 			CacheManger._cacheList.push(cache);
 		}
 
@@ -6380,7 +7409,7 @@ var Laya=window.Laya=(function(window,document){
 
 		CacheManger.forceDispose=function(){
 			var i=0,len=CacheManger._cacheList.length;
-			for(i=0;i<len;i++){
+			for (i=0;i < len;i++){
 				CacheManger._cacheList[i].tryDispose(true);
 			}
 		}
@@ -6437,7 +7466,7 @@ var Laya=window.Laya=(function(window,document){
 			if (compClass)
 				return new compClass();
 			else
-			console.log("[error] Undefined class:",className);
+			console.warn("[error] Undefined class:",className);
 			return null;
 		}
 
@@ -6464,7 +7493,11 @@ var Laya=window.Laya=(function(window,document){
 							}else {
 							var tChild=ClassUtils.createByJson(data,null,root,customHandler,instanceHandler)
 							if (data.type=="Script"){
-								tChild["owner"]=node;
+								if (tChild.hasOwnProperty("owner")){
+									tChild["owner"]=node;
+									}else if (tChild.hasOwnProperty("target")){
+									tChild["target"]=node;
+								}
 								}else if (data.props.renderType=="mask"){
 								node.mask=tChild;
 								}else {
@@ -6684,6 +7717,7 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
+	*@private
 	*<code>Color</code> 是一个颜色值处理类。
 	*/
 	//class laya.utils.Color
@@ -6749,6 +7783,7 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
+	*@private
 	*<code>Dragging</code> 类是触摸滑动控件。
 	*/
 	//class laya.utils.Dragging
@@ -7351,6 +8386,7 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
+	*@private
 	*<code>HTMLChar</code> 是一个 HTML 字符类。
 	*/
 	//class laya.utils.HTMLChar
@@ -7453,7 +8489,8 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*<code>Pool</code> 是对象池类，用于对象的存贮、重复使用。
+	*<p> <code>Pool</code> 是对象池类，用于对象的存贮、重复使用。</p>
+	*<p>合理使用对象池，可以有效减少对象创建的开销，避免频繁的垃圾回收，从而优化游戏流畅度。</p>
 	*/
 	//class laya.utils.Pool
 	var Pool=(function(){
@@ -7503,14 +8540,21 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*<code>Stat</code> 用于显示帧率统计信息。
+	*<p> <code>Stat</code> 是一个性能统计面板，可以实时更新相关的性能参数。</p>
+	*<p>参与统计的性能参数如下（所有参数都是每大约1秒进行更新）：<br/>
+	*FPS(Canvas)/FPS(WebGL)：Canvas 模式或者 WebGL 模式下的帧频，也就是每秒显示的帧数，值越高、越稳定，感觉越流畅；<br/>
+	*Sprite：统计所有渲染节点（包括容器）数量，它的大小会影响引擎进行节点遍历、数据组织和渲染的效率。其值越小，游戏运行效率越高；<br/>
+	*DrawCall：此值是决定性能的重要指标，其值越小，游戏运行效率越高。Canvas模式下表示每大约1秒的图像绘制次数；WebGL模式下表示每大约1秒的渲染提交批次，每次准备数据并通知GPU渲染绘制的过程称为1次DrawCall，在每次DrawCall中除了在通知GPU的渲染上比较耗时之外，切换材质与shader也是非常耗时的操作；<br/>
+	*CurMem：Canvas模式下，表示内存占用大小，值越小越好，过高会导致游戏闪退；WebGL模式下，表示内存与显存的占用，值越小越好；<br/>
+	*Shader：是 WebGL 模式独有的性能指标，表示每大约1秒 Shader 提交次数，值越小越好；<br/>
+	*Canvas：由三个数值组成，只有设置 CacheAs 后才会有值，默认为0/0/0。从左到右数值的意义分别为：每帧重绘的画布数量 / 缓存类型为"normal"类型的画布数量 / 缓存类型为"bitmap"类型的画布数量。</p>
 	*/
 	//class laya.utils.Stat
 	var Stat=(function(){
 		function Stat(){};
 		__class(Stat,'laya.utils.Stat');
 		/**
-		*点击帧频显示区域的处理函数。
+		*点击性能统计显示区域的处理函数。
 		*/
 		__getset(1,Stat,'onclick',null,function(fn){
 			Stat._canvas.source.onclick=fn;
@@ -7550,7 +8594,7 @@ var Laya=window.Laya=(function(window,document){
 				Stat._view[i].x=4;
 				Stat._view[i].y=i *Stat._fontSize+2 *pixel;
 			}
-			Stat._height=pixel *(Stat._view.length *12+3 *pixel);
+			Stat._height=pixel *(Stat._view.length *12+3 *pixel)+4;
 			if (!Stat._canvas){
 				Stat._canvas=new HTMLCanvas('2D');
 				Stat._canvas.size(Stat._width,Stat._height);
@@ -7571,8 +8615,10 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		Stat.hide=function(){
-			Browser.removeElement(Stat._canvas.source);
-			Laya.timer.clear(Stat,Stat.loop);
+			if (Stat._canvas){
+				Browser.removeElement(Stat._canvas.source);
+				Laya.timer.clear(Stat,Stat.loop);
+			}
 		}
 
 		Stat.clear=function(){
@@ -7595,7 +8641,7 @@ var Laya=window.Laya=(function(window,document){
 				Stat.canvasReCache=Math.ceil(Stat.canvasReCache / count);
 				Stat.treeNodeCollision=Math.round(Stat.treeNodeCollision / count);
 				Stat.treeSpriteCollision=Math.round(Stat.treeSpriteCollision / count);
-				var delay=Stat.FPS > 0?Math.floor(1000 / Stat.FPS).toString():" ";
+				var delay=Stat.FPS > 0 ? Math.floor(1000 / Stat.FPS).toString():" ";
 				Stat._fpsStr=Stat.FPS+(Stat.renderSlow ? " slow" :"")+" "+delay;
 				Stat._canvasStr=Stat.canvasReCache+"/"+Stat.canvasNormal+"/"+Stat.canvasBitmap;
 				Stat.currentMemorySize=ResourceManager.systemResourceManager.memorySize;
@@ -7648,7 +8694,7 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*<code>Timer</code> 是时钟管理类。它是一个单例，可以通过 Laya.timer 访问。
+	*<code>Timer</code> 是时钟管理类。它是一个单例，不要手动实例化此类，应该通过 Laya.timer 访问。
 	*/
 	//class laya.utils.Timer
 	var Timer=(function(){
@@ -7692,11 +8738,16 @@ var Laya=window.Laya=(function(window,document){
 					var t=handler.userFrame ? frame :timer;
 					if (t >=handler.exeTime){
 						if (handler.repeat){
-							if (t > handler.exeTime){
+							if (!handler.jumpFrame){
 								handler.exeTime+=handler.delay;
 								handler.run(false);
 								if (t > handler.exeTime){
 									handler.exeTime+=Math.ceil((t-handler.exeTime)/ handler.delay)*handler.delay;
+								}
+								}else {
+								while (t >=handler.exeTime){
+									handler.exeTime+=handler.delay;
+									handler.run(false);
 								}
 							}
 							}else {
@@ -7736,7 +8787,7 @@ var Laya=window.Laya=(function(window,document){
 
 		/**@private */
 		__proto._recoverHandler=function(handler){
-			this._map[handler.key]=null;
+			if(this._map[handler.key]==handler)this._map[handler.key]=null;
 			handler.clear();
 			Timer._pool.push(handler);
 		}
@@ -7745,7 +8796,7 @@ var Laya=window.Laya=(function(window,document){
 		__proto._create=function(useFrame,repeat,delay,caller,method,args,coverBefore){
 			if (!delay){
 				method.apply(caller,args);
-				return;
+				return null;
 			}
 			if (coverBefore){
 				var handler=this._getHandler(caller,method);
@@ -7756,8 +8807,8 @@ var Laya=window.Laya=(function(window,document){
 					handler.caller=caller;
 					handler.method=method;
 					handler.args=args;
-					handler.exeTime=delay+(useFrame ? this.currFrame :Browser.now());
-					return;
+					handler.exeTime=delay+(useFrame ? this.currFrame :this.currTimer+Browser.now()-this._lastTimer);
+					return handler;
 				}
 			}
 			handler=Timer._pool.length > 0 ? Timer._pool.pop():new TimerHandler();
@@ -7767,9 +8818,10 @@ var Laya=window.Laya=(function(window,document){
 			handler.caller=caller;
 			handler.method=method;
 			handler.args=args;
-			handler.exeTime=delay+(useFrame ? this.currFrame :Browser.now());
+			handler.exeTime=delay+(useFrame ? this.currFrame :this.currTimer+Browser.now()-this._lastTimer);
 			this._indexHandler(handler);
 			this._handlers.push(handler);
+			return handler;
 		}
 
 		/**@private */
@@ -7802,10 +8854,13 @@ var Laya=window.Laya=(function(window,document){
 		*@param method 定时器回调函数。
 		*@param args 回调参数。
 		*@param coverBefore 是否覆盖之前的延迟执行，默认为 true 。
+		*@param jumpFrame 时钟是否跳帧。基于时间的循环回调，单位时间间隔内，如能执行多次回调，出于性能考虑，引擎默认只执行一次，设置jumpFrame=true后，则回调会连续执行多次
 		*/
-		__proto.loop=function(delay,caller,method,args,coverBefore){
+		__proto.loop=function(delay,caller,method,args,coverBefore,jumpFrame){
 			(coverBefore===void 0)&& (coverBefore=true);
-			this._create(false,true,delay,caller,method,args,coverBefore);
+			(jumpFrame===void 0)&& (jumpFrame=false);
+			var handler=this._create(false,true,delay,caller,method,args,coverBefore);
+			if (handler)handler.jumpFrame=jumpFrame;
 		}
 
 		/**
@@ -7936,6 +8991,7 @@ var Laya=window.Laya=(function(window,document){
 					this.caller=null;
 					this.method=null;
 					this.args=null;
+					this.jumpFrame=false;
 				}
 				__class(TimerHandler,'');
 				var __proto=TimerHandler.prototype;
@@ -7944,12 +9000,12 @@ var Laya=window.Laya=(function(window,document){
 					this.method=null;
 					this.args=null;
 				}
-				__proto.run=function(widthClear){
+				__proto.run=function(withClear){
 					var caller=this.caller;
 					if (caller && caller.destroyed)return this.clear();
 					var method=this.method;
 					var args=this.args;
-					widthClear && this.clear();
+					withClear && this.clear();
 					if (method==null)return;
 					args ? method.apply(caller,args):method.call(caller);
 				}
@@ -7962,7 +9018,7 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*<code>Tween</code> 是一个缓动类。使用实现目标对象属性的渐变。
+	*<code>Tween</code> 是一个缓动类。使用此类能够实现对目标对象属性的渐变。
 	*/
 	//class laya.utils.Tween
 	var Tween=(function(){
@@ -8336,8 +9392,7 @@ var Laya=window.Laya=(function(window,document){
 			if (model){
 				if (model.updateZOrder !=null){
 					model.updateZOrder();
-				}
-				else{
+					}else {
 					for (i=0;i < len;i++){
 						model.removeChild(array[i].conchModel);
 					}
@@ -8371,6 +9426,64 @@ var Laya=window.Laya=(function(window,document){
 				return result[1].toLowerCase();
 			}
 			return null;
+		}
+
+		Utils.getTransformRelativeToWindow=function(coordinateSpace,x,y){
+			var stage=Laya.stage;
+			var globalTransform=laya.utils.Utils.getGlobalPosAndScale(coordinateSpace);
+			var canvasMatrix=stage._canvasTransform.clone();
+			var canvasLeft=canvasMatrix.tx;
+			var canvasTop=canvasMatrix.ty;
+			canvasMatrix.rotate(-Math.PI / 180 *Laya.stage.canvasDegree);
+			canvasMatrix.scale(Laya.stage.clientScaleX,Laya.stage.clientScaleY);
+			var perpendicular=(Laya.stage.canvasDegree % 180 !=0);
+			var tx=NaN,ty=NaN;
+			if (perpendicular){
+				tx=y+globalTransform.y;
+				ty=x+globalTransform.x;
+				tx *=canvasMatrix.d;
+				ty *=canvasMatrix.a;
+				if (Laya.stage.canvasDegree==90){
+					tx=canvasLeft-tx;
+					ty+=canvasTop;
+				}
+				else {
+					tx+=canvasLeft;
+					ty=canvasTop-ty;
+				}
+			}
+			else {
+				tx=x+globalTransform.x;
+				ty=y+globalTransform.y;
+				tx *=canvasMatrix.a;
+				ty *=canvasMatrix.d;
+				tx+=canvasLeft;
+				ty+=canvasTop;
+			}
+			ty+=Laya.stage['_safariOffsetY'];
+			var domScaleX=NaN,domScaleY=NaN;
+			if (perpendicular){
+				domScaleX=canvasMatrix.d *globalTransform.height;
+				domScaleY=canvasMatrix.a *globalTransform.width;
+				}else {
+				domScaleX=canvasMatrix.a *globalTransform.width;
+				domScaleY=canvasMatrix.d *globalTransform.height;
+			}
+			return {x:tx,y:ty,scaleX:domScaleX,scaleY:domScaleY};
+		}
+
+		Utils.fitDOMElementInArea=function(dom,coordinateSpace,x,y,width,height){
+			if (!dom._fitLayaAirInitialized){
+				dom._fitLayaAirInitialized=true;
+				dom.style.transformOrigin=dom.style.webKittransformOrigin="left top";
+				dom.style.position="absolute"
+			};
+			var transform=Utils.getTransformRelativeToWindow(coordinateSpace,x,y);
+			dom.style.transform=dom.style.webkitTransform="scale("+transform.scaleX+","+transform.scaleY+") rotate("+(Laya.stage.canvasDegree)+"deg)";
+			dom.style.width=width+'px';
+			dom.style.height=height+'px';
+			dom.style.left=transform.x+'px';
+			dom.style.top=transform.y+'px';
 		}
 
 		Utils._gid=1;
@@ -8656,8 +9769,16 @@ var Laya=window.Laya=(function(window,document){
 			}
 		}
 
+		UIUtils._getReplaceStr=function(word){
+			return UIUtils.escapeSequence[word];
+		}
+
+		UIUtils.adptString=function(str){
+			return str.replace(/\\(\w)/g,UIUtils._getReplaceStr);
+		}
+
 		__static(UIUtils,
-		['grayFilter',function(){return this.grayFilter=new ColorFilter([0.3086,0.6094,0.082,0,0,0.3086,0.6094,0.082,0,0,0.3086,0.6094,0.082,0,0,0,0,0,1,0]);}
+		['grayFilter',function(){return this.grayFilter=new ColorFilter([0.3086,0.6094,0.082,0,0,0.3086,0.6094,0.082,0,0,0.3086,0.6094,0.082,0,0,0,0,0,1,0]);},'escapeSequence',function(){return this.escapeSequence={"\\n":"\n","\\t":"\t"};}
 		]);
 		return UIUtils;
 	})()
@@ -8690,6 +9811,322 @@ var Laya=window.Laya=(function(window,document){
 		['dataO',function(){return this.dataO={"comp/button1.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGIAAABRCAYAAAApS3MNAAABSUlEQVR4Xu3a0QmFMADFUJ1JXM0h3moPZ6qg4AoNeLqAIenFn65jjLE40w2sQkxvcAMI0eggRKSDEEJUDEQ4/COEiBiIYFiEEBEDEQyLECJiIIJhEUJEDEQwLEKIiIEIhkUIETEQwbAIISIGIhgWIUTEQATDIoSIGIhgWIQQEQMRDIsQImIggnEvYvv9IzjfxDiP/XlgJsTcCyDEXP/v14UQImIggmERQkQMRDAsQoiIgQiGRQgRMRDBsAghIgYiGBYhRMRABMMihIgYiGBYhBARAxEMixAiYiCCYRFCRAxEMCxCiIiBCMa7iAjPpzG8fY3kF0KIiIEIhkUIETEQwbAIISIGIhgWIUTEQATDIoSIGIhgWIQQEQMRDIsQImIggmERQkQMRDAsQoiIgQiGRQgRMRDBsAghIgYiGBYhRMRABMMihIgYiGBcGJiOHTRZjZAAAAAASUVORK5CYII=","comp/line2.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAECAYAAACOXx+WAAAAG0lEQVQYV2NkoDJgpLJ5DIxtra3/qWko1V0IAJvgApS1libIAAAAAElFTkSuQmCC","view/create.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAkCAYAAAC9itu8AAAAdElEQVQ4T2NkwAIWLFjwH5t4QkICIyM2CXQxmAHka/j///9mXDYxMjL6YtgwBDUg+w8crIT8MBQ0oEca55JvWNPS9xgu4tISzADyNfz///8MnrRkgmHDENSALWng9fRQ0DA40xLecglbWhpqGoZCMUNKUQkANAHAJVkE5XwAAAAASUVORK5CYII=","view/rendertime.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAkCAYAAAC9itu8AAABeUlEQVQ4T+2Uv0tCURSAvyNdcwiXBlsaaomWFgeHlqAtCPsDJHwIiUtDSxERtErtmQ6CjkHo4FpDBQ0tbVFR0BYE0eQvOnFF7T17QlOTd3m88873OD8+rtA9uVzOBIPBlIisAwvd8B1QajQahXQ63bIx6QHFYrEEJHrv7qeqZhzHOfYA+Xw+Yow5B+YHoGwymdxW1QAQEFWNAk8i8uEDuZM3gUcLZIEJYNcNqWrVcZyd7p9t8jLwYIFTYBx47UHlcjmcSCQ+B5JtpU0LnAFj3br7kE+yTalb4BCYczVqoT3AjteW4T73FlgFNgY+1IGQz4hPLGCAI2DGbweu2Auw1Vmcqk4C+8DsEOgZOBCR9/6mVdU2vgIsAdOuIVwANRFpezatuahpTYVSop1m+y6pasm8NQqSvvW61KwslkSHuCRkgvErr0taiUXaal1Sr0siWRO/9HfpF+RN9nfpB/qqmrXrv7mktVhYVm5GLo1cct9LI5e8d84/3UvfAgdlKH0EO7MAAAAASUVORK5CYII=","view/cache.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAkCAYAAABSSLCCAAAAcElEQVQ4T2NcsGDB/4SEBEYGBgYGYtmMxCpENhhsA6mA8f///5tHNTEwkBcQpIYcSD15kUtWigi51vR/jVYdOGUQy2YkViGywWSnvTOkhiAonkY1gZIRqSEHTntkRe4g10RWQIyWe5Bgo2O5R7dkBADztyP+yFzirAAAAABJRU5ErkJggg==","comp/clip_selectBox.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAAAoCAYAAAAIeF9DAAAAsElEQVRoQ+3ZQQ0AMQzEwAuqEgh/Sj2pKObhIrBsrfLonHPu12MMTEGYFg+kIFaPgmA9ClIQzQDG0w0pCGYAw2khBcEMYDgtpCCYAQynhRQEM4DhtJCCYAYwnBZSEMwAhtNCCoIZwHBmd/tTh6IUBIrx/tRbiFWkIFaPFoL1KEhBNAMYTzekIJgBDKeFFAQzgOG0kIJgBjCcFlIQzACG00IKghnAcFpIQTADGE4LwYL8U/BE1dCJ3PsAAAAASUVORK5CYII=","comp/label.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHgAAAASCAYAAACQCxruAAAAmElEQVRoQ+3aMQqAQBBDUef+hx4Zq1mrbPnhWylECHmghVZ397OOqqp97TlugdNzgEXFIaaFuwROt0LmBEay5aXb920+FjIpMJItLy1wvhUyKTCSLS8tcL4VMikwki0vLXC+FTIpMJItLy1wvhUyKTCSLS89wPP1Qeh8M0zy+84gMMbruqjA15OxbtjAu7mPa5bj0fb/A8cLgD4n/wQKNiIAAAAASUVORK5CYII=","comp/clip_tree_arrow.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAQCAYAAAArij59AAAAwUlEQVQoU5WRPRKCMBCFWUt6vYQeB06RUDpoBbFDa7yDwm30FGi9dHnOMiQDBgvT5c3b7+0PRVEUlVV9A3NmzL6T//SRfMz5CgCdtVafjlmzaHAigAbM2tE8YVo1pf0yvABoc9D3wACgBbMKIgD4qqDJsqqlMV8VGL5n/88geCJKlijSMBXFZUNx/CSi9WwX1r7R99thzKKqkxXRbMUWSE2u2sEwHsxHCbrMVSq6N4xRD9HAvJstylEkarhurlqnfQC58YP5+CvQNwAAAABJRU5ErkJggg==","view/bg_panel.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAMUlEQVRYR+3QQREAAAjDMGZk/l2CDD6pgl7SduexGCBAgAABAgQIECBAgAABAgS+BQ4oyStBhXcy5AAAAABJRU5ErkJggg==","view/bg_top.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAMUlEQVRYR+3QQREAAAjDMKZp/rWBDD6pgl7SduexGCBAgAABAgQIECBAgAABAgS+BQ6WyDMhXMLeQgAAAABJRU5ErkJggg==","view/clickselect.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAqCAYAAACDdWrxAAACfElEQVRIS8WVO2iTYRSGn5OWqpMOurg0VRBdVVCsg7GgDjpZECyirl4GEYfSgBlaB5VSpApdxCJIoeKgg7dKC21ALahIiyiKKUjxAiI4qCH1lRP/hPhfAnHpGZPv+c4573nP95ukO/xHmINmtq8RtswsPiipB/gAPAFem5nCbcSWKukIsD84/A2YBh4DL8ysWLkk0qOkDcD5GLF+Ac+Ap35ZHGjAdWB5gtJvgZFYVSWdBHaFwBlg1Mw8K0ngFiAbAm+a2XBij/6HpBbgBrAEmAVeAZ1AFU40QDCWrcBZL0/S4Vq4HtgB7DWzU5XyauDBMhhWz70ryVVdb2ZuhGpI2g1MODjfiMFrxZk3s9WNwJ6snHFxQUlXgXfAPeC5mf2O2Y5oqZLcMceCw1+AseCSSTP7mSiOpM3A7RixfvgYgAd+WUQcSSnfPWBlgtIvgf5YVSVdBA6GQF/mS2bmWcvbERmHJF+payFw0MzO1TWApKXBViwL3h5/Pk4AVTjRAMFY9njJXl6wLccrcD3wAHDUzBwuRw18JtbkbkFJruomM7sf2o4u4Jals/mFRgxeFcfBQm97UyOwM+WMiwums/k3QnMps+HWpuLIRC5TCrcRW2pbT35MRiY4XDRsVmiU5uJQIZfxb0k5Ij229eQPySJ287MLGO8Rd1M0XY6AO3LjzYVSy3fAH+VICL4a6o9VtTWbnzbYGKI+IrtQ6Ns2EFuq/5jOTnWD9f4DikeFvvbqhyg2Yzo3voJSy2fAjfEJMYPRQQ2caAAfC7AW2WkvrzU79dCwnRW4Hjgg6JrrbV9VKbkKw1Csyd2Ca7on1y2krHOub3t16//2n79SarbsH7BKtfejoCjmAAAAAElFTkSuQmCC","view/resize.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAqCAYAAACDdWrxAAABeUlEQVRIS+2UvUpdURCFvxXRKJpIEBURsVAIiiBoaaGCjY2VLyH4MBaCPoWlnQlpI6SxsQmkURQL5eK/6JK57iuRnMPZtxAkuOFUhzWz96xvjcg8tluAT5LOQqJMHba/AgPAD0nOEtruAOaB6Lon6U+ucAoYTLe7Bb5XCm1/BCaAXqAVOAHyOkYn27PA5/TGWmXHxvBeT2i7TVIM4MUp7ZhGPlY3V/pVKUxEjAIjyac74LIAjK70PwCoyfYXYDJwyqDoHtiRdFOfql0naBgIrILF/ZIi1yH6h1XbYXCPpKOq7s34GEX7JB00m445YBzYlPSQ1dF2N7CaWN2W9DNXuJxAj1uGVeuVQtvh32LyuR34DexWCv+CfAXoBzYkHb8Boe1OSRcFkBdfNY18IQiUtFUpTJjNAPEFHVfAaQFyjZ3zNBzbQ8BSWkZViEbk1uIpjXR8AKbT7jwEvpVUqEk6L0pHLN5hSWWxeq7XjI/v6Sgz0vZ7Ov7DdDwCkcb1m86tSukAAAAASUVORK5CYII=","view/clickanalyse.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAqCAYAAACDdWrxAAAC7UlEQVRIS5WWT2hUZxTFfyfGFolkoUVKrHQiEaX+IfgHa54UQzUqpWYhLbQU6ULNwgYXuog6yiiTgK2LgtAu6yqbFkpRBEURQzJEBN200NqKkxoDLnQhFUrizJU7vje8SSbzZr7FwDy+c75z7z3nfU80uMxMDin9JC0zewvYAHwIrAH65wWaWQuwOdy8CVgUHnBd0sUKoJktBbYC24B1QHMVNeck3ZWZrYhtXpUg/3/gS0kzDnT2/cDqpFqBUUnnK5pjZutDgo01Tr0g6XbVrprZypBgO9AUU/EK+ErSyzLQzC5XkTkCfBR7fl/Smeh/qasOlPRp9DAkOgp8H5P9o6SriUAnMrOzgNdswNeSntcL9IYNAQ8kHYuXU5Y6u8ZIupldAO5I+nkOsNb8wjk/ljTZKFCSvMbSMrPSiOpNx9uAz3UP4IbfWSsdrcDH4eZuYHF46LCk47PT8S6wG9gbJmRhlfoPSLrhJvdERJs7E+S73dZKmnagsx8JB50UEHdY3+x0dIUEO2qcekTSr/OlY21I4N5dEJMwA6yX9CKejqkqGn8DemPPb0v6YrZXpyS1xYbsRD3AtZjsk5IuJQKdyMyGAa/ZnbNR0tN6gd6wXwAP8SfV0jGnxki6mV1xyf4ubdTkPue/Jf3TEJCMNZFRMQLtyNwqvaTrSkdHZry1MFM8bLLPgY5U8/SyeYHvncotb5b1A/t8c2QGg3sT2WBLBbD95PiGogr9Ej0Gbap8r4ZJ5kR+MPhW7WdGd5npEFaa15IE+YWW5uklf2S6/1N7OnfasG+Ad5KiAfyVzwYfVDQnlc71YTaA8Ntrvtq/y2eDgapdTZ0a60UMhjdvmcCgWDClJge7npSBqfRYYY5M6U/M/NqO1mQ+G7xf4VUH5rNBOXtviLQfzH0afizop0fZroOJQCdKpcfyUKrZFhTpfDgU/F4nMNcH9gPwLJ8Nls3xarUaI+mp9NhTg5GJbPBZQyb3OReayP17rutmHPga1PpCOk+zrlEAAAAASUVORK5CYII=","view/res.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAoCAYAAAD6xArmAAADwUlEQVRIS+3WT2gcdRQH8O/b2SwNC7l4MAEPvbilUkoPOUmLjSDrZn4hxYKH/kGwyB4tQogiu/N+GymyoWguhVBQKKkHQTHsW9fUQwqKp4AgtMXkInhILl4CkoTdmSe/6XZp2pntLli8uMedt9/3mze/33yW8Jw+9Jxy0TeYmV8FcFVVTxPRiwA6AP5U1TvZbHapUqn8nrawxGBVJWvtNVWdJ6K05h1V/dhaW08KT/wRM1sAVQCRqn5JRLdyudw9Iora7faJKIrKqnrBNSWiahAEC0+GHwpm5utEdD+KopsuBMDbzPxt0oqstRdV9Za7lslkzlar1Z8erzsUHATBJhG93C34fmJi4ly5XG6nzTEIgjoRzanqkrX2amowM98F8Fq3wK34PWb+Ii14cXExv7e3V6hWq78+axQrANwt/kVEl5j5h0G2IzMfUdWCtfa3R/VPzvhTAG8AOM/MfwwYehTANwB+ZOYPE4ODIDhJRJvMvD9IqLW2GEXRbSJ6AcBtZr6UGPzoS2Y+lc/nt+bm5v5Oa2CtvaKqywC8bs06M7+eGszMn7nTBqDOzPNpwcvLyyPb29vfAZh2Naq6Za0tpAbXarUzURS53eGKL1trv0oKZ+a3AHytqplMJlOOoui4tfaDvqOw1lZUtabubBOtqOqN0dHRB/v7++62XwHwDoB33dkAUGPmoO92e/yitXZeVT8BkE1acbdpPQiCj4hIBw52hQsLC8c6nc77AN4E8FK3yQ4R/Qzgc2b+Je0ZDPU+fjiZp1eXFD5U8CB7u+/DGybgXxnFMA3/m1GISGwegNMAeuYBuON53lKpVBrePBG5RkTuSPc1b2ZmZnDzRKRnHoDYvIODg3u5XM69/E8AKAO40G1aNcb0N6/ZbF5X1fsAbjpInXnGmETzGo3GRdew+0DPGmPSzRORTQA988bHx89NTk6mmtdoNGLziGjJ9/1085rN5l1VPWSeMSbVvLW1tXwYhoXp6en+5olIbB6A2Dzf9wcyb319/cju7m5hdnY22TwRic3zPO98qVQayLxWq3U0DMPYPGNMsnmrq6snx8bGNqempgYyT0SKzjoAsXnGmP7mNZvNU9lsdqtYLKaaJyJXABwyzxiTbp6IxOYRUd33/VTzNjY2RnZ2dnrmAdgyxqSbJyJnAMTmEdFl3/cTzROR2DzHk6qWiei4Maa/eSJScZY99FRXPM+7MTIy8iAMQ6/dbsfmEVHPPGPM4OaJiBtDqnmuqfuL4Pv+8Oa1Wq1jYRg+ZR6A2DxjzP/mPRupfwAf56Q4urCh6QAAAABJRU5ErkJggg==","view/tab_panel.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAABICAYAAADyMAW8AAAAcUlEQVRYR+3WsQ3AMAhE0TCMeyTvP1tShRQo7lxYegxA8fUPLuac97VhwuKXKhTlFxRQ9GPDClawYvGEDwxIZu7pFRZXr4ACinY1ghWsYMX/NxWQr22edyvGGHt6hcV1NqGAon8QVrCCFYteISDnBuQB3xJuQcDkEngAAAAASUVORK5CYII=","view/btn_close.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAqCAYAAACz+XvQAAACmUlEQVRIS7WWS0/bUBCFz7mJmyZxENm06mNVoVZC7LqGn9FNqy55/BSWSEhs2/4uuqFVoA150JLKJvGdaiIH2TfXNoKQpeP5PHPO3GMTK/5xxTwsAUWkBeBZ+qAByb/Zh4pIA8CL9NqY5Dj7vw9YA/ABwDsAfwB8ITnUIhF5CuATgNcAfgH4RnJSCkwLl6AA/lXBtLZQQxFxoTr6q6LOFl2WmuJAtcY7ZuXIixsczfRyTlPfhpSN7BpwBeBtFdQLFJE2gI8AXi7GBBBl3Fdnv5L87XbpWxuFfQbw3NXM0dQLLdrDIH3ylGTiLLYB8CS9lpCc3tmU+xzL1Z9lEXl/n06KavjowCiK1uM4fqMd1Ov1s3a7fZntZjabtSeTiQYHgiC4aLVavZwpbofT6TQYDAaH1tod3bMwDHc7nc5PLZrNZmG/3z8WkS1jzGm32z1oNBqjUqD+6YM2m81xFWyeNkUaulAAlyKyWdTZbdqUmZKFakEVrLRDV7P5zY6m3rQp6tA1AMC5tXY7he51Op0fdwbGcdwdDodHWc2MMdcL9wGM1tbW9sMw/L6UNm6HChuNRifW2g1XM0dTL3TJZS1KkkTDFbVaLQqCIJcm6k0URRpxuvg39Xo9rtzDh5zt1Z/lXq+32rR5dKC1dt0YM08bAGd65BxN1ZB52ojIBcl82rgdWmsDkocAdgDoW22X5DxtSIZJkhyT3AJwCuCAZD5tfCP7oMaYcRVs/tAiDT1QHX2zqLPbtCkzxYFqjXfM3GKXAR3NtC6nqTccioAeA84BbCuU5B4Af9r4gCLSBXCU1UxErjPuj0Rk3xiznDYuMIWdANhwNXM09UKXXNai9LtQ9y4yxuS/XUijr9L0lXBDMp82j370HhJdWvsftiHJYFPSIqEAAAAASUVORK5CYII=","comp/combobox.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFsAAABCCAYAAAA476rKAAACfElEQVR4Xu3bMYsTURQF4PMmExgIWkgEU5hskyJYxGYKY5VS7NzCylL8Bftj3NbKQjuxTBWbaUwhKdIYLCJotlACA5m8kQTZZZkkeN9dbuNJOXPPu/DN5ZHkMa7dbpfgx0TAEdvEedeE2HbWxDa0JjaxLQUMe3HPJrahQECrNE3RarUOJheLBbIsq9znZAdgJ0mC4XCIer1eSa/Xa4xGI+R5TuwA272RTqeDfr9fuTeZTDCfz/dmONkK/cFggGazebnCcrnEeDw+uCKxFdiNRmO3nURRBO/9bvtYrVbEVpgejXa7XfR6PUynU8xms6O1nGzlU3DO7fbu7V5dlsf/0yO2ElsSJ7ZES1lLbCWgJE5siZaylthKQEmc2BItZS2xlYCSOLElWspaYisBJXFiS7SUtcRWAkrixJZoKWuJrQSUxIkt0VLWElsJKIkTW6L1t5an6wFooRGerofKBeZ4uh4IFxrj6XqoXECOp+sBaJoIT9c1esIsT9eFYFbl/J5tJc13agyliU1sWwHDbtyziW0oYNiKk22JfXJ6xnfXjcDdFttnb43a/b9tovQ5iG30/IltBL1tQ2xiGwoYtuJkE9tQILBV/ugl4rh2MF1sPJJP59fuc7IDsTe37mHz8Bki+MoKHhFqn9+j9vs7sQN9K7G89xRx837levHzG5Lph8p1TrZK3iF//ApxdLVI4YFk/BpA9Uc5sVXYwObOCfyDJ3AoUcIh+vIRtYuve1clthJ7G8/7p4hv30Xx6weSybuDKxL7BrARxcjTF0iyN4AviH0Tpto1ONlaQUGe2AIsbSmxtYKCPLEFWNpSYmsFBXliC7C0pZfY2oWY/zeBP8uaLni/AFTVAAAAAElFTkSuQmCC","comp/textinput.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFsAAAAWCAYAAACv8OArAAAAZElEQVRYR+3UQQkAMAwEwcZI/LtsoSL2NTGwMByZ3b3HJQIDO3H+EdidNezQGjbsUiBs+dmwQ4EwZdmwQ4EwZdmwQ4EwZdmwQ4EwZdmwQ4EwZdmwQ4EwZdmwQ4EwZdmwQ4Ew9QBe0R29X9x+dwAAAABJRU5ErkJggg==","comp/vscroll.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABEAAAAhCAYAAAA/F0BXAAAAOklEQVRIS2N8+OzVf2YWFgYmJiYGcgHjqCEYQTcaJpipaTRMRsOEmDJmNJ2MppPRdEJMCIymE2JCCQAYonwDuu2VMAAAAABJRU5ErkJggg==","comp/vscroll$down.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABEAAAAzCAYAAABxCePHAAAC/klEQVRIS+2WS0wTURSG/zszBcrLFVvjio0LiAqRRDAmGpRodFE1MQQQkOKGqBujRo3ExLjB4MaKgDzUaGQhvoJGYwAjYoioERcuDGxYEIwPkBY6nWvObXuLnXZaSklYOIu5M/fxzZn/nvPPsInJKa5qGhRFQaIH+w8xSbcymtTd+gBFYXAdyjM9sf7ORxgGR0t5/j9jpkhq2t5B0xQwBrgqNsnJ9V0j4BzQdQNtNYXWkKz0NDiaXkBTFTCFoaWmCHVtQ+AGh+4z0HNiO2bmPNYQGiXQvkuPoaqqiIgi8Pl8eHBqtwlA86MKS6Cy8z1gjIFzjqcXHBEBlpBgRNuOd+HVlYqogJiQIChcg/BtW5k8SaSSkxPJ5PRPTttHfkI7kcghIpn8NYfp33NLXp+TnYG1OWvA3ox9499nPSjdkCsgHJxOIjc43VMrugL9dEUD4Oj/PA4CsUfDX/jOjbmisHTDCCzi4t4QgLDrQF+qTYOmqhgYGw9BvLpv0ZNjQwieaU9b7ZCDriFhSt3VBSZNartHA6aUJ7SK+jqO5n5pSp1HiqSw1e3Di0ypwBpiU1XsudwnTanraDEqrg2GmZLbGkJh2jQVZY29JlPqPe03JX/uxLE7Nk3DjjP3pCn1Ne7HrNsjdYoLQsmWYtNQ3NCBgeZKzLrn/foEoogbQgvSUmz4454P7VQikGhpHzGSZdVOUqqYTGli6gemZ9yJ+0lSTalk/TrxtQOYaBnESbTinokev4UG+p+9/xoyJQKQn8x7vf7JjEFZ1FJBBvuC12RINIdAwtkIQuksnxgHhKBUZ6scQtLSNyiWJpav47z9STjbjfJ8k5iVN0eEs911bhZjUTWpbR+RztZ6uFBERNCq1rfS2e43lFhDsjPscDS9lM7W4dyCquuvpbM9PFkq0iHm7mSl2yP+bj05uxdeXZe5FHOL6Xdr17nQ79bziwew4NXFqwUTMiaEtKBPwtZjnRi8WgXPglfqsyQITc60pwpAeNpH1GRZtRM0pWVVcTJM6S+dYaRsIf025wAAAABJRU5ErkJggg==","comp/vscroll$bar.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABEAAAA/CAYAAAAGyyO8AAABYElEQVRYR+2Wv0sDMRTH30tarCg6dRWnQnFT6OiqoP+tk+Cig+AiHayDiNSlg+jgD47K1US+Lwm5s4o/mkElN1xy73KfcF/efTi+Ht3Y0X1Btw8FffdoLy3QSnuZ+HhwZe+exrS13hGGJYsTWSszN0rJ1zHDDbJ0eDYkgHjv5Nxub3TIGEsTY/xDVq6NAN7MfW2u2aCG1nQ0GEZIOXmp7Pw5BPDF+VaGIGQfbM6k0ng5kw8/wF/eJzP5JInZkjg2CSS8zk6vCys7Wb8r5qqsncAP+pdR1Lu9rvgVT4uYg+3F+PCtAzjzu/taKdKKBSS2/wkEMBg/Q+rB50zqzZb7ZPoD/GeZ1HySxGxJHJsEEl5nc22VmCFalpFJTjLKNUtFxlDfP72IogYAP8PPZekWM5OqjErFWpjjbxprABJRA/JYjOOOX4Bgo6bWGYKsfMg5k+lmy5n8uUxm8kkSs6Vw7Cstibc9Fv5vWQAAAABJRU5ErkJggg==","comp/vscroll$up.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABEAAAAzCAYAAABxCePHAAADF0lEQVRIS92WTUhUURTHz31vPv0KKmkXrtxUGNomkCANLdCUpEatJFuIClIEFRl9kGH0BYWQElLpotGKEJXAtKQooYUFpi1axLQZMCyyZJqv926cM2/uTM288emoUHfx3v16v3fuuef+72Hume/c7/cBAwaLKWaLBZjLPc0Zk0CSJGBs4SDOObDP7i9ckuXkIbLJRJDFFrJk2SGNvZNwy7ExoZEJLWnqfQ+4SlUFaHNs0gXpQhq6x0GWGe0Y7oCicGivyYsLigup7XgFJlkCJjFwNm2HqrZR4CqHoKLC3fr8GFAMpPLqEJhMoZjpay6Bnx4vpKfYoLx1kCwKBlXoOV78BygGsudCH1nwtNVBgHBBUFFzL1n0+Gx5YghOxhINiAbFG1uZODESxf+bJShKrulv8HUusp1G/IBz1qTZIGvdamBjU584Aopzs+lbDhwfFFgc2/imLq0fazgAHF5MumBtuh3YwJsPfGdeNqgY1qqqfcSprRLgr7rWZzWbwCTL8HLKFYEEgkrUn+eHIDzNbltBSG33O+jcnxNZmrYcw5Yc7hoXotRenRPyz0IgBzrGYkTp9qEtxiEV10eEKD08Wgh7bzwTonSvIV/soK5jd53rE6I0eGY3/PL5wWYxQ+nFgShRKqK6LqTwhJNEafRKNQHCcWK3WmDHqR5NlMoSQzAWUV+9vkBMsKXYLCSbs3Oe+SGqqupGrIL3h3YclifYkjo7yZ7izIzUUGrhnvXAzA+PURkR8xCwPnMVsCUVpW0bsiCUKOH9S0980JvaLJSQUTal9Q+9/RgRJQSgnvgCgdBkxkCKektSpC9cR0HCOQgiZUMI3njijwYg+COzLP9rkLr7E3Dn4Gbhp7BPDC+n0TkhlK2zJpccuSBIfVdsutVdt9U4pLbjtVC2B0cKYN/N50LZHh0rFGGguztV14aFsvWfLiVhSrVboaSlXyjbk/NlBNKFVLT0k7INX3KAx+sXfkBlKzjpJItGLlcmhmSkptAB83h9MTuCICxBRUkMwUmY5+uFPY7LmJ7GW05SZycsSos9xUsmSr8BfgGeWI6+BgEAAAAASUVORK5CYII=","comp/button.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAE0AAABFCAYAAAAPWmvdAAABA0lEQVR4Xu3ZMRGDUBRFwXwfKSgxFhfRgAbUxEakkCEO3qmX+p9m5w7NW9v7cz18I4EFbeT1fwxtbgYtmEGDVgRC458GLQiExNKgBYGQWBq0IBASS4MWBEJiadCCQEgsDVoQCImlQQsCIbE0aEEgJJZW0Pbj64Q3hFvQhmL3CQ8atLlAKCwNWhAIiaVBCwIhsTRoQSAklgYtCITE0qAFgZBYGrQgEBJLgxYEQmJp0IJASCwNWhAIiaUVtOfrdMIbwi1oQ7H7hAcN2lwgFJYGLQiExNKgBYGQWBq0IBASS4MWBEJiadCCQEgsDVoQCImlQQsCIbE0aEEgJJYGLQiExNIC2g/MxaMp6CSauwAAAABJRU5ErkJggg==","view/bg_tool.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAMklEQVRYR+3QQREAAAjDMCYG/DsEGXxSBb2ke7YeiwECBAgQIECAAAECBAgQIEDgW+AAAeIuAVS/mngAAAAASUVORK5CYII=","comp/minBtn.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAA8CAYAAAB1odqiAAAArUlEQVRYR+3X0QmAMAwE0GQN19B9nM193CmiIH7ZXOAoRc/fpjl8jVDdOj/eOc8USBcXqUjLAtDQRMSOdHb3JatTYCZUXodIy10bGxTI1Lx6/YA0Ima6W2tKFcjmdpGKtCow7NBAdxozy+804Gfx/cDqbLzWDzs0ekNY4B9nOMEehMKTVIEEyKeFSKmc18+MppRtipJuYPCa1SkwEyqvo6Tlxm8bFEijvBt9n/QA/fOPydLHcUIAAAAASUVORK5CYII=","view/zoom_out.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAoCAYAAAD6xArmAAACy0lEQVRIS92WQU8TQRTH/28oQkj0CL0QOMAJQkz4DkS6A+GA+A00Hrhj0uy8NiTwEdBPAOrB0Fnq3U8g6gkOSjxUjpCQCu08M5u2qaVAt7YmOqfNZPa3b9/+Z35L6NOgPnHx98Gbm5sTlUplA0AGQBpACcBBKpXazmaz3+5607YVM/MjEXlNRPdbASJyTkRrzPz+Nvg1MDNPAvgI4AGA10qpvHPuSCk17ZwLAazV4HPM/PUmeDvwSwBPAbxl5sf+RmYWZo7XMvOehwPYYebnScAnAMaVUrNhGH5pBefz+Rnn3GcAJ8w8kQT8E8A9AEMA/HXrqM9fMrO/bjvataJvFdd7/IaZfS9/67ExZpeIngB4xczPklQ8KSKHPmoispdKpXKjo6PHp6enU5VKxXhoV6moVXhnjpVS5wDOwjD81K7qG7e033lXV1cviMjvvDEAP0TkYHBwcKtarT4UkXcALolo1RhTaIV3dVYYY9aIyOfZDw9fMcYUm+FdgWvtYgCmBisrpRbCMPxQh3cNbgM3zJzvCdhDcrncuojMA8gy8/eegTvO8U0Lk87/UY9ve9h/BI6iyJ+1GyLScB4RHQDYDoKgO+dFURSfFQCuOQ9A7LwgCJI5r1gsTlar1YbznHP5crl8NDw8PK2Uip3n4QMDA3OLi4udO89a23Ce1jp2nrVWtNbxh7bWxs4jop0gCDp3XhRFJyIy7pybXV5ejp3XDN7f359RSsXO01p37jxrbey8i4uLoZGRkWvOa5q/1Fp37rx+VtxwntY6dl5zK6Io2hWR2Hla686dV0vFoY+aP8xFJJdOp49LpdIUEZkaNHkqfIWd5JiIzkXkLAiCZM7zO09EYueJyBgRxc4joi0ADeeJyOrS0lJvnBdFkf8xbDhPKbWSyWR647xCocC+53XnAVjQWvfGeS1wo7XunfOstesA5pVS2Uwm8w877xeHf444cscwYAAAAABJRU5ErkJggg==","view/refresh2.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAA/CAYAAAAPIIPGAAAEIElEQVRYR+2XTUhjVxTH/+fGpBrGT/xoBQdFFMMQLNLNbLooLbaFzqKMUhCSZwsuhGG6KCNd6DuRLgqzmGVxUd8LUrpoYWZTKO1yNi2F1oVtceEHflSLqNEav8bklPuqgsl75sUPSsucTQj33v895+R/7y+XcA1B16CJ/6GoYRiDItKfzWZjExMTv5/XtoLlx2Kxm0qp1wH0AHgTwC4RfWRZ1mdewp6ig4ODN9Lp9CMieh+AchH41Lbtj92EXUUHBgaCh4eH3wJ4zSObGSLqtSzrZ9+ihmF8CODR8YIflFL3MplMNxF9IiJWIBC4Pz4+/ldR5RuG8QuAlwGsAWi3bTsVj8dvAWhOJpPfFPK2a/mGYewDeAHAV7Zt9+aK9PX1VYRCoVcApNxa4CX6J4B6AE9t2341V9QwjO8AvAFg27btytxxL9EvAbynJxNRj2VZX58sjMfjd4joyT9D9NiyrHf9iup+/gggBCALQPfxVwARAO8cWywD4LZt2z/5EtWT+vv774rIBIBSlx/mmT5dyWTyC9+WOpkYi8XalVIPRKQbwItEpHv9PRE9tCzrt6IsVcgyhcYLnv1CAkWXfxFBxzEXXXipq+8imz7P9CJdO3+N754y86A+vYFAIDY8PHw58DHzTQB54DNNs3jwMfONY6R4go+Z/YNvbGwsuLKyci74APQys3/wMfMZ8InIPaVUt4g44AuHw/eHhoaKAx8znwEfM6dGR0dviUizaZoXA59pmvtE5ICPmfPAx8wVABzwubXA1VLM7IBPRJ4mEok88DHzKfiY2R/4mPkUfCLSk0gkTsHHzHdE5Immnog8TiQS/sDHzK7gE5EIEZ2CTyl1e2RkxD/4TNO8S0Su4BORZ0qpftM0iwefaZrtAB4QkQM+AA74ADxk5ufgc78CfV99xdy61yMajUbfAvA5gJeKycZj7gqADygajf5xRYIn+6xoUbmCDM9I/LuidXV1qK2txdzcHPb39ZPAOwpmGgqFUFFRgerqauczm81iaWkJa2v64eLhU6+eKqXQ1NTkZOcWq6urWF5edh1zzZSI0NbWhvLyctdFBwcHmJ2dxe7urn/R+vp6J0sd6XQaCwsLqKysRGNjI9bX17G4uIhMRr8jiig/EokgHA7j6OgIU1NTjkBZWRl0f7e2tgo60LX8rq4u/UjC5uamU2ZuBAIBZ1O9mVsLXEU7OztRUlKCnZ0dTE9P54nqfmsnaNHJycm8cVfRlpYW1NTUOJN1pjrjk6iqqkJra6vzNZVKYWZmxp+oLq2jo8NpgQ7dx729PZSWlkKL6hARpwr9Q+aGp/m12Zubm6H9mhtacH5+HhsbG/4tdTJTZ9bQ0OD0LxgMOm7Y3t6GNv55R7XgMS3oH5cJ/y3Rq775V3X5bx8zSv8DuWzoa2vgb5tumbHGlerDAAAAAElFTkSuQmCC","view/settings2.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAA/CAYAAAAPIIPGAAAD2ElEQVRYR+1Xz08bRxT+ZjAGYQoH4rS9IBJBQJEsUC8VKNdQtamUE0fLayqhKHeOaGbFkT8gFVLZtXzk1qqKSs4NUg8RXCIQVoOQ2jRFHHCwBRj2VW+zttY/14BXVaPOyR7NfPN9771536xACEOEgImPDHRhYaHv/Pz8kEMVjUbjq6urxVZhayo/lUo9chzndTabfWMYxkMAGx7QrG3bL5LJ5B0p5f1MJvNz7QENQdPp9LdE9CMAZrcHYAaoxJ8AvARwD8AtAI9t2/7JD9wQdH5+/q7jOLzx04DqeCelnFlbW/s9EJQXGIbxq8eQ//4mhPieiJjlEwBf8qQQYtOyLFZRNeqYJpPJWCQSeUBEzz3JrwqFwvT6+vo575ybm4vGYrFNAF8AICnlbKlU2sxms4Uych2oYRh5AJ9UFggxb1mW5aeSTqfTRLTmm3tv2/bAVUCfWpb1zA9qGAaHwD/XGjQU+WVGHU0Ug4ZSUjXFnwMwXVP8nP1RAPG2i5/Z+q9pKpWaFUL8wvNE9FUmk9m48jWtLWavofztNZTb124oN2neH1mTvmoo/pcfHDGtdZ9nLbw4rrW+nvGZpvlISvl6aWnpjWmaD4nINT4hxKxS6sXy8vIdx3HuK6XaMz6ttWt8QohDInKNTwjhJtWzlJdCiHtEdEtK+VgpFWx8Wuu7RMQbWxofEb0TQsxordszPq11Q+MjoidCCNf4AGxqrYONb2VlJVYsFh84jvPck/yKW5/W2jU+rXWUwdj4OBQcYzbCxcXF5sanlMoLIaqMTylVZXymaVYZHxG9N02zufE1AH2qlKoyPqUUh6AyFwgaivzyVehoorxkdL6k/MUPIEdE0/7i5zcUGx8Rxdsufmbrv6ZKqSrjM01z48rXtLbFeA3FNT4At6/dUIJ7V/MV/6HOn0gkvgbwA4DPbyLZ2/sWwHcikUj82SHAMqe3DMrv+I6Ofw9USonJyUlXzfb2NhzHaamsKdPBwUGcnp7i7OwMAwMDGBsbc4H29vaQz+fR09OD3t5eHB8f1x3QEJQBR0dHcXFx4QL39/dXbTw5OXEBI5EIcrlcHXBDUGYxPj6O7u7uljJLpRJ2d3ddNf7RVD6DlhkWCgUcHrof0YjH44jFYu5vnt/Z2QmWz0lhsHIMi8Wiu/HDF6T7mMDExAT6+vjR8iHGHA5/8uqYTk1Noaurq3L6/v4+jo6OqtgMDQ1hZGSkMnd5eYmtra3K/0DQg4ODivTyLg7B8PBw+6ChyC8f39FEMWgoJRVK8TPbjl/T2mruWEO5SYMNo/P/xaDfeB712U3YeXv/ALDwD+TbY8Dbd9BBAAAAAElFTkSuQmCC","view/setting.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAkCAYAAAC9itu8AAACAklEQVQ4T5XUS4iOcRTH8c9xCeVeiiiXhSJRJFIusRO2lEtZKFlgY6GxZDUrk2TFwii22JJLlERRLKRQJmXBkHIb8+hM/2d6ememed93957n93v+55zf9/mHll9VVTNxopTPR8T3piTyT1VVs7AL9zEd+4roOn5gK25HxLfacAjL8A8TWw6ta28jorc2LMLhIu7Ds2Jah4XlRVci4mNUVTUDadiLFF/G5GL4iyOYjxsYMnQ1BDfxujk0VmJPecFAO4bV2Nk05Bqzz3Za6ut86JJDx2vN4Hbj3hjBbcOt4eCaQZXUj5daT4pGoNFimI1zpdYVEf2jsTQX+5MX5NaOFdFFJHzJ2bWI+FJv6SRWYACTWliqa68ioqc2LMWpwtJ7PCymzVhSWOqOiHeZdPachqNIcXdBJV/2B6cLa5cwZLjQYOkqnuNsOeEM1uJgE43xDBsaH9QQfJ21VNBoHfpBaWHLiKGLoeO1ZnAHkpcxgkvOeoeDa0FjTnNLEfF1PJamYkcR3YmIX6OxNA35Kb7BFKwvoqf4jeV4GRE/azQ2Yh4GMaGFpbr2OSKe1Ibse1MRJ84fimkxMqc0Pc55MrjsOYvZRoofNW6/vPUSwEQ+2+tPQ14h9fX4Ap+aQ2MB1pQTB9sx5K24qmnorKWCRvtDF0PHa+0suBaW0ry91O5mus3n/wHmQwUTIH+tVgAAAABJRU5ErkJggg==","view/refresh.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAkCAYAAAC9itu8AAACiElEQVQ4T4WVS4iPYRTGf4/7/X6XcivXcktEUhTKQkqyYCOKjWyUhezFThbIlJ3LYrIRkoWGUhhhTMko4zJujYRpxgxHj9737/P3zfh239c57/uc5/zO+UQ3T0QsBRYCtZI+5jBVx0fEcGA6MA+YCXQCVyXddWwlISL6ARuARcXvhQPrJF3/nRARvYHtwLRuFLYCFyW15ITl6XTHvwIuJzlrgHrgiqSOiqSI2ANMAL4BxyW1R8RYYKSkp8Vb8w2HgD7AE0kXSozoD0wC2nPCAWAw0CyppiRhBzAD6MgJW4D5KdDFNeSkiJgFbEvONeYE698N2K0ArPsDMAZwguN+AmeKfZgLbAb6llj7A7gk6eFfnY6I0cDKpNc1tQFNwG1JvvFPp0sKXQ2sAGokveuJpVHAHGBJ4ul76vLNapbs9dYk6R8oU7driyztA2Z3w5L1n5LUnBPWptMd/xw4l+RscsHAeeNSZMloTAG+AIcltUXERPdB0qMylk4klu5LOlni2ABgqm3Oko4BQ4Fnko6WJOxPzlXg2wV4hv2czuOYhmsBsDf1rD7fYP0HkyyzZN0twHjACZmlI0WWFgM7e2DprKQ71SyNA9YDBnFYcq0RuOZ5/h9LdsVS6yV97YmlgYDn2X3wjUa7QdKLapY8015ePrWMJVtembhewLI0YWU4eZvck/Q525pXo4M/AY+TLMP40u+SuooseVjsitm/IakzItz5QcXhKSZsBCyrpdjlwuZwfSO8mLOkdYAHqFXSrRKWvErtXFdOcJcnp0AX96ZwuldQ5uxtTrD+VUmWWXqfujwk8eQ4f68rsuRG+d/gZVb9eIk9kPS6miXvIv91rNc12TXPc5MkTyO/AFhJCujHqZlCAAAAAElFTkSuQmCC","comp/checkbox.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAqCAYAAACDdWrxAAABbUlEQVRIS+2TP0gCURzHv88GRYsrExyOo5cEQVEtWdQQpE4N0R+HxmirXXCrKYigqMF2IRqCQByaLJqNIFpyUIzu4rIwpExODy88ITD/cJ603Rsf7/OGz+/zI5TSEAE20cZRgBMySKni8XrbwICrWAwG2ESZIadFS53J0R25brCyHZNud1vbcRuPV7fDAOu9GXJatNSZHN2R6wb/PfJCrxOZCR8Gbk6hWc6Xg8PrcgBETMIVPdIGSjYG/NoOSHcfkLqDK3qsBSRIrgRAuBF1quUPEUPhYGMwb2dhywrqQ3F0Dt++jSokJMBdhmDO52pB2WwFP7OK8rgH9os99IgppNf3QWwMFP4RNHKALrmoflIj53l6CaWpRcBkgiIkYHl6gDTrh5JJg57v/kJ1YOUixw7jfWELxMpAKUmAXAR7tg3LZ7am3IbjKDBOvPiDqkUmcoj+9H1d7k3nmHdweBubB70ON9wRzQH8pVVQb+Q/zZAEfpwDCU4AAAAASUVORK5CYII=","comp/btn_close.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAA8CAYAAAB1odqiAAAE6UlEQVRYR+3Y30+bVRgH8G/T0t/0Jy0USrIsC0E2GMKAVYcRpmSbEzIGZhqyxCxeceGVF3pjvJl/wYyJWZYY4hZBFnBuBBUW2ewYAxlsSMiyLKH8aEt/0vZtSxvM+562We15C6jlxr53zfO8z+ec5z2nOTmCk598tY19fAQs+Hlvz76QX1zpAwd+1NMNXzieU1QtFeKbvn4CXvqgC95wLKegRirC1e8GCPjh+53wMnRwedkG54aLG4yhSI/ycnPawHaKJ5M1MhGuXR8k4MX3OnjBx3NPcLX3DPfepSu3odfrYC4r5X7bVlbhcrnT4kdrjlA7xYLffj9EwJ6udnhCW9TEJ08XUgWTqE6n5XLdbk9G7MjhKmodrbwAfQPDBLxw7h1ecH3dDq/Xm1GYrZqceXIgGo0GJSXFvOCNmz8RsLv9NNyhKO+icTqc8Pl8acDLyWyr1Wo1DEYDbw2dXIz+4TsE7DzbBneQH2SruDZc8Pv9GSiLqVQq6Iv0WVe5TiHG4K1RAnaceguuYCTrCx63G4FAgAoqlUpodbqs7+sVEgyN/ELAs20t2Ajwgz6vF6FgMGtL5QoF1BoNL1qklODW6DgBT518gxcM+P1gQqFdLRqZXA6lSkVFWXDk198I2NZyAs7NMDXR7XRmYBKZjMuNMEzmljHQF46hUIrR8XsEbG228IJ+T/rGFkskkMoVHBgOBRGNRNI2vkpL/5YsODZhJeCbJ47D4WeoM4wyDLai5PsWiCUQJ2aXTN4pnswzqmS4e+8BAZstDbxg1qW3hyALTlinCPh6Uz1C0Rg2w/S/tz3UpaYWSgsgF4twf3IagvOXr297PR5YGuv+bd2s71sfzkCj1ULQe+3u9vraGlg0lw+LlZhMEIzUNu7vmYYFmz/9LJeTS9We+PIymaGl6wLizo2cokJDEawDNxLg+W7EHTkGjUWw/tBPwOMdnYg7nNQZep4/Q2B9jYspS0zQHjyUlrdTPJksNBrwYGiQgE3vtiNup4O2SSuOzk5y7z2ubYKyuBiaAwe5394XzxGw29Pi5iYLdeDCYgMmfxxOgKfPIG53UBNt049SBVNo4g864HRmxMz1x3hAIybv3CZg49ttiK/bqYneFRuCLldGYTY5OfPkQBR6PTRl6cfIVEtLivHw51ECNrS2Ir62zrtKfWtrCHo8acDLyWyrFVot1CYTbw2hqQRTY2MJsLk5K8hW8TkcCPp8GSiHqdVQG41ZtxUHTkwQ8NhrFsRXyUrke3wuF0L+TSooVxVCrc9+iBKWmvDodysB65saEFtZ5cX8Hi+YQDBrS2VKBVRa/jONqKwU05NTBKyrexWxlRUquOnfBBNidrVoZHIZClWF1DqisjLMzPxBwNraasRsdHDD6c7ApDIJVzTMRDJiRQb6EUNkLsPs7DwBa6qrELPZqCNzu/1pG1siEUOhkHK5wWAYkUg0La7T0U9tIrMZc/MLBKw+XImtZTrIMBFEouQkIBEXQJaYXXJ0O8WTeQXlZsw/XSRg1SsVvGDWpbuHIAsu/LlEwMrKCsQDAcQ93j2U2H2qUKuBUKnE4uISBF9f/Hj7wJwVhyordl/hH2Q+W1zCixoLOdNUj98Ei+byYbH5lnPkmJhL6O+18/c0/1m38/c0qVbm72nYVuTvadgu5O9pUtsif0+Tv6dhF8P/657mLz4NfQVdLmZiAAAAAElFTkSuQmCC","comp/textarea.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFsAAAAXCAYAAABkrDOOAAAA4klEQVRoQ+3ZvQrCMBiF4e9rU+sPOErRqxDRe/KG9Fp0EAc3VzuIg1ML4uDmlkaaquDenMUTyJoDD+8W3ZyKlaoshSeogHOy1m1euOmoI1EU+auqQUf/8XHnnBzLp3jsWdaVJEnEGEPsADXU2Ifro8Gej/uSpqnHruvmaVegqirZX+4N9mIy8Nh13XEct7vE18RaK7vzjdiIFoiNUH5vEJvYQAHgFMsmNlAAOMWyiQ0UAE6xbGIDBYBTLJvYQAHgFMsmNlAAOMWyiQ0UAE79lM2fmrDy358a/q6Hhf68ng175QueKdEXxUGVVwAAAABJRU5ErkJggg==","view/re.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAoCAYAAAD6xArmAAACpklEQVRIS+WWPUgcQRiG3+8O70QEUwTB1EJgsTGdRRrhOMjOtEtSRbBIBMFKuCtkZleES2uRQoWQJggKKW7Of7GyTRvBLkVShhS73OXMfWGOU85Es7uXs0m2XeZh+OZ95xnCHX10R1ykBvu+P5fP59+VSqVvf9pUarBS6jWAR0Q0rbWOboP3BCaiOQAHAKTW+vtN8L8BW96W4zjPPM/78Ss8FlypVEYajYbHzALAJIAHALJdoDWl1Esi4m74rWBmpiAI5pk5AHAvJj0VrXU5Fmyhvu+/AfA8YRxfaa1LsWDf92eZeSMJlJnXtdYvEo1Ca30G4GEH/ImI1lqt1nE+nz9vNBrLnVTY39uO4zxNdHgrKytjzWbzs13FzKfDw8PFxcXF8HL3Nscd8BEAN3HcgiCYbLVaHyyIiGaUUm+7R9JzQZRSo0T0BUCGmRd831/tBttK53K5zXK5/DV1pZVSG0Q0C2BXa/0kySEmKojWeoiZD4hoKpvNTiwtLX1MC7+1IFrrQWZeJaJxx3EKN5186lF0LwiC4DEz31dKvU+z69i7Ig0stnm9wv4zsDGm7bxCodBf5xlj2s5j5mkpZf+c1wHPEdFBGIbS87z+OO8S3EnAVhRFvTnv8PBwpF6ve0QkiGiSmX9znuu66ZxXq9XmAcQ6j5krUspkzqvVaqmcJ4SId54xxl6ZiZwHYN113WTOq1arZ0R05TwAa5lM5rher5/ncrllAPYl1HZeFEXJnLe3tzd2cXHRdh6A04GBgWKxWLxyXlcqjqIochPHbWdn58p5AGaEENec13NB9vf3R5vNZtt5RLTguu4159lKA9gUQqR3njHGHpx9tOxKKfvnvGq1OmQrC2AKwIQQon/OOzk5GQzD0I5hPIqi/jvPGNN2npTyH3feTzoJOzgswwlqAAAAAElFTkSuQmCC","view/search.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAqCAYAAABcOxDuAAABX0lEQVRIS+3VsUrEQBAG4H9HiDZiJQg+gJVaiKAoWClYXWeZ7D6CtbWFr5Ai2ayQxkLQRgsLGwtBUQsRC6sDCxHxEIvIZSRwxRGSu83pNUe23c0H+89kR2AISwzBxAiinuctCSH2AawD+AFwRkR7QRC85CO0ur5SaoOZzwGM54A3IlrJw1aolPIewEJJUY+01jvde31RKeUMgNceXdLSWk9VQl3XnSWiZhnKzF9RFE1WQrPDUsonAHNFsBDiJAzDRmXUdd1tIjoFMJaDW0KI1TAMH61RpdQ0Mx8z8zMzHxLRAYBlAG0Al2ma7hpjHqxbqgNeAJgHcKW1XutEMeE4Ttv3/axXC1dh9XPgbZqmW8aYd9t3ohCVUt4BWARwkyTJZhzHH7Zgdq4MvQbw7ThOw/f9zypgKVoVsS7UX+C+v+kgeI0Oklrvb0Yw03rwlZW8Hnz14OvqjXrw1e/pPyfwCww91CttlMG7AAAAAElFTkSuQmCC","view/save.png":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAoCAYAAAD6xArmAAAA1klEQVRIS+2VzQ3DIAyFwxwdoMMAA/VQ8ZByyEBhmA7QOVxxKLIaOcIoSZUfrlifHw/wM91Ky6zE7SZgANTaDEDhzYJ5odSMC7nA5U7+b4X2dVQr3ic4hHCTlMcY33xPZUUGcwBvdEJwjcfGGIQQ4rd2qenWA3hyAUuABwCP31NtN+i1v02qP4DicRybM885J2ceB/NCyUupfuLxBS4WbmKF9rNUv4p9gq21d0l5SunF91RWZDAH8EYnBNd4nDPPWitnXst0I6Leez+feVowEQ3e+wNk3ge7C/Qp3GfwkgAAAABJRU5ErkJggg=="};},'base64',function(){return this.base64=new Base64Atlas(Base64AtlasManager.dataO);}
 		]);
 		return Base64AtlasManager;
+	})()
+
+
+	/**
+	*...
+	*@author ww
+	*/
+	//class laya.debug.DebugPanel
+	var DebugPanel=(function(){
+		function DebugPanel(){
+			this.tShowObj=null;
+			this.preValueO={};
+			this.div=null;
+			this.debug_view=null;
+			this.height=300;
+			this.clickedHandler=null;
+			this.fromMe=false;
+			this._treeDataList=null;
+			this._init();
+		}
+
+		__class(DebugPanel,'laya.debug.DebugPanel');
+		var __proto=DebugPanel.prototype;
+		__proto.removeNoDisplayKeys=function(arr){
+			var i=0;
+			for (i=arr.length-1;i >=0;i--){
+				if (DebugPanel.noDisplayKeys[arr[i]]){
+					arr.splice(i,1);
+				}
+			}
+		}
+
+		__proto.updateShowKeys=function(){
+			DebugPanel.tObjKeys.length=0;
+			if (!this.tShowObj)
+				return;
+			DebugPanel.tObjKeys=ClassTool.getObjectDisplayAbleKeys(this.tShowObj,DebugPanel.tObjKeys);
+			if (this.tShowObj==Laya.stage){
+				this.removeNoDisplayKeys(DebugPanel.tObjKeys);
+			}
+			DebugPanel.tObjKeys.sort(MathUtil.sortSmallFirst);
+		}
+
+		__proto._init=function(){
+			var _$this=this;
+			this.div=Browser.document.createElement('div');
+			Browser.document.body.appendChild(this.div);
+			this.clickedHandler=new Handler(this,this.onClickSelected);
+			this.debug_view=Browser.window.layaair_debug_view;
+			this.debug_view.initLayaAirDebugView(this.div);
+			this.debug_view.tree.attachEvent("onSelect",function(id){
+				var dataO;
+				dataO=_$this.getDataByID(id,_$this._treeDataList[0]);
+				if (dataO.target){
+					DebugTool.showDisBound(dataO.target);
+					_$this.showTargetInfo(dataO.target);
+				}
+			});
+			this.debug_view.setValueChangeHandler(function(data,new_value){
+				_$this.onValueChange(data,new_value);
+			});
+			this.debug_view.onRefresh(function(){
+				DebugPanel.I.setRoot(Laya.stage);
+			});
+			this.debug_view.onInspectElement(function(){
+				ClickSelectTool.I.beginClickSelect(_$this.clickedHandler);
+			});
+			this.debug_view.onLogInfo(function(){
+				console.log(_$this.tShowObj);
+			});
+			this.debug_view.onPrintEnabledNodeChain(function(){
+				DebugTool.traceDisMouseEnable(_$this.tShowObj);
+			});
+			this.debug_view.onPrintSizeChain(function(){
+				DebugTool.traceDisSizeChain(_$this.tShowObj);
+			});
+			this.debug_view.onToggleVisibility(function(selectd){
+				if (_$this.tShowObj){
+					_$this.tShowObj.visible=_$this.debug_view.getVisibility();
+				}
+			});
+			this.debug_view.onToggleDebugBorder(function(selectd){
+				if (!_$this.tShowObj)
+					return;
+				SpriteRenderHook.showDisplayBorder(_$this.tShowObj,_$this.debug_view.getShowDebugBorder());
+			});
+			this.debug_view.onToggleShowCurrentCache(function(selectd){
+				CacheAnalyser.showRecacheSprite=_$this.debug_view.getShowCurrentCache();
+			});
+			this.debug_view.onToggleShowAllCache(function(selectd){
+				CacheAnalyser.showCacheSprite=_$this.debug_view.getShowAllCache();
+			});
+			this.debug_view.onToggleShowAtlas(function(selectd){
+				console.log("toggle show atlas:",_$this.debug_view.getShowAtlas());
+				if (_$this.debug_view.getShowAtlas()){
+					AtlasTools.getInstance().start();
+				}
+				else {
+					AtlasTools.getInstance().end();
+				}
+			});
+			JSTools.showToBody(this.div,0,0);
+			Laya.stage.on("resize",this,this.adptPos);
+			this.adptPos();
+		}
+
+		__proto.onClickSelected=function(target){
+			var dataO;
+			if (!this._treeDataList)
+				return;
+			this.debug_view.tree.selectItem(IDTools.getObjID(target));
+			this.debug_view.bounceUpInspectButton();
+		}
+
+		__proto.updateLoop=function(){
+			if (this.tShowObj){
+				this.showTargetInfo(this.tShowObj);
+			}
+		}
+
+		__proto.onSelectItem=function(obj){
+			var tTarget;
+			tTarget=obj.target;
+			this.showTargetInfo(tTarget);
+		}
+
+		__proto.onValueChange=function(obj,newValue){
+			if (obj["type"]=="number"){
+				newValue=DebugPanel.mParseFloat(newValue);
+			}
+			if (obj["type"]=="boolean"){
+				newValue=newValue.toString()=="true";
+			}
+			if (this.tShowObj){
+				var key;
+				key=obj["key"];
+				this.preValueO[key]=this.tShowObj[key]=newValue;
+			}
+		}
+
+		__proto.showTargetInfo=function(tTarget){
+			if (!tTarget)
+				return;
+			this.debug_view.setVisibility(tTarget.visible);
+			this.debug_view.setShowDebugBorder(SpriteRenderHook.isDisplayShowBorder(tTarget));
+			var i=0,len=0;
+			len=DebugPanel.tObjKeys.length;
+			var key;
+			if (this.tShowObj==tTarget){
+				for (i=0;i < len;i++){
+					key=DebugPanel.tObjKeys[i];
+					if (this.preValueO[key] !=tTarget[key]){
+						this.debug_view.changeValueByLabel(key,tTarget[key]);
+					}
+				}
+			}
+			else {
+				this.tShowObj=tTarget;
+				this.updateShowKeys();
+				var dataList;
+				dataList=DebugPanel.getObjectData(tTarget);
+				this.debug_view.setContents(dataList);
+			}
+			for (i=0;i < len;i++){
+				key=DebugPanel.tObjKeys[i];
+				this.preValueO[key]=tTarget[key];
+			}
+		}
+
+		__proto.adptPos=function(){
+			if (this.fromMe)return;
+			this.fromMe=true;
+			JSTools.setPos(this.div,0,Browser.clientHeight-this.height);
+			this.debug_view.resize(Browser.clientWidth,this.height);
+			if (!DebugPanel.overlay){
+				Laya.stage.setScreenSize(Browser.clientWidth *Browser.pixelRatio,(Browser.clientHeight-this.height)*Browser.pixelRatio);
+			}
+			this.fromMe=false;
+		}
+
+		__proto.setRoot=function(sprite){
+			var mtreeo;
+			mtreeo=DebugPanel.getSpriteTreeArr(sprite);
+			this._treeDataList=[mtreeo];
+			var wraped;
+			wraped={};
+			wraped.id=0;
+			wraped.item=[mtreeo];
+			this.debug_view.setTree(wraped);
+			Laya.timer.loop(500,this,this.updateLoop);
+		}
+
+		__proto.getDataByID=function(targetID,nodeO){
+			if (!nodeO)
+				return null;
+			if (targetID==nodeO.id)
+				return nodeO;
+			var childs;
+			childs=nodeO["item"];
+			if (!childs)
+				return null;
+			var i=0,len=0;
+			len=childs.length;
+			var tRst;
+			for (i=0;i < len;i++){
+				tRst=this.getDataByID(targetID,childs[i]);
+				if (tRst)
+					return tRst;
+			}
+			return null;
+		}
+
+		__proto.getDataByTarget=function(target,nodeO){
+			if (!nodeO)
+				return null;
+			if (target==nodeO.target)
+				return nodeO;
+			var childs;
+			childs=nodeO["item"];
+			if (!childs)
+				return null;
+			var i=0,len=0;
+			len=childs.length;
+			var tRst;
+			for (i=0;i < len;i++){
+				tRst=this.getDataByTarget(target,childs[i]);
+				if (tRst)
+					return tRst;
+			}
+			return null;
+		}
+
+		DebugPanel.init=function(underGame,bgColor){
+			(underGame===void 0)&& (underGame=true);
+			(bgColor===void 0)&& (bgColor="#ffffff");
+			if (!DebugPanel.I){
+				DebugPanel.overlay=!underGame;
+				DivScripts.init();
+				DebugTool.initBasicFunctions();
+				RenderSpriteHook.init();
+				SpriteRenderHook.init();
+				DebugPanel.I=new DebugPanel();
+				DebugPanel.I.setRoot(Laya.stage);
+				CacheAnalyser.showRecacheSprite=false;
+				if (bgColor){
+					DebugPanel.I.div.style.background=bgColor;
+				}
+			}
+		}
+
+		DebugPanel.getSpriteTreeArr=function(sprite){
+			var rst;
+			rst={};
+			rst["text"]=""+ClassTool.getNodeClassAndName(sprite);
+			rst.target=sprite;
+			IDTools.idObj(sprite);
+			rst.id=IDTools.getObjID(sprite);
+			var childs;
+			childs=sprite._childs;
+			var i=0,len=0;
+			len=childs.length;
+			var tchild;
+			var childsList;
+			childsList=[];
+			rst["item"]=childsList;
+			for (i=0;i < len;i++){
+				childsList.push(DebugPanel.getSpriteTreeArr(childs[i]));
+			}
+			return rst;
+		}
+
+		DebugPanel.getObjectData=function(data){
+			var dataList;
+			var tData;
+			var key;
+			var tValue;
+			var tType;
+			dataList=[];
+			var keys;
+			keys=DebugPanel.tObjKeys;
+			var i=0,len=0;
+			len=keys.length;
+			for (i=0;i < len;i++){
+				key=keys[i];
+				tValue=data[key];
+				tType=typeof(tValue);
+				if (key.charAt(0)=="_")
+					continue ;
+				if (DebugPanel.displayTypes[tType]){
+					tData={};
+					tData["key"]=key;
+					tData["value"]=tValue;
+					tData["type"]=tType;
+					dataList.push(tData);
+				}
+			}
+			return dataList;
+		}
+
+		DebugPanel.mParseFloat=function(v){
+			var rst=NaN;
+			rst=parseFloat(v);
+			if (isNaN(rst))
+				return 0;
+			return rst;
+		}
+
+		DebugPanel.I=null
+		DebugPanel.overlay=false;
+		DebugPanel.ChildrenSign="item";
+		DebugPanel.LabelSign="text";
+		DebugPanel.tObjKeys=[];
+		__static(DebugPanel,
+		['displayTypes',function(){return this.displayTypes={"boolean":true,"number":true,"string":true};},'displayKeys',function(){return this.displayKeys=[["x","number"],["y","number"],["width","number"],["width","number"],["width","number"],["width","number"],["width","number"],["width","number"],["width","number"],["width","number"],["width","number"],];},'noDisplayKeys',function(){return this.noDisplayKeys={"desginWidth":true,"desginHeight":true };}
+		]);
+		return DebugPanel;
 	})()
 
 
@@ -9049,8 +10486,7 @@ var Laya=window.Laya=(function(window,document){
 				return;
 			if (!DebugTool.selectedNodes || DebugTool.selectedNodes.length < 1)
 				return;
-			console.log("selected:");
-			console.log(DebugTool.selectedNodes);
+			console.log("selected:",DebugTool.selectedNodes);
 			var i=0;
 			var len=0;
 			len=DebugTool.selectedNodes.length;
@@ -9086,7 +10522,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		DebugTool.traceDisMouseEnable=function(tar){
-			console.log("traceDisMouseEnable:");
+			console.log("----------------traceDisMouseEnable--------------------");
 			if (!tar)
 				tar=DebugTool.target;
 			if (!tar){
@@ -9094,19 +10530,20 @@ var Laya=window.Laya=(function(window,document){
 				return null;
 			};
 			var strArr;
-			strArr=["TraceDisMouseEnable"];
+			strArr=[];
 			DebugTool.selectedNodes=[];
 			while (tar){
-				strArr.push(ClassTool.getNodeClassAndName(tar)+":"+tar.mouseEnabled+" hitFirst:"+tar.hitTestPrior);
+				strArr.push(ClassTool.getNodeClassAndName(tar)+": mouseEnabled:"+tar.mouseEnabled+" hitFirst:"+tar.hitTestPrior);
 				DebugTool.selectedNodes.push(tar);
 				tar=tar.parent;
 			}
+			console.log(strArr.join("\n"));
 			DebugTool.showSelected();
 			return strArr.join("\n");
 		}
 
 		DebugTool.traceDisSizeChain=function(tar){
-			console.log("traceDisSizeChain:");
+			console.log("---------------------traceDisSizeChain-------------------");
 			if (!tar)
 				tar=DebugTool.target;
 			if (!tar){
@@ -9115,15 +10552,13 @@ var Laya=window.Laya=(function(window,document){
 			}
 			DebugTool.selectedNodes=[];
 			var strArr;
-			strArr=["traceDisSizeChain"];
+			strArr=[];
 			while (tar){
-				DebugTool.dTrace(TraceTool.getClassName(tar)+":");
-				strArr.push(ClassTool.getNodeClassAndName(tar)+":");
-				strArr.push("Size: x:"+tar.x+" y:"+tar.y+" w:"+tar.width+" h:"+tar.height+" scaleX:"+tar.scaleX+" scaleY:"+tar.scaleY);
-				TraceTool.traceSize(tar);
+				strArr.push(ClassTool.getNodeClassAndName(tar)+": x:"+tar.x+" y:"+tar.y+" w:"+tar.width+" h:"+tar.height+" scaleX:"+tar.scaleX+" scaleY:"+tar.scaleY);
 				DebugTool.selectedNodes.push(tar);
 				tar=tar.parent;
 			}
+			console.log(strArr.join("\n"));
 			DebugTool.showSelected();
 			return strArr.join("\n");
 		}
@@ -9403,6 +10838,98 @@ var Laya=window.Laya=(function(window,document){
 	*...
 	*@author ww
 	*/
+	//class laya.debug.divui.DivScripts
+	var DivScripts=(function(){
+		function DivScripts(){}
+		__class(DivScripts,'laya.debug.divui.DivScripts');
+		DivScripts.init=function(){
+			var script;
+			script=Base64Tool.decodeToByte(DivScripts.data).readUTFBytes();
+			Browser.window.eval(script);
+		}
+
+		DivScripts.data="ZnVuY3Rpb24gZGh0bWx4RXZlbnQoZSx0LGkpe2UuYWRkRXZlbnRMaXN0ZW5lcj9lLmFkZEV2ZW50TGlzdGVuZXIodCxpLCExKTplLmF0dGFjaEV2ZW50JiZlLmF0dGFjaEV2ZW50KCJvbiIrdCxpKX1mdW5jdGlvbiBkaHRtbFhUcmVlT2JqZWN0KGUsdCxpLG4pe2lmKGRodG1seEV2ZW50LmluaXRUb3VjaCYmZGh0bWx4RXZlbnQuaW5pdFRvdWNoKCksX2lzSUUpdHJ5e2RvY3VtZW50LmV4ZWNDb21tYW5kKCJCYWNrZ3JvdW5kSW1hZ2VDYWNoZSIsITEsITApfWNhdGNoKG8pe30ib2JqZWN0IiE9dHlwZW9mIGU/dGhpcy5wYXJlbnRPYmplY3Q9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoZSk6dGhpcy5wYXJlbnRPYmplY3Q9ZSx0aGlzLnBhcmVudE9iamVjdC5zdHlsZS5vdmVyZmxvdz0iaGlkZGVuIix0aGlzLl9pdGltX2RnPSEwLHRoaXMuZGxtdHI9IiwiLHRoaXMuZHJvcExvd2VyPSExLHRoaXMuZW5hYmxlSUVJbWFnZUZpeCghMCksdGhpcy54bWxzdGF0ZT0wLHRoaXMubXl0eXBlPSJ0cmVlIix0aGlzLnNtY2hlY2s9ITAsdGhpcy53aWR0aD10LHRoaXMuaGVpZ2h0PWksdGhpcy5yb290SWQ9bix0aGlzLmNoaWxkQ2FsYz1udWxsLHRoaXMuZGVmX2ltZ194PSIxOHB4Iix0aGlzLmRlZl9pbWdfeT0iMThweCIsdGhpcy5kZWZfbGluZV9pbWdfeD0iMThweCIsdGhpcy5kZWZfbGluZV9pbWdfeT0iMjRweCIsdGhpcy5fZHJhZ2dlZD1uZXcgQXJyYXksdGhpcy5fc2VsZWN0ZWQ9bmV3IEFycmF5LHRoaXMuc3R5bGVfcG9pbnRlcj0icG9pbnRlciIsdGhpcy5fYWltZ3M9ITAsdGhpcy5odG1sY0E9IiBbIix0aGlzLmh0bWxjQj0iXSIsdGhpcy5sV2luPXdpbmRvdyx0aGlzLmNNZW51PTAsdGhpcy5tbGl0ZW1zPTAsdGhpcy5pY29uVVJMPSIiLHRoaXMuZGFkbW9kZT0wLHRoaXMuc2xvd1BhcnNlPSExLHRoaXMuYXV0b1Njcm9sbD0hMCx0aGlzLmhmTW9kZT0wLHRoaXMubm9kZUN1dD1uZXcgQXJyYXksdGhpcy5YTUxzb3VyY2U9MCx0aGlzLlhNTGxvYWRpbmdXYXJuaW5nPTAsdGhpcy5faWRwdWxsPXt9LHRoaXMuX3B1bGxTaXplPTAsdGhpcy50cmVlTGluZXNPbj0hMCx0aGlzLnRzY2hlY2s9ITEsdGhpcy50aW1nZW49ITAsdGhpcy5kcGNweT0hMSx0aGlzLl9sZF9pZD1udWxsLHRoaXMuX2R5bkRlbGV0ZUJyYW5jaGVzPXt9LHRoaXMuX29pZV9vblhMRT1bXSx0aGlzLmltUGF0aD13aW5kb3cuZGh4X2dsb2JhbEltZ1BhdGh8fCIiLHRoaXMuY2hlY2tBcnJheT1uZXcgQXJyYXkoImljb25VbmNoZWNrQWxsLmdpZiIsImljb25DaGVja0FsbC5naWYiLCJpY29uQ2hlY2tHcmF5LmdpZiIsImljb25VbmNoZWNrRGlzLmdpZiIsImljb25DaGVja0Rpcy5naWYiLCJpY29uQ2hlY2tEaXMuZ2lmIiksdGhpcy5yYWRpb0FycmF5PW5ldyBBcnJheSgicmFkaW9fb2ZmLmdpZiIsInJhZGlvX29uLmdpZiIsInJhZGlvX29uLmdpZiIsInJhZGlvX29mZi5naWYiLCJyYWRpb19vbi5naWYiLCJyYWRpb19vbi5naWYiKSx0aGlzLmxpbmVBcnJheT1uZXcgQXJyYXkoImxpbmUyLmdpZiIsImxpbmUzLmdpZiIsImxpbmU0LmdpZiIsYmxhbmtfYmFzZTY0LGJsYW5rX2Jhc2U2NCwibGluZTEuZ2lmIiksdGhpcy5taW51c0FycmF5PW5ldyBBcnJheSgibWludXMyLmdpZiIsIm1pbnVzMy5naWYiLCJtaW51czQuZ2lmIiwiZGF0YTppbWFnZS9naWY7YmFzZTY0LFIwbEdPRGxoRWdBWUFKRUNBTEd2clo2ZG5mVDA5QUFBQUNINUJBRUFBQUlBTEFBQUFBQVNBQmdBQUFJY2xJK3B5KzBQbzV5MFdoc0NEV0IzbUdYZnd3SG1oYWJxeXJaVEFRQTciLCJtaW51czUuZ2lmIiksdGhpcy5wbHVzQXJyYXk9bmV3IEFycmF5KCJwbHVzMi5naWYiLCJwbHVzMy5naWYiLCJwbHVzNC5naWYiLCJkYXRhOmltYWdlL2dpZjtiYXNlNjQsUjBsR09EbGhFZ0FZQUpFQ0FLR2duN0d2cmZUMDlBQUFBQ0g1QkFFQUFBSUFMQUFBQUFBU0FCZ0FBQUljbEkrcHkrMFBvNXkwVW5CRHlIc0NMUUZmT0U2ZGhhYnF5clpKQVFBNyIsInBsdXM1LmdpZiIpLHRoaXMuaW1hZ2VBcnJheT1uZXcgQXJyYXkoImRhdGE6aW1hZ2UvZ2lmO2Jhc2U2NCxSMGxHT0RsaEVnQVNBS0VDQUplWGw3R3ZyZi8vLy8vLy95SDVCQUVLQUFJQUxBQUFBQUFTQUJJQUFBSXpsSStwQXUyOURBaTAxamlUWFJuTm0zVEhCNDVCYUoyZXVsQm94TENTL0s2d09OODBYcHQ2citCOUhrU2FJSVdFS1EwRkFEcz0iLCJkYXRhOmltYWdlL2dpZjtiYXNlNjQsUjBsR09EbGhFZ0FTQUtFQ0FKZVhsN0d2cmYvLy8vLy8veUg1QkFFS0FBSUFMQUFBQUFBU0FCSUFBQUl6bEkrcHl3Y1BtM21oV2drQ3NqQk92VmtpbUVsRzlabENCbFhkKzJYampMS2c1R3FvZVpYcXZzT1FYSy9palVaVEtWVUZBRHM9IiwiZGF0YTppbWFnZS9naWY7YmFzZTY0LFIwbEdPRGxoRWdBU0FLRUNBSmVYbDdHdnJmLy8vLy8vL3lINUJBRUtBQUlBTEFBQUFBQVNBQklBQUFJd2xJK3B5d2NQbTNtaFdna0NzakJPdlZraW1FbEc5WmxDdVlJWTZUWXMrNmJtSERPNGlnZmREM0dOaGhlVjBWUUFBRHM9IiksdGhpcy5jdXRJbWc9bmV3IEFycmF5KDAsMCwwKSx0aGlzLmN1dEltYWdlPSJidXRfY3V0LmdpZiIsZGh4NC5fZXZlbnRhYmxlKHRoaXMpLHRoaXMuaHRtbE5vZGU9bmV3IGRodG1sWFRyZWVJdGVtT2JqZWN0KHRoaXMucm9vdElkLCIiLDAsdGhpcyksdGhpcy5odG1sTm9kZS5odG1sTm9kZS5jaGlsZE5vZGVzWzBdLmNoaWxkTm9kZXNbMF0uc3R5bGUuZGlzcGxheT0ibm9uZSIsdGhpcy5odG1sTm9kZS5odG1sTm9kZS5jaGlsZE5vZGVzWzBdLmNoaWxkTm9kZXNbMF0uY2hpbGROb2Rlc1swXS5jbGFzc05hbWU9ImhpZGRlblJvdyIsdGhpcy5hbGxUcmVlPXRoaXMuX2NyZWF0ZVNlbGYoKSx0aGlzLmFsbFRyZWUuYXBwZW5kQ2hpbGQodGhpcy5odG1sTm9kZS5odG1sTm9kZSksZGh0bWx4LiRjdXN0b21TY3JvbGwmJmRodG1seC5DdXN0b21TY3JvbGwuZW5hYmxlKHRoaXMpLF9pc0ZGJiYodGhpcy5hbGxUcmVlLmNoaWxkTm9kZXNbMF0ud2lkdGg9IjEwMCUiLHRoaXMuYWxsVHJlZS5jaGlsZE5vZGVzWzBdLnN0eWxlLm92ZXJmbG93PSJoaWRkZW4iKTt2YXIgcj10aGlzO2lmKHRoaXMuYWxsVHJlZS5vbnNlbGVjdHN0YXJ0PW5ldyBGdW5jdGlvbigicmV0dXJuIGZhbHNlOyIpLF9pc01hY09TJiYodGhpcy5hbGxUcmVlLm9uY29udGV4dG1lbnU9ZnVuY3Rpb24oZSl7cmV0dXJuIHIuX2RvQ29udENsaWNrKGV8fHdpbmRvdy5ldmVudCwhMCl9KSx0aGlzLmFsbFRyZWUub25tb3VzZWRvd249ZnVuY3Rpb24oZSl7cmV0dXJuIHIuX2RvQ29udENsaWNrKGV8fHdpbmRvdy5ldmVudCl9LHRoaXMuWE1MTG9hZGVyPXRoaXMuX3BhcnNlWE1MVHJlZSxfaXNJRSYmdGhpcy5wcmV2ZW50SUVDYXNoaW5nKCEwKSx0aGlzLnNlbGVjdGlvbkJhcj1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCJESVYiKSx0aGlzLnNlbGVjdGlvbkJhci5jbGFzc05hbWU9InNlbGVjdGlvbkJhciIsdGhpcy5zZWxlY3Rpb25CYXIuaW5uZXJIVE1MPSImbmJzcDsiLHRoaXMuc2VsZWN0aW9uQmFyLnN0eWxlLmRpc3BsYXk9Im5vbmUiLHRoaXMuYWxsVHJlZS5hcHBlbmRDaGlsZCh0aGlzLnNlbGVjdGlvbkJhciksd2luZG93LmFkZEV2ZW50TGlzdGVuZXImJndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCJ1bmxvYWQiLGZ1bmN0aW9uKCl7dHJ5e3IuZGVzdHJ1Y3RvcigpfWNhdGNoKGUpe319LCExKSx3aW5kb3cuYXR0YWNoRXZlbnQmJndpbmRvdy5hdHRhY2hFdmVudCgib251bmxvYWQiLGZ1bmN0aW9uKCl7dHJ5e3IuZGVzdHJ1Y3RvcigpfWNhdGNoKGUpe319KSx0aGlzLnNldEltYWdlc1BhdGg9dGhpcy5zZXRJbWFnZVBhdGgsdGhpcy5zZXRJY29uc1BhdGg9dGhpcy5zZXRJY29uUGF0aCx0aGlzLnNldFNraW4oIm1hdGVyaWFsIiksZGh0bWx4LmltYWdlX3BhdGgpe3ZhciBsPWRodG1seC5pbWFnZV9wYXRoLHM9dGhpcy5wYXJlbnRPYmplY3QuY2xhc3NOYW1lLm1hdGNoKC9kaHh0cmVlX2RoeF8oW2Etel9dKikvaSk7bnVsbCE9cyYmbnVsbCE9c1sxXSYmKGwrPSJkaHh0cmVlXyIrc1sxXSsiLyIpLHRoaXMuc2V0SW1hZ2VQYXRoKGwpfXJldHVybiB0aGlzfWZ1bmN0aW9uIGNPYmplY3QoKXtyZXR1cm4gdGhpc31mdW5jdGlvbiBkaHRtbFhUcmVlSXRlbU9iamVjdChlLHQsaSxuLG8scil7cmV0dXJuIHRoaXMuaHRtbE5vZGU9IiIsdGhpcy5hY29sb3I9IiIsdGhpcy5zY29sb3I9IiIsdGhpcy50cj0wLHRoaXMuY2hpbGRzQ291bnQ9MCx0aGlzLnRlbXBET01NPTAsdGhpcy50ZW1wRE9NVT0wLHRoaXMuZHJhZ1NwYW49MCx0aGlzLmRyYWdNb3ZlPTAsdGhpcy5zcGFuPTAsdGhpcy5jbG9zZWJsZT0xLHRoaXMuY2hpbGROb2Rlcz1uZXcgQXJyYXksdGhpcy51c2VyRGF0YT1uZXcgY09iamVjdCx0aGlzLmNoZWNrc3RhdGU9MCx0aGlzLnRyZWVOb2Q9bix0aGlzLmxhYmVsPXQsdGhpcy5wYXJlbnRPYmplY3Q9aSx0aGlzLmFjdGlvbkhhbmRsZXI9byx0aGlzLmltYWdlcz1uZXcgQXJyYXkobi5pbWFnZUFycmF5WzBdLG4uaW1hZ2VBcnJheVsxXSxuLmltYWdlQXJyYXlbMl0pLHRoaXMuaWQ9bi5fZ2xvYmFsSWRTdG9yYWdlQWRkKGUsdGhpcyksdGhpcy50cmVlTm9kLmNoZWNrQm94T2ZmP3RoaXMuaHRtbE5vZGU9dGhpcy50cmVlTm9kLl9jcmVhdGVJdGVtKDEsdGhpcyxyKTp0aGlzLmh0bWxOb2RlPXRoaXMudHJlZU5vZC5fY3JlYXRlSXRlbSgwLHRoaXMsciksdGhpcy5odG1sTm9kZS5vYmpCZWxvbmc9dGhpcyx0aGlzfWZ1bmN0aW9uIGpzb25Qb2ludGVyKGUsdCl7dGhpcy5kPWUsdGhpcy5kcD10fWZ1bmN0aW9uIGRoeF9pbml0X3RyZWVzKCl7Zm9yKHZhciBlPWRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCJkaXYiKSx0PTA7dDxlLmxlbmd0aDt0KyspImRodG1seFRyZWUiPT1lW3RdLmNsYXNzTmFtZSYmZGh0bWxYVHJlZUZyb21IVE1MKGVbdF0pfXZhciBibGFua19iYXNlNjQ9ImRhdGE6aW1hZ2UvZ2lmO2Jhc2U2NCxSMGxHT0RsaEVnQVNBSUFBQVAvLy8vLy8veUg1QkFVVUFBRUFMQUFBQUFBU0FCSUFBQUlQakkrcHkrMFBvNXkwMm91ejNwd1hBRHM9IjsidW5kZWZpbmVkIj09dHlwZW9mIHdpbmRvdy5kaHgmJih3aW5kb3cuZGh4PXdpbmRvdy5kaHg0PXt2ZXJzaW9uOiI1LjAiLHNraW46bnVsbCxsYXN0SWQ6MSxuZXdJZDpmdW5jdGlvbigpe3JldHVybiB0aGlzLmxhc3RJZCsrfSx6aW06e2RhdGE6e30sc3RlcDo1LGZpcnN0OmZ1bmN0aW9uKCl7cmV0dXJuIDEwMH0sbGFzdDpmdW5jdGlvbigpe3ZhciBlPXRoaXMuZmlyc3QoKTtmb3IodmFyIHQgaW4gdGhpcy5kYXRhKWU9TWF0aC5tYXgoZSx0aGlzLmRhdGFbdF0pO3JldHVybiBlfSxyZXNlcnZlOmZ1bmN0aW9uKGUpe3JldHVybiB0aGlzLmRhdGFbZV09dGhpcy5sYXN0KCkrdGhpcy5zdGVwLHRoaXMuZGF0YVtlXX0sY2xlYXI6ZnVuY3Rpb24oZSl7bnVsbCE9dGhpcy5kYXRhW2VdJiYodGhpcy5kYXRhW2VdPW51bGwsZGVsZXRlIHRoaXMuZGF0YVtlXSl9fSxzMmI6ZnVuY3Rpb24oZSl7cmV0dXJuInN0cmluZyI9PXR5cGVvZiBlJiYoZT1lLnRvTG93ZXJDYXNlKCkpLDE9PWV8fDE9PWV8fCJ0cnVlIj09ZXx8IjEiPT1lfHwieWVzIj09ZXx8InkiPT1lfHwib24iPT1lfSxzMmo6ZnVuY3Rpb24ocyl7dmFyIG9iaj1udWxsO2RoeDQudGVtcD1udWxsO3RyeXtldmFsKCJkaHg0LnRlbXA9IitzKX1jYXRjaChlKXtkaHg0LnRlbXA9bnVsbH1yZXR1cm4gb2JqPWRoeDQudGVtcCxkaHg0LnRlbXA9bnVsbCxvYmp9LGFic0xlZnQ6ZnVuY3Rpb24oZSl7cmV0dXJuInN0cmluZyI9PXR5cGVvZiBlJiYoZT1kb2N1bWVudC5nZXRFbGVtZW50QnlJZChlKSksdGhpcy5nZXRPZmZzZXQoZSkubGVmdH0sYWJzVG9wOmZ1bmN0aW9uKGUpe3JldHVybiJzdHJpbmciPT10eXBlb2YgZSYmKGU9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoZSkpLHRoaXMuZ2V0T2Zmc2V0KGUpLnRvcH0sX2FPZnM6ZnVuY3Rpb24oZSl7Zm9yKHZhciB0PTAsaT0wO2U7KXQrPXBhcnNlSW50KGUub2Zmc2V0VG9wKSxpKz1wYXJzZUludChlLm9mZnNldExlZnQpLGU9ZS5vZmZzZXRQYXJlbnQ7cmV0dXJue3RvcDp0LGxlZnQ6aX19LF9hT2ZzUmVjdDpmdW5jdGlvbihlKXt2YXIgdD1lLmdldEJvdW5kaW5nQ2xpZW50UmVjdCgpLGk9ZG9jdW1lbnQuYm9keSxuPWRvY3VtZW50LmRvY3VtZW50RWxlbWVudCxvPXdpbmRvdy5wYWdlWU9mZnNldHx8bi5zY3JvbGxUb3B8fGkuc2Nyb2xsVG9wLHI9d2luZG93LnBhZ2VYT2Zmc2V0fHxuLnNjcm9sbExlZnR8fGkuc2Nyb2xsTGVmdCxsPW4uY2xpZW50VG9wfHxpLmNsaWVudFRvcHx8MCxzPW4uY2xpZW50TGVmdHx8aS5jbGllbnRMZWZ0fHwwLGE9dC50b3Arby1sLGQ9dC5sZWZ0K3ItcztyZXR1cm57dG9wOk1hdGgucm91bmQoYSksbGVmdDpNYXRoLnJvdW5kKGQpfX0sZ2V0T2Zmc2V0OmZ1bmN0aW9uKGUpe3JldHVybiBlLmdldEJvdW5kaW5nQ2xpZW50UmVjdD90aGlzLl9hT2ZzUmVjdChlKTp0aGlzLl9hT2ZzKGUpfSxfaXNPYmo6ZnVuY3Rpb24oZSl7cmV0dXJuIG51bGwhPWUmJiJvYmplY3QiPT10eXBlb2YgZSYmInVuZGVmaW5lZCI9PXR5cGVvZiBlLmxlbmd0aH0sX2NvcHlPYmo6ZnVuY3Rpb24oZSl7aWYodGhpcy5faXNPYmooZSkpe3ZhciB0PXt9O2Zvcih2YXIgaSBpbiBlKSJvYmplY3QiPT10eXBlb2YgZVtpXSYmbnVsbCE9ZVtpXT90W2ldPXRoaXMuX2NvcHlPYmooZVtpXSk6dFtpXT1lW2ldfWVsc2UgZm9yKHZhciB0PVtdLGk9MDtpPGUubGVuZ3RoO2krKykib2JqZWN0Ij09dHlwZW9mIGVbaV0mJm51bGwhPWVbaV0/dFtpXT10aGlzLl9jb3B5T2JqKGVbaV0pOnRbaV09ZVtpXTtyZXR1cm4gdH19LHdpbmRvdy5kaHg0LmlzSUU9bmF2aWdhdG9yLnVzZXJBZ2VudC5pbmRleE9mKCJNU0lFIik+PTB8fG5hdmlnYXRvci51c2VyQWdlbnQuaW5kZXhPZigiVHJpZGVudCIpPj0wLHdpbmRvdy5kaHg0LmlzSUU2PW51bGw9PXdpbmRvdy5YTUxIdHRwUmVxdWVzdCYmbmF2aWdhdG9yLnVzZXJBZ2VudC5pbmRleE9mKCJNU0lFIik+PTAsd2luZG93LmRoeDQuaXNJRTc9bmF2aWdhdG9yLnVzZXJBZ2VudC5pbmRleE9mKCJNU0lFIDcuMCIpPj0wJiZuYXZpZ2F0b3IudXNlckFnZW50LmluZGV4T2YoIlRyaWRlbnQiKTwwLHdpbmRvdy5kaHg0LmlzSUU4PW5hdmlnYXRvci51c2VyQWdlbnQuaW5kZXhPZigiTVNJRSA4LjAiKT49MCYmbmF2aWdhdG9yLnVzZXJBZ2VudC5pbmRleE9mKCJUcmlkZW50Iik+PTAsd2luZG93LmRoeDQuaXNJRTk9bmF2aWdhdG9yLnVzZXJBZ2VudC5pbmRleE9mKCJNU0lFIDkuMCIpPj0wJiZuYXZpZ2F0b3IudXNlckFnZW50LmluZGV4T2YoIlRyaWRlbnQiKT49MCx3aW5kb3cuZGh4NC5pc0lFMTA9bmF2aWdhdG9yLnVzZXJBZ2VudC5pbmRleE9mKCJNU0lFIDEwLjAiKT49MCYmbmF2aWdhdG9yLnVzZXJBZ2VudC5pbmRleE9mKCJUcmlkZW50Iik+PTAmJjEhPXdpbmRvdy5uYXZpZ2F0b3IucG9pbnRlckVuYWJsZWQsd2luZG93LmRoeDQuaXNJRTExPW5hdmlnYXRvci51c2VyQWdlbnQuaW5kZXhPZigiVHJpZGVudCIpPj0wJiYxPT13aW5kb3cubmF2aWdhdG9yLnBvaW50ZXJFbmFibGVkLHdpbmRvdy5kaHg0LmlzRWRnZT1uYXZpZ2F0b3IudXNlckFnZW50LmluZGV4T2YoIkVkZ2UiKT49MCx3aW5kb3cuZGh4NC5pc09wZXJhPW5hdmlnYXRvci51c2VyQWdlbnQuaW5kZXhPZigiT3BlcmEiKT49MCx3aW5kb3cuZGh4NC5pc0Nocm9tZT1uYXZpZ2F0b3IudXNlckFnZW50LmluZGV4T2YoIkNocm9tZSIpPj0wJiYhd2luZG93LmRoeDQuaXNFZGdlLHdpbmRvdy5kaHg0LmlzS0hUTUw9KG5hdmlnYXRvci51c2VyQWdlbnQuaW5kZXhPZigiU2FmYXJpIik+PTB8fG5hdmlnYXRvci51c2VyQWdlbnQuaW5kZXhPZigiS29ucXVlcm9yIik+PTApJiYhd2luZG93LmRoeDQuaXNFZGdlLHdpbmRvdy5kaHg0LmlzRkY9bmF2aWdhdG9yLnVzZXJBZ2VudC5pbmRleE9mKCJGaXJlZm94Iik+PTAsd2luZG93LmRoeDQuaXNJUGFkPW5hdmlnYXRvci51c2VyQWdlbnQuc2VhcmNoKC9pUGFkL2dpKT49MCx3aW5kb3cuZGh4NC5kbmQ9e2V2czp7fSxwX2VuOih3aW5kb3cuZGh4NC5pc0lFfHx3aW5kb3cuZGh4NC5pc0VkZ2UpJiYod2luZG93Lm5hdmlnYXRvci5wb2ludGVyRW5hYmxlZHx8d2luZG93Lm5hdmlnYXRvci5tc1BvaW50ZXJFbmFibGVkKSxfbVRvdWNoOmZ1bmN0aW9uKGUpe3JldHVybiB3aW5kb3cuZGh4NC5pc0lFMTAmJmUucG9pbnRlclR5cGU9PWUuTVNQT0lOVEVSX1RZUEVfTU9VU0V8fHdpbmRvdy5kaHg0LmlzSUUxMSYmIm1vdXNlIj09ZS5wb2ludGVyVHlwZXx8d2luZG93LmRoeDQuaXNFZGdlJiYibW91c2UiPT1lLnBvaW50ZXJUeXBlfSxfdG91Y2hPbjpmdW5jdGlvbihlKXtudWxsPT1lJiYoZT1kb2N1bWVudC5ib2R5KSxlLnN0eWxlLnRvdWNoQWN0aW9uPWUuc3R5bGUubXNUb3VjaEFjdGlvbj0iIixlPW51bGx9LF90b3VjaE9mZjpmdW5jdGlvbihlKXtudWxsPT1lJiYoZT1kb2N1bWVudC5ib2R5KSxlLnN0eWxlLnRvdWNoQWN0aW9uPWUuc3R5bGUubXNUb3VjaEFjdGlvbj0ibm9uZSIsZT1udWxsfX0sMT09d2luZG93Lm5hdmlnYXRvci5wb2ludGVyRW5hYmxlZD93aW5kb3cuZGh4NC5kbmQuZXZzPXtzdGFydDoicG9pbnRlcmRvd24iLG1vdmU6InBvaW50ZXJtb3ZlIixlbmQ6InBvaW50ZXJ1cCJ9OjE9PXdpbmRvdy5uYXZpZ2F0b3IubXNQb2ludGVyRW5hYmxlZD93aW5kb3cuZGh4NC5kbmQuZXZzPXtzdGFydDoiTVNQb2ludGVyRG93biIsbW92ZToiTVNQb2ludGVyTW92ZSIsZW5kOiJNU1BvaW50ZXJVcCJ9OiJ1bmRlZmluZWQiIT10eXBlb2Ygd2luZG93LmFkZEV2ZW50TGlzdGVuZXImJih3aW5kb3cuZGh4NC5kbmQuZXZzPXtzdGFydDoidG91Y2hzdGFydCIsbW92ZToidG91Y2htb3ZlIixlbmQ6InRvdWNoZW5kIn0pKSwidW5kZWZpbmVkIj09dHlwZW9mIHdpbmRvdy5kaHg0Ll9ldmVudGFibGUmJih3aW5kb3cuZGh4NC5fZXZlbnRhYmxlPWZ1bmN0aW9uKGUsdCl7cmV0dXJuImNsZWFyIj09dD8oZS5kZXRhY2hBbGxFdmVudHMoKSxlLmRoeGV2cz1udWxsLGUuYXR0YWNoRXZlbnQ9bnVsbCxlLmRldGFjaEV2ZW50PW51bGwsZS5jaGVja0V2ZW50PW51bGwsZS5jYWxsRXZlbnQ9bnVsbCxlLmRldGFjaEFsbEV2ZW50cz1udWxsLHZvaWQoZT1udWxsKSk6KGUuZGh4ZXZzPXtkYXRhOnt9fSxlLmF0dGFjaEV2ZW50PWZ1bmN0aW9uKGUsdCl7ZT1TdHJpbmcoZSkudG9Mb3dlckNhc2UoKSx0aGlzLmRoeGV2cy5kYXRhW2VdfHwodGhpcy5kaHhldnMuZGF0YVtlXT17fSk7dmFyIGk9d2luZG93LmRoeDQubmV3SWQoKTtyZXR1cm4gdGhpcy5kaHhldnMuZGF0YVtlXVtpXT10LGl9LGUuZGV0YWNoRXZlbnQ9ZnVuY3Rpb24oZSl7Zm9yKHZhciB0IGluIHRoaXMuZGh4ZXZzLmRhdGEpe3ZhciBpPTA7Zm9yKHZhciBuIGluIHRoaXMuZGh4ZXZzLmRhdGFbdF0pbj09ZT8odGhpcy5kaHhldnMuZGF0YVt0XVtuXT1udWxsLGRlbGV0ZSB0aGlzLmRoeGV2cy5kYXRhW3RdW25dKTppKys7MD09aSYmKHRoaXMuZGh4ZXZzLmRhdGFbdF09bnVsbCxkZWxldGUgdGhpcy5kaHhldnMuZGF0YVt0XSl9fSxlLmNoZWNrRXZlbnQ9ZnVuY3Rpb24oZSl7cmV0dXJuIGU9U3RyaW5nKGUpLnRvTG93ZXJDYXNlKCksbnVsbCE9dGhpcy5kaHhldnMuZGF0YVtlXX0sZS5jYWxsRXZlbnQ9ZnVuY3Rpb24oZSx0KXtpZihlPVN0cmluZyhlKS50b0xvd2VyQ2FzZSgpLG51bGw9PXRoaXMuZGh4ZXZzLmRhdGFbZV0pcmV0dXJuITA7dmFyIGk9ITA7Zm9yKHZhciBuIGluIHRoaXMuZGh4ZXZzLmRhdGFbZV0paT10aGlzLmRoeGV2cy5kYXRhW2VdW25dLmFwcGx5KHRoaXMsdCkmJmk7cmV0dXJuIGl9LGUuZGV0YWNoQWxsRXZlbnRzPWZ1bmN0aW9uKCl7Zm9yKHZhciBlIGluIHRoaXMuZGh4ZXZzLmRhdGEpe2Zvcih2YXIgdCBpbiB0aGlzLmRoeGV2cy5kYXRhW2VdKXRoaXMuZGh4ZXZzLmRhdGFbZV1bdF09bnVsbCxkZWxldGUgdGhpcy5kaHhldnMuZGF0YVtlXVt0XTt0aGlzLmRoeGV2cy5kYXRhW2VdPW51bGwsZGVsZXRlIHRoaXMuZGh4ZXZzLmRhdGFbZV19fSx2b2lkKGU9bnVsbCkpfSxkaHg0Ll9ldmVudGFibGUoZGh4NCkpLCJ1bmRlZmluZWQiPT10eXBlb2Ygd2luZG93LmRodG1seCYmKHdpbmRvdy5kaHRtbHg9e2V4dGVuZDpmdW5jdGlvbihlLHQpe2Zvcih2YXIgaSBpbiB0KWVbaV18fChlW2ldPXRbaV0pO3JldHVybiBlfSxleHRlbmRfYXBpOmZ1bmN0aW9uKGUsdCxpKXt2YXIgbj13aW5kb3dbZV07biYmKHdpbmRvd1tlXT1mdW5jdGlvbihlKXtpZihlJiYib2JqZWN0Ij09dHlwZW9mIGUmJiFlLnRhZ05hbWUpe3ZhciBpPW4uYXBwbHkodGhpcyx0Ll9pbml0P3QuX2luaXQoZSk6YXJndW1lbnRzKTtmb3IodmFyIG8gaW4gZGh0bWx4KXRbb10mJnRoaXNbdFtvXV0oZGh0bWx4W29dKTtmb3IodmFyIG8gaW4gZSl0W29dP3RoaXNbdFtvXV0oZVtvXSk6MD09PW8uaW5kZXhPZigib24iKSYmdGhpcy5hdHRhY2hFdmVudChvLGVbb10pfWVsc2UgdmFyIGk9bi5hcHBseSh0aGlzLGFyZ3VtZW50cyk7cmV0dXJuIHQuX3BhdGNoJiZ0Ll9wYXRjaCh0aGlzKSxpfHx0aGlzfSx3aW5kb3dbZV0ucHJvdG90eXBlPW4ucHJvdG90eXBlLGkmJmRodG1seC5leHRlbmQod2luZG93W2VdLnByb3RvdHlwZSxpKSl9LHVybDpmdW5jdGlvbihlKXtyZXR1cm4tMSE9ZS5pbmRleE9mKCI/Iik/IiYiOiI/In19KSxfaXNGRj0hMSxfaXNJRT0hMSxfaXNPcGVyYT0hMSxfaXNLSFRNTD0hMSxfaXNNYWNPUz0hMSxfaXNDaHJvbWU9ITEsX0ZGcnY9ITEsX0tIVE1McnY9ITEsX09wZXJhUnY9ITEsLTEhPW5hdmlnYXRvci51c2VyQWdlbnQuaW5kZXhPZigiTWFjaW50b3NoIikmJihfaXNNYWNPUz0hMCksbmF2aWdhdG9yLnVzZXJBZ2VudC50b0xvd2VyQ2FzZSgpLmluZGV4T2YoImNocm9tZSIpPi0xJiYoX2lzQ2hyb21lPSEwKSwtMSE9bmF2aWdhdG9yLnVzZXJBZ2VudC5pbmRleE9mKCJTYWZhcmkiKXx8LTEhPW5hdmlnYXRvci51c2VyQWdlbnQuaW5kZXhPZigiS29ucXVlcm9yIik/KF9LSFRNTHJ2PXBhcnNlRmxvYXQobmF2aWdhdG9yLnVzZXJBZ2VudC5zdWJzdHIobmF2aWdhdG9yLnVzZXJBZ2VudC5pbmRleE9mKCJTYWZhcmkiKSs3LDUpKSxfS0hUTUxydj41MjU/KF9pc0ZGPSEwLF9GRnJ2PTEuOSk6X2lzS0hUTUw9ITApOi0xIT1uYXZpZ2F0b3IudXNlckFnZW50LmluZGV4T2YoIk9wZXJhIik/KF9pc09wZXJhPSEwLF9PcGVyYVJ2PXBhcnNlRmxvYXQobmF2aWdhdG9yLnVzZXJBZ2VudC5zdWJzdHIobmF2aWdhdG9yLnVzZXJBZ2VudC5pbmRleE9mKCJPcGVyYSIpKzYsMykpKTotMSE9bmF2aWdhdG9yLmFwcE5hbWUuaW5kZXhPZigiTWljcm9zb2Z0Iik/KF9pc0lFPSEwLCgtMSE9bmF2aWdhdG9yLmFwcFZlcnNpb24uaW5kZXhPZigiTVNJRSA4LjAiKXx8LTEhPW5hdmlnYXRvci5hcHBWZXJzaW9uLmluZGV4T2YoIk1TSUUgOS4wIil8fC0xIT1uYXZpZ2F0b3IuYXBwVmVyc2lvbi5pbmRleE9mKCJNU0lFIDEwLjAiKXx8ZG9jdW1lbnQuZG9jdW1lbnRNb2RlPjcpJiYiQmFja0NvbXBhdCIhPWRvY3VtZW50LmNvbXBhdE1vZGUmJihfaXNJRT04KSk6Ik5ldHNjYXBlIj09bmF2aWdhdG9yLmFwcE5hbWUmJi0xIT1uYXZpZ2F0b3IudXNlckFnZW50LmluZGV4T2YoIlRyaWRlbnQiKT9faXNJRT04OihfaXNGRj0hMCxfRkZydj1wYXJzZUZsb2F0KG5hdmlnYXRvci51c2VyQWdlbnQuc3BsaXQoInJ2OiIpWzFdKSksInVuZGVmaW5lZCI9PXR5cGVvZiB3aW5kb3cuZGh0bWx4RXZlbnQsbnVsbD09ZGh0bWx4RXZlbnQudG91Y2hEZWxheSYmKGRodG1seEV2ZW50LnRvdWNoRGVsYXk9MmUzKSwidW5kZWZpbmVkIj09dHlwZW9mIGRodG1seEV2ZW50LmluaXRUb3VjaCYmKGRodG1seEV2ZW50LmluaXRUb3VjaD1mdW5jdGlvbigpe2Z1bmN0aW9uIGUoKXtpZihpKXt2YXIgZT1kb2N1bWVudC5jcmVhdGVFdmVudCgiSFRNTEV2ZW50cyIpO2UuaW5pdEV2ZW50KCJkYmxjbGljayIsITAsITApLGkuZGlzcGF0Y2hFdmVudChlKSx0PWk9bnVsbH19dmFyIHQsaSxuLG87ZGh0bWx4RXZlbnQoZG9jdW1lbnQuYm9keSwidG91Y2hzdGFydCIsZnVuY3Rpb24ocil7aT1yLnRvdWNoZXNbMF0udGFyZ2V0LG49ci50b3VjaGVzWzBdLmNsaWVudFgsbz1yLnRvdWNoZXNbMF0uY2xpZW50WSx0PXdpbmRvdy5zZXRUaW1lb3V0KGUsZGh0bWx4RXZlbnQudG91Y2hEZWxheSl9KSxkaHRtbHhFdmVudChkb2N1bWVudC5ib2R5LCJ0b3VjaG1vdmUiLGZ1bmN0aW9uKGUpe3QmJihNYXRoLmFicyhlLnRvdWNoZXNbMF0uY2xpZW50WC1uKT41MHx8TWF0aC5hYnMoZS50b3VjaGVzWzBdLmNsaWVudFktbyk+NTApJiYod2luZG93LmNsZWFyVGltZW91dCh0KSx0PWk9ITEpfSksZGh0bWx4RXZlbnQoZG9jdW1lbnQuYm9keSwidG91Y2hlbmQiLGZ1bmN0aW9uKGUpe3QmJih3aW5kb3cuY2xlYXJUaW1lb3V0KHQpLHQ9aT0hMSl9KSxkaHRtbHhFdmVudC5pbml0VG91Y2g9ZnVuY3Rpb24oKXt9fSksZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuX2RvQ29udENsaWNrPWZ1bmN0aW9uKGUsdCl7aWYoIXQmJjIhPWUuYnV0dG9uKXJldHVybiB0aGlzLl9hY01lbnUmJih0aGlzLl9hY01lbnUuaGlkZUNvbnRleHRNZW51P3RoaXMuX2FjTWVudS5oaWRlQ29udGV4dE1lbnUoKTp0aGlzLmNNZW51Ll9jb250ZXh0RW5kKCkpLCEwO2Zvcih2YXIgaT1faXNJRT9lLnNyY0VsZW1lbnQ6ZS50YXJnZXQ7aSYmIkJPRFkiIT1pLnRhZ05hbWUmJiFpLnBhcmVudE9iamVjdDspaT1pLnBhcmVudE5vZGU7aWYoIWl8fCFpLnBhcmVudE9iamVjdClyZXR1cm4hMDt2YXIgbj1pLnBhcmVudE9iamVjdDtpZih0aGlzLmNhbGxFdmVudCgib25SaWdodENsaWNrIixbbi5pZCxlXSl8fCgoZS5zcmNFbGVtZW50fHxlLnRhcmdldCkub25jb250ZXh0bWVudT1mdW5jdGlvbihlKXtyZXR1cm4oZXx8ZXZlbnQpLmNhbmNlbEJ1YmJsZT0hMCwhMX0pLHRoaXMuX2FjTWVudT1uLmNNZW51fHx0aGlzLmNNZW51LHRoaXMuX2FjTWVudSl7aWYoIXRoaXMuY2FsbEV2ZW50KCJvbkJlZm9yZUNvbnRleHRNZW51Iixbbi5pZF0pKXJldHVybiEwO2lmKF9pc01hY09TfHwoKGUuc3JjRWxlbWVudHx8ZS50YXJnZXQpLm9uY29udGV4dG1lbnU9ZnVuY3Rpb24oZSl7cmV0dXJuKGV8fGV2ZW50KS5jYW5jZWxCdWJibGU9ITAsITF9KSx0aGlzLl9hY01lbnUuc2hvd0NvbnRleHRNZW51KXt2YXIgbz13aW5kb3cuZG9jdW1lbnQuZG9jdW1lbnRFbGVtZW50LHI9d2luZG93LmRvY3VtZW50LmJvZHksbD1uZXcgQXJyYXkoby5zY3JvbGxMZWZ0fHxyLnNjcm9sbExlZnQsby5zY3JvbGxUb3B8fHIuc2Nyb2xsVG9wKTtpZihfaXNJRSl2YXIgcz1lLmNsaWVudFgrbFswXSxhPWUuY2xpZW50WStsWzFdO2Vsc2UgdmFyIHM9ZS5wYWdlWCxhPWUucGFnZVk7dGhpcy5fYWNNZW51LnNob3dDb250ZXh0TWVudShzLTEsYS0xKSx0aGlzLmNvbnRleHRJRD1uLmlkLGUuY2FuY2VsQnViYmxlPSEwLHRoaXMuX2FjTWVudS5fc2tpcF9oaWRlPSEwfWVsc2UgaS5jb250ZXh0TWVudUlkPW4uaWQsaS5jb250ZXh0TWVudT10aGlzLl9hY01lbnUsaS5hPXRoaXMuX2FjTWVudS5fY29udGV4dFN0YXJ0LGkuYShpLGUpLGkuYT1udWxsO3JldHVybiExfXJldHVybiEwfSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5lbmFibGVJRUltYWdlRml4PWZ1bmN0aW9uKGUpe2U/KHRoaXMuX2dldEltZz1mdW5jdGlvbigpe3ZhciBlPWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoIkRJViIpO3JldHVybiBlLmlubmVySFRNTD0iJm5ic3A7IixlLmNsYXNzTmFtZT0iZGh4X2JnX2ltZ19maXgiLGV9LHRoaXMuX3NldFNyYz1mdW5jdGlvbihlLHQpe2Uuc3R5bGUuYmFja2dyb3VuZEltYWdlPSJ1cmwoIit0KyIpIn0sdGhpcy5fZ2V0U3JjPWZ1bmN0aW9uKGUpe3ZhciB0PWUuc3R5bGUuYmFja2dyb3VuZEltYWdlO3JldHVybiB0LnN1YnN0cig0LHQubGVuZ3RoLTUpLnJlcGxhY2UoLyheIil8KCIkKS9nLCIiKX0pOih0aGlzLl9nZXRJbWc9ZnVuY3Rpb24oZSl7cmV0dXJuIGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoZT09dGhpcy5yb290SWQ/ImRpdiI6ImltZyIpfSx0aGlzLl9zZXRTcmM9ZnVuY3Rpb24oZSx0KXtlLnNyYz10fSx0aGlzLl9nZXRTcmM9ZnVuY3Rpb24oZSl7cmV0dXJuIGUuc3JjfSl9LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLmRlc3RydWN0b3I9ZnVuY3Rpb24oKXtmb3IodmFyIGUgaW4gdGhpcy5faWRwdWxsKXt2YXIgdD10aGlzLl9pZHB1bGxbZV07dCYmKHQucGFyZW50T2JqZWN0PW51bGwsdC50cmVlTm9kPW51bGwsdC5jaGlsZE5vZGVzPW51bGwsdC5zcGFuPW51bGwsdC50ci5ub2RlbT1udWxsLHQudHI9bnVsbCx0Lmh0bWxOb2RlLm9iakJlbG9uZz1udWxsLHQuaHRtbE5vZGU9bnVsbCx0aGlzLl9pZHB1bGxbZV09bnVsbCl9dGhpcy5wYXJlbnRPYmplY3QuaW5uZXJIVE1MPSIiLHRoaXMuYWxsVHJlZS5vbnNlbGVjdHN0YXJ0PW51bGwsdGhpcy5hbGxUcmVlLm9uY29udGV4dG1lbnU9bnVsbCx0aGlzLmFsbFRyZWUub25tb3VzZWRvd249bnVsbDtmb3IodmFyIGUgaW4gdGhpcyl0aGlzW2VdPW51bGx9LGNPYmplY3QucHJvdG90eXBlPW5ldyBPYmplY3QsY09iamVjdC5wcm90b3R5cGUuY2xvbmU9ZnVuY3Rpb24oKXtmdW5jdGlvbiBlKCl7fXJldHVybiBlLnByb3RvdHlwZT10aGlzLG5ldyBlfSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5fZ2xvYmFsSWRTdG9yYWdlQWRkPWZ1bmN0aW9uKGUsdCl7cmV0dXJuIHRoaXMuX2dsb2JhbElkU3RvcmFnZUZpbmQoZSwxLDEpPyhlPWUrIl8iKyhuZXcgRGF0ZSkudmFsdWVPZigpLHRoaXMuX2dsb2JhbElkU3RvcmFnZUFkZChlLHQpKToodGhpcy5faWRwdWxsW2VdPXQsdGhpcy5fcHVsbFNpemUrKyxlKX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuX2dsb2JhbElkU3RvcmFnZVN1Yj1mdW5jdGlvbihlKXt0aGlzLl9pZHB1bGxbZV0mJih0aGlzLl91bnNlbGVjdEl0ZW0odGhpcy5faWRwdWxsW2VdKSx0aGlzLl9pZHB1bGxbZV09bnVsbCx0aGlzLl9wdWxsU2l6ZS0tKSx0aGlzLl9sb2NrZXImJnRoaXMuX2xvY2tlcltlXSYmKHRoaXMuX2xvY2tlcltlXT0hMSl9LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLl9nbG9iYWxJZFN0b3JhZ2VGaW5kPWZ1bmN0aW9uKGUsdCxpLG4pe3ZhciBvPXRoaXMuX2lkcHVsbFtlXTtpZihvKXtpZihvLnVuUGFyc2VkJiYhaSYmdGhpcy5yZVBhcnNlKG8sMCksdGhpcy5fc3JuZCYmIW8uaHRtbE5vZGUmJnRoaXMuX2J1aWxkU1JORChvLGkpLG4mJnRoaXMuX2Vkc2Jwc0EpZm9yKHZhciByPTA7cjx0aGlzLl9lZHNicHNBLmxlbmd0aDtyKyspaWYodGhpcy5fZWRzYnBzQVtyXVsyXT09ZSlyZXR1cm4gZGh4NC5jYWxsRXZlbnQoIm9uZ2V0SXRlbUVycm9yIixbIlJlcXVlc3RlZCBpdGVtIHN0aWxsIGluIHBhcnNpbmcgcHJvY2Vzcy4iLGVdKSxudWxsO3JldHVybiBvfXJldHVybiB0aGlzLnNsb3dQYXJzZSYmMCE9ZSYmIXQ/dGhpcy5wcmVQYXJzZShlKTpudWxsfSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5fZHJhd05ld1RyPWZ1bmN0aW9uKGUsdCl7dmFyIGk9ZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgidHIiKSxuPWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoInRkIiksbz1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCJ0ZCIpO3JldHVybiBuLmFwcGVuZENoaWxkKGRvY3VtZW50LmNyZWF0ZVRleHROb2RlKCIgIikpLG8uY29sU3Bhbj0zLG8uYXBwZW5kQ2hpbGQoZSksaS5hcHBlbmRDaGlsZChuKSxpLmFwcGVuZENoaWxkKG8pLGl9LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLnBhcnNlPWZ1bmN0aW9uKGUsdCxpKXtpZigic3RyaW5nIj09dHlwZW9mIHQmJihpPXQsdD1udWxsKSwianNvbiI9PT1pKXJldHVybiB0aGlzLl9sb2FkSlNPTk9iamVjdChlLHQpO2lmKCJjc3YiPT09aSlyZXR1cm4gdGhpcy5fbG9hZENTVlN0cmluZyhlLHQpO2lmKCJqc2FycmF5Ij09PWkpcmV0dXJuIHRoaXMuX2xvYWRKU0FycmF5KGUsdCk7dmFyIG49dGhpczt0aGlzLnBhcnNDb3VudHx8dGhpcy5jYWxsRXZlbnQoIm9uWExTIixbbixudWxsXSksdGhpcy54bWxzdGF0ZT0xLHRoaXMuWE1MTG9hZGVyKHtyZXNwb25zZVhNTDpkaHg0LmFqYXgucGFyc2UoZSl9LHQpfSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5fYXR0YWNoQ2hpbGROb2RlPWZ1bmN0aW9uKGUsdCxpLG4sbyxyLGwscyxhLGQsaCl7ZCYmZC5wYXJlbnRPYmplY3QmJihlPWQucGFyZW50T2JqZWN0KSwwPT1lLlhNTGxvYWQmJnRoaXMuWE1Mc291cmNlJiYhdGhpcy5YTUxsb2FkaW5nV2FybmluZyYmKGUuWE1MbG9hZD0xLHRoaXMuX2xvYWREeW5YTUwoZS5pZCkpO3ZhciBjPWUuY2hpbGRzQ291bnQsdT1lLmNoaWxkTm9kZXM7aWYoaCYmaC50ci5wcmV2aW91c1NpYmxpbmcmJihoLnRyLnByZXZpb3VzU2libGluZy5wcmV2aW91c1NpYmxpbmc/ZD1oLnRyLnByZXZpb3VzU2libGluZy5ub2RlbTpzPXMucmVwbGFjZSgiVE9QIiwiIikrIixUT1AiKSxkKXt2YXIgcCxfO2ZvcihwPTA7Yz5wO3ArKylpZih1W3BdPT1kKXtmb3IoXz1jO18hPXA7Xy0tKXVbMStfXT11W19dO2JyZWFrfXArKyxjPXB9aWYocylmb3IodmFyIG09cy5zcGxpdCgiLCIpLGc9MDtnPG0ubGVuZ3RoO2crKylzd2l0Y2gobVtnXSl7Y2FzZSJUT1AiOmZvcihlLmNoaWxkc0NvdW50PjAmJihkPW5ldyBPYmplY3QsZC50cj1lLmNoaWxkTm9kZXNbMF0udHIucHJldmlvdXNTaWJsaW5nKSxlLl9oYXNfdG9wPSEwLHA9YztwPjA7cC0tKXVbcF09dVtwLTFdO2M9MH12YXIgZjsoZj10aGlzLl9pZHB1bGxbdF0pJiYtMT09Zi5zcGFufHwoZj11W2NdPW5ldyBkaHRtbFhUcmVlSXRlbU9iamVjdCh0LGksZSx0aGlzLG4sMSksdD11W2NdLmlkLGUuY2hpbGRzQ291bnQrKyksZi5odG1sTm9kZXx8KGYubGFiZWw9aSxmLmh0bWxOb2RlPXRoaXMuX2NyZWF0ZUl0ZW0odGhpcy5jaGVja0JveE9mZj8xOjAsZiksZi5odG1sTm9kZS5vYmpCZWxvbmc9ZiksbyYmKGYuaW1hZ2VzWzBdPW8pLHImJihmLmltYWdlc1sxXT1yKSxsJiYoZi5pbWFnZXNbMl09bCk7dmFyIGI9dGhpcy5fZHJhd05ld1RyKGYuaHRtbE5vZGUpO2lmKCh0aGlzLlhNTGxvYWRpbmdXYXJuaW5nfHx0aGlzLl9oQWRJKSYmKGYuaHRtbE5vZGUucGFyZW50Tm9kZS5wYXJlbnROb2RlLnN0eWxlLmRpc3BsYXk9Im5vbmUiKSxkJiZkLnRyJiZkLnRyLm5leHRTaWJsaW5nP2UuaHRtbE5vZGUuY2hpbGROb2Rlc1swXS5pbnNlcnRCZWZvcmUoYixkLnRyLm5leHRTaWJsaW5nKTp0aGlzLnBhcnNpbmdPbj09ZS5pZD90aGlzLnBhcnNlZEFycmF5W3RoaXMucGFyc2VkQXJyYXkubGVuZ3RoXT1iOmUuaHRtbE5vZGUuY2hpbGROb2Rlc1swXS5hcHBlbmRDaGlsZChiKSxkJiYhZC5zcGFuJiYoZD1udWxsKSx0aGlzLlhNTHNvdXJjZSYmKGEmJjAhPWE/Zi5YTUxsb2FkPTA6Zi5YTUxsb2FkPTEpLGYudHI9YixiLm5vZGVtPWYsMD09ZS5pdGVtSWQmJihiLmNoaWxkTm9kZXNbMF0uY2xhc3NOYW1lPSJoaWRkZW5Sb3ciKSwoZS5fcl9sb2dpY3x8dGhpcy5fZnJidHIpJiZ0aGlzLl9zZXRTcmMoZi5odG1sTm9kZS5jaGlsZE5vZGVzWzBdLmNoaWxkTm9kZXNbMF0uY2hpbGROb2Rlc1sxXS5jaGlsZE5vZGVzWzBdLHRoaXMuaW1QYXRoK3RoaXMucmFkaW9BcnJheVswXSkscylmb3IodmFyIG09cy5zcGxpdCgiLCIpLGc9MDtnPG0ubGVuZ3RoO2crKylzd2l0Y2gobVtnXSl7Y2FzZSJTRUxFQ1QiOnRoaXMuc2VsZWN0SXRlbSh0LCExKTticmVhaztjYXNlIkNBTEwiOnRoaXMuc2VsZWN0SXRlbSh0LCEwKTticmVhaztjYXNlIkNISUxEIjpmLlhNTGxvYWQ9MDticmVhaztjYXNlIkNIRUNLRUQiOnRoaXMuWE1MbG9hZGluZ1dhcm5pbmc/dGhpcy5zZXRDaGVja0xpc3QrPXRoaXMuZGxtdHIrdDp0aGlzLnNldENoZWNrKHQsMSk7YnJlYWs7Y2FzZSJIQ0hFQ0tFRCI6dGhpcy5fc2V0Q2hlY2soZiwidW5zdXJlIik7YnJlYWs7Y2FzZSJPUEVOIjpmLm9wZW5NZT0xfWlmKCF0aGlzLlhNTGxvYWRpbmdXYXJuaW5nJiYodGhpcy5fZ2V0T3BlblN0YXRlKGUpPDAmJiF0aGlzLl9oQWRJJiZ0aGlzLm9wZW5JdGVtKGUuaWQpLGQmJih0aGlzLl9jb3JyZWN0UGx1cyhkKSx0aGlzLl9jb3JyZWN0TGluZShkKSksdGhpcy5fY29ycmVjdFBsdXMoZSksdGhpcy5fY29ycmVjdExpbmUoZSksdGhpcy5fY29ycmVjdFBsdXMoZiksZS5jaGlsZHNDb3VudD49MiYmKHRoaXMuX2NvcnJlY3RQbHVzKHVbZS5jaGlsZHNDb3VudC0yXSksdGhpcy5fY29ycmVjdExpbmUodVtlLmNoaWxkc0NvdW50LTJdKSksMiE9ZS5jaGlsZHNDb3VudCYmdGhpcy5fY29ycmVjdFBsdXModVswXSksdGhpcy50c2NoZWNrJiZ0aGlzLl9jb3JyZWN0Q2hlY2tTdGF0ZXMoZSksdGhpcy5fb25yYWRoKSlpZigxPT10aGlzLnhtbHN0YXRlKXt2YXIgdj10aGlzLm9uWExFO3RoaXMub25YTEU9ZnVuY3Rpb24oZSl7dGhpcy5fb25yYWRoKHQpLHYmJnYoZSl9fWVsc2UgdGhpcy5fb25yYWRoKHQpO3JldHVybiBmfSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5fcGFyc2VJdGVtPWZ1bmN0aW9uKGUsdCxpLG4pe3ZhciBvO2lmKHRoaXMuX3NybmQmJighdGhpcy5faWRwdWxsW289ZS5nZXQoImlkIildfHwhdGhpcy5faWRwdWxsW29dLnNwYW4pKXJldHVybiB2b2lkIHRoaXMuX2FkZEl0ZW1TUk5EKHQuaWQsbyxlKTt2YXIgcj1lLmdldF9hbGwoKTtpZigib2JqZWN0Ij09dHlwZW9mIHRoaXMud2FpdFVwZGF0ZVhNTCYmIXRoaXMud2FpdFVwZGF0ZVhNTFtyLmlkXSlyZXR1cm4gdm9pZCB0aGlzLl9wYXJzZShlLHIuaWQsMSk7bnVsbCE9PXIudGV4dCYmInVuZGVmaW5lZCIhPXR5cGVvZiByLnRleHR8fChyLnRleHQ9ZS5zdWIoIml0ZW10ZXh0Iiksci50ZXh0JiYoci50ZXh0PXIudGV4dC5jb250ZW50KCkpKTt2YXIgbD1bXTtpZihyLnNlbGVjdCYmbC5wdXNoKCJTRUxFQ1QiKSxyLnRvcCYmbC5wdXNoKCJUT1AiKSxyLmNhbGwmJih0aGlzLm5vZGVBc2tpbmdDYWxsPXIuaWQpLC0xPT1yLmNoZWNrZWQ/bC5wdXNoKCJIQ0hFQ0tFRCIpOnIuY2hlY2tlZCYmbC5wdXNoKCJDSEVDS0VEIiksci5vcGVuJiZsLnB1c2goIk9QRU4iKSx0aGlzLndhaXRVcGRhdGVYTUwpaWYodGhpcy5fZ2xvYmFsSWRTdG9yYWdlRmluZChyLmlkKSl2YXIgcz10aGlzLnVwZGF0ZUl0ZW0oci5pZCxyLnRleHQsci5pbTAsci5pbTEsci5pbTIsci5jaGVja2VkLHIuY2hpbGQpO2Vsc2V7MD09dGhpcy5ucGw/bC5wdXNoKCJUT1AiKTppPXQuY2hpbGROb2Rlc1t0aGlzLm5wbF07dmFyIHM9dGhpcy5fYXR0YWNoQ2hpbGROb2RlKHQsci5pZCxyLnRleHQsMCxyLmltMCxyLmltMSxyLmltMixsLmpvaW4oIiwiKSxyLmNoaWxkLDAsaSk7ci5pZD1zLmlkLGk9bnVsbH1lbHNlIHZhciBzPXRoaXMuX2F0dGFjaENoaWxkTm9kZSh0LHIuaWQsci50ZXh0LDAsci5pbTAsci5pbTEsci5pbTIsbC5qb2luKCIsIiksci5jaGlsZCxufHwwLGkpO2lmKHIudG9vbHRpcCYmKHMuc3Bhbi5wYXJlbnROb2RlLnBhcmVudE5vZGUudGl0bGU9ci50b29sdGlwKSxyLnN0eWxlJiYocy5zcGFuLnN0eWxlLmNzc1RleHQ/cy5zcGFuLnN0eWxlLmNzc1RleHQrPSI7IityLnN0eWxlOnMuc3Bhbi5zZXRBdHRyaWJ1dGUoInN0eWxlIixzLnNwYW4uZ2V0QXR0cmlidXRlKCJzdHlsZSIpKyI7ICIrci5zdHlsZSkpLHIucmFkaW8mJihzLl9yX2xvZ2ljPSEwKSxyLm5vY2hlY2tib3gpe3ZhciBhPXMuc3Bhbi5wYXJlbnROb2RlLnByZXZpb3VzU2libGluZy5wcmV2aW91c1NpYmxpbmc7YS5zdHlsZS5kaXNwbGF5PSJub25lIixzLm5vY2hlY2tib3g9ITB9ci5kaXNhYmxlZCYmKG51bGwhPXIuY2hlY2tlZCYmdGhpcy5fc2V0Q2hlY2socyxyLmNoZWNrZWQpLHRoaXMuZGlzYWJsZUNoZWNrYm94KHMsMSkpLHMuX2FjYz1yLmNoaWxkfHwwLHRoaXMucGFyc2VyRXh0ZW5zaW9uJiZ0aGlzLnBhcnNlckV4dGVuc2lvbi5fcGFyc2VFeHRlbnNpb24uY2FsbCh0aGlzLGUscix0P3QuaWQ6MCksdGhpcy5zZXRJdGVtQ29sb3IocyxyLmFDb2wsci5zQ29sKSwiMSI9PXIubG9ja2VkJiZ0aGlzLmxvY2tJdGVtKHMuaWQsITAsITApLChyLmltd2lkdGh8fHIuaW1oZWlnaHQpJiZ0aGlzLnNldEljb25TaXplKHIuaW13aWR0aCxyLmltaGVpZ2h0LHMpLCIwIiE9ci5jbG9zZWFibGUmJiIxIiE9ci5jbG9zZWFibGV8fHRoaXMuc2V0SXRlbUNsb3NlYWJsZShzLHIuY2xvc2VhYmxlKTt2YXIgZD0iIjtyLnRvcG9mZnNldCYmdGhpcy5zZXRJdGVtVG9wT2Zmc2V0KHMsci50b3BvZmZzZXQpLHRoaXMuc2xvd1BhcnNlJiYib2JqZWN0IiE9dHlwZW9mIHRoaXMud2FpdFVwZGF0ZVhNTD8oIXMuY2hpbGRzQ291bnQmJmUuc3ViX2V4aXN0cygiaXRlbSIpJiYocy51blBhcnNlZD1lLmNsb25lKCkpLGUuZWFjaCgidXNlcmRhdGEiLGZ1bmN0aW9uKGUpe3RoaXMuc2V0VXNlckRhdGEoci5pZCxlLmdldCgibmFtZSIpLGUuY29udGVudCgpKX0sdGhpcykpOmUuc3ViX2V4aXN0cygiaXRlbSIpJiYoZD10aGlzLl9wYXJzZShlLHIuaWQsMSkpLCIiIT1kJiYodGhpcy5ub2RlQXNraW5nQ2FsbD1kKSxlLmVhY2goInVzZXJkYXRhIixmdW5jdGlvbih0KXt0aGlzLnNldFVzZXJEYXRhKGUuZ2V0KCJpZCIpLHQuZ2V0KCJuYW1lIiksdC5jb250ZW50KCkpfSx0aGlzKX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuX3BhcnNlPWZ1bmN0aW9uKGUsdCxpLG4pe2lmKHRoaXMuX3NybmQmJiF0aGlzLnBhcmVudE9iamVjdC5vZmZzZXRIZWlnaHQpe3ZhciBvPXRoaXM7cmV0dXJuIHdpbmRvdy5zZXRUaW1lb3V0KGZ1bmN0aW9uKCl7by5fcGFyc2UoZSx0LGksbil9LDEwMCl9aWYoZS5leGlzdHMoKSl7aWYodGhpcy5za2lwTG9jaz0hMCwhdCl7dD1lLmdldCgiaWQiKSx0aGlzLl9keW5EZWxldGVCcmFuY2hlc1t0XSYmKHRoaXMuZGVsZXRlQ2hpbGRJdGVtcyh0KSx0aGlzLl9keW5EZWxldGVCcmFuY2hlc1t0XS0tLHRoaXMuX2R5bkRlbGV0ZUJyYW5jaGVzW3RdfHxkZWxldGUgdGhpcy5fZHluRGVsZXRlQnJhbmNoZXNbdF0pO3ZhciByPWUuZ2V0KCJkaHhfc2VjdXJpdHkiKTtyJiYoZGh0bWx4LnNlY3VyaXR5X2tleT1yKSxlLmdldCgicmFkaW8iKSYmKHRoaXMuaHRtbE5vZGUuX3JfbG9naWM9ITApLHRoaXMucGFyc2luZ09uPXQsdGhpcy5wYXJzZWRBcnJheT1uZXcgQXJyYXksdGhpcy5zZXRDaGVja0xpc3Q9IiIsdGhpcy5ub2RlQXNraW5nQ2FsbD0iIn12YXIgbD10aGlzLl9nbG9iYWxJZFN0b3JhZ2VGaW5kKHQpO2lmKCFsKXJldHVybiBkaHg0LmNhbGxFdmVudCgib25EYXRhU3RydWN0dXJlRXJyb3IiLFsiWE1MIHJlZmVycyB0byBub3QgZXhpc3RpbmcgcGFyZW50Il0pO2lmKHRoaXMucGFyc0NvdW50PXRoaXMucGFyc0NvdW50P3RoaXMucGFyc0NvdW50KzE6MSx0aGlzLlhNTGxvYWRpbmdXYXJuaW5nPTEsIWwuY2hpbGRzQ291bnR8fG58fHRoaXMuX2Vkc2Jwc3x8bC5faGFzX3RvcCl2YXIgcz0wO2Vsc2UgdmFyIHM9MDtpZih0aGlzLm5wbD0wLGUuZWFjaCgiaXRlbSIsZnVuY3Rpb24obixvKXtyZXR1cm4gbC5YTUxsb2FkPTEsdGhpcy5fcGFyc2VJdGVtKG4sbCwwLHMpLHRoaXMuX2Vkc2JwcyYmdGhpcy5ucGw9PXRoaXMuX2Vkc2Jwc0M/KHRoaXMuX2Rpc3RyaWJ1dGVkU3RhcnQoZSxvKzEsdCxpLGwuY2hpbGRzQ291bnQpLC0xKTp2b2lkIHRoaXMubnBsKyt9LHRoaXMsbiksIWkpe2lmKGUuZWFjaCgidXNlcmRhdGEiLGZ1bmN0aW9uKHQpe3RoaXMuc2V0VXNlckRhdGEoZS5nZXQoImlkIiksdC5nZXQoIm5hbWUiKSx0LmNvbnRlbnQoKSl9LHRoaXMpLGwuWE1MbG9hZD0xLHRoaXMud2FpdFVwZGF0ZVhNTCl7dGhpcy53YWl0VXBkYXRlWE1MPSExO2Zvcih2YXIgYT1sLmNoaWxkc0NvdW50LTE7YT49MDthLS0pbC5jaGlsZE5vZGVzW2FdLl9kbWFyayYmdGhpcy5kZWxldGVJdGVtKGwuY2hpbGROb2Rlc1thXS5pZCl9Zm9yKHZhciBhPSh0aGlzLl9nbG9iYWxJZFN0b3JhZ2VGaW5kKHRoaXMucGFyc2luZ09uKSwwKTthPHRoaXMucGFyc2VkQXJyYXkubGVuZ3RoO2ErKylsLmh0bWxOb2RlLmNoaWxkTm9kZXNbMF0uYXBwZW5kQ2hpbGQodGhpcy5wYXJzZWRBcnJheVthXSk7dGhpcy5wYXJzZWRBcnJheT1bXSx0aGlzLmxhc3RMb2FkZWRYTUxJZD10LHRoaXMuWE1MbG9hZGluZ1dhcm5pbmc9MDtmb3IodmFyIGQ9dGhpcy5zZXRDaGVja0xpc3Quc3BsaXQodGhpcy5kbG10ciksaD0wO2g8ZC5sZW5ndGg7aCsrKWRbaF0mJnRoaXMuc2V0Q2hlY2soZFtoXSwxKTt0aGlzLlhNTHNvdXJjZSYmdGhpcy50c2NoZWNrJiZ0aGlzLnNtY2hlY2smJmwuaWQhPXRoaXMucm9vdElkJiYoMD09PWwuY2hlY2tzdGF0ZT90aGlzLl9zZXRTdWJDaGVja2VkKDAsbCk6MT09PWwuY2hlY2tzdGF0ZSYmdGhpcy5fc2V0U3ViQ2hlY2tlZCgxLGwpKSx0aGlzLl9yZWRyYXdGcm9tKHRoaXMsbnVsbCxuKSxlLmdldCgib3JkZXIiKSYmIm5vbmUiIT1lLmdldCgib3JkZXIiKSYmdGhpcy5fcmVvcmRlckJyYW5jaChsLGUuZ2V0KCJvcmRlciIpLCEwKSwiIiE9dGhpcy5ub2RlQXNraW5nQ2FsbCYmdGhpcy5jYWxsRXZlbnQoIm9uQ2xpY2siLFt0aGlzLm5vZGVBc2tpbmdDYWxsLHRoaXMuZ2V0U2VsZWN0ZWRJdGVtSWQoKV0pLHRoaXMuX2JyYW5jaFVwZGF0ZSYmdGhpcy5fYnJhbmNoVXBkYXRlTmV4dChlKX1pZigxPT10aGlzLnBhcnNDb3VudCl7aWYodGhpcy5wYXJzaW5nT249bnVsbCx0aGlzLl9zcm5kJiZsLmlkIT10aGlzLnJvb3RJZCYmKHRoaXMucHJlcGFyZVNSKGwuaWQpLHRoaXMuWE1Mc291cmNlJiZ0aGlzLm9wZW5JdGVtKGwuaWQpKSxlLnRocm91Z2goIml0ZW0iLCJvcGVuIixudWxsLGZ1bmN0aW9uKGUpe3RoaXMub3Blbkl0ZW0oZS5nZXQoImlkIikpfSx0aGlzKSwhdGhpcy5fZWRzYnBzfHwhdGhpcy5fZWRzYnBzQS5sZW5ndGgpe3ZhciBjPXRoaXM7d2luZG93LnNldFRpbWVvdXQoZnVuY3Rpb24oKXtjLmNhbGxFdmVudCgib25YTEUiLFtjLHRdKX0sMSksdGhpcy54bWxzdGF0ZT0wfXRoaXMuc2tpcExvY2s9ITF9dGhpcy5wYXJzQ291bnQtLTt2YXIgYz10aGlzO3JldHVybiB0aGlzLl9lZHNicHMmJndpbmRvdy5zZXRUaW1lb3V0KGZ1bmN0aW9uKCl7Yy5fZGlzdHJpYnV0ZWRTdGVwKHQpfSx0aGlzLl9lZHNicHNEKSwhaSYmdGhpcy5vblhMRSYmdGhpcy5vblhMRSh0aGlzLHQpLHRoaXMubm9kZUFza2luZ0NhbGx9fSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5fcmVkcmF3RnJvbT1mdW5jdGlvbihlLHQsaSxuKXtpZih0KW89dDtlbHNle3ZhciBvPWUuX2dsb2JhbElkU3RvcmFnZUZpbmQoZS5sYXN0TG9hZGVkWE1MSWQpO2lmKGUubGFzdExvYWRlZFhNTElkPS0xLCFvKXJldHVybiAwfWZvcih2YXIgcj0wLGw9aT9pLTE6MDtsPG8uY2hpbGRzQ291bnQ7bCsrKWlmKHRoaXMuX2JyYW5jaFVwZGF0ZSYmMSE9dGhpcy5fZ2V0T3BlblN0YXRlKG8pfHx0JiYxIT1ufHwoby5jaGlsZE5vZGVzW2xdLmh0bWxOb2RlLnBhcmVudE5vZGUucGFyZW50Tm9kZS5zdHlsZS5kaXNwbGF5PSIiKSwxPT1vLmNoaWxkTm9kZXNbbF0ub3Blbk1lJiYodGhpcy5fb3Blbkl0ZW0oby5jaGlsZE5vZGVzW2xdKSxvLmNoaWxkTm9kZXNbbF0ub3Blbk1lPTApLGUuX3JlZHJhd0Zyb20oZSxvLmNoaWxkTm9kZXNbbF0pLG51bGwhPXRoaXMuY2hpbGRDYWxjKXtpZigoby5jaGlsZE5vZGVzW2xdLnVuUGFyc2VkfHwhby5jaGlsZE5vZGVzW2xdLlhNTGxvYWQmJnRoaXMuWE1Mc291cmNlKSYmKG8uY2hpbGROb2Rlc1tsXS5fYWNjP28uY2hpbGROb2Rlc1tsXS5zcGFuLmlubmVySFRNTD1vLmNoaWxkTm9kZXNbbF0ubGFiZWwrdGhpcy5odG1sY0Erby5jaGlsZE5vZGVzW2xdLl9hY2MrdGhpcy5odG1sY0I6by5jaGlsZE5vZGVzW2xdLnNwYW4uaW5uZXJIVE1MPW8uY2hpbGROb2Rlc1tsXS5sYWJlbCksby5jaGlsZE5vZGVzW2xdLmNoaWxkTm9kZXMubGVuZ3RoJiZ0aGlzLmNoaWxkQ2FsYyl7aWYoMT09dGhpcy5jaGlsZENhbGMmJihvLmNoaWxkTm9kZXNbbF0uc3Bhbi5pbm5lckhUTUw9by5jaGlsZE5vZGVzW2xdLmxhYmVsK3RoaXMuaHRtbGNBK28uY2hpbGROb2Rlc1tsXS5jaGlsZHNDb3VudCt0aGlzLmh0bWxjQiksMj09dGhpcy5jaGlsZENhbGMpe3ZhciBzPW8uY2hpbGROb2Rlc1tsXS5jaGlsZHNDb3VudC0oby5jaGlsZE5vZGVzW2xdLnB1cmVDaGlsZHN8fDApO3MmJihvLmNoaWxkTm9kZXNbbF0uc3Bhbi5pbm5lckhUTUw9by5jaGlsZE5vZGVzW2xdLmxhYmVsK3RoaXMuaHRtbGNBK3MrdGhpcy5odG1sY0IpLG8ucHVyZUNoaWxkcz9vLnB1cmVDaGlsZHMrKzpvLnB1cmVDaGlsZHM9MX1pZigzPT10aGlzLmNoaWxkQ2FsYyYmKG8uY2hpbGROb2Rlc1tsXS5zcGFuLmlubmVySFRNTD1vLmNoaWxkTm9kZXNbbF0ubGFiZWwrdGhpcy5odG1sY0Erby5jaGlsZE5vZGVzW2xdLl9hY2MrdGhpcy5odG1sY0IpLDQ9PXRoaXMuY2hpbGRDYWxjKXt2YXIgcz1vLmNoaWxkTm9kZXNbbF0uX2FjYztzJiYoby5jaGlsZE5vZGVzW2xdLnNwYW4uaW5uZXJIVE1MPW8uY2hpbGROb2Rlc1tsXS5sYWJlbCt0aGlzLmh0bWxjQStzK3RoaXMuaHRtbGNCKX19ZWxzZSA0PT10aGlzLmNoaWxkQ2FsYyYmcisrO3IrPW8uY2hpbGROb2Rlc1tsXS5fYWNjLDM9PXRoaXMuY2hpbGRDYWxjJiZyKyt9by51blBhcnNlZHx8IW8uWE1MbG9hZCYmdGhpcy5YTUxzb3VyY2V8fChvLl9hY2M9ciksZS5fY29ycmVjdExpbmUobyksZS5fY29ycmVjdFBsdXMobyksdGhpcy5jaGlsZENhbGMmJiF0JiZlLl9maXhDaGlsZENvdW50TGFiZWwobyl9LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLl9jcmVhdGVTZWxmPWZ1bmN0aW9uKCl7dmFyIGU9ZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgiZGl2Iik7cmV0dXJuIGUuY2xhc3NOYW1lPSJjb250YWluZXJUYWJsZVN0eWxlIixlLnN0eWxlLndpZHRoPXRoaXMud2lkdGgsZS5zdHlsZS5oZWlnaHQ9dGhpcy5oZWlnaHQsdGhpcy5wYXJlbnRPYmplY3QuYXBwZW5kQ2hpbGQoZSksZX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuX3hjbG9zZUFsbD1mdW5jdGlvbihlKXtpZighZS51blBhcnNlZCl7aWYodGhpcy5yb290SWQhPWUuaWQpe2lmKCFlLmh0bWxOb2RlKXJldHVybjtmb3IodmFyIHQ9ZS5odG1sTm9kZS5jaGlsZE5vZGVzWzBdLmNoaWxkTm9kZXMsaT10Lmxlbmd0aCxuPTE7aT5uO24rKyl0W25dLnN0eWxlLmRpc3BsYXk9Im5vbmUiO3RoaXMuX2NvcnJlY3RQbHVzKGUpfWZvcih2YXIgbj0wO248ZS5jaGlsZHNDb3VudDtuKyspZS5jaGlsZE5vZGVzW25dLmNoaWxkc0NvdW50JiZ0aGlzLl94Y2xvc2VBbGwoZS5jaGlsZE5vZGVzW25dKX19LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLl94b3BlbkFsbD1mdW5jdGlvbihlKXt0aGlzLl9IaWRlU2hvdyhlLDIpO2Zvcih2YXIgdD0wO3Q8ZS5jaGlsZHNDb3VudDt0KyspdGhpcy5feG9wZW5BbGwoZS5jaGlsZE5vZGVzW3RdKX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuX2NvcnJlY3RQbHVzPWZ1bmN0aW9uKGUpe2lmKGUuaHRtbE5vZGUpe3ZhciB0PWUuaHRtbE5vZGUuY2hpbGROb2Rlc1swXS5jaGlsZE5vZGVzWzBdLmNoaWxkTm9kZXNbMF0ubGFzdENoaWxkLGk9ZS5odG1sTm9kZS5jaGlsZE5vZGVzWzBdLmNoaWxkTm9kZXNbMF0uY2hpbGROb2Rlc1syXS5jaGlsZE5vZGVzWzBdLG49dGhpcy5saW5lQXJyYXk7aWYodGhpcy5YTUxzb3VyY2UmJiFlLlhNTGxvYWQpe3ZhciBuPXRoaXMucGx1c0FycmF5O2lmKHRoaXMuX3NldFNyYyhpLHRoaXMuaWNvblVSTCtlLmltYWdlc1syXSksdGhpcy5fdHh0aW1nKXJldHVybiB0LmlubmVySFRNTD0iWytdIn1lbHNlIGlmKGUuY2hpbGRzQ291bnR8fGUudW5QYXJzZWQpaWYoZS5odG1sTm9kZS5jaGlsZE5vZGVzWzBdLmNoaWxkTm9kZXNbMV0mJiJub25lIiE9ZS5odG1sTm9kZS5jaGlsZE5vZGVzWzBdLmNoaWxkTm9kZXNbMV0uc3R5bGUuZGlzcGxheSl7aWYoIWUud3NpZ24pdmFyIG49dGhpcy5taW51c0FycmF5O2lmKHRoaXMuX3NldFNyYyhpLHRoaXMuaWNvblVSTCtlLmltYWdlc1sxXSksdGhpcy5fdHh0aW1nKXJldHVybiB0LmlubmVySFRNTD0iWy1dIn1lbHNle2lmKCFlLndzaWduKXZhciBuPXRoaXMucGx1c0FycmF5O2lmKHRoaXMuX3NldFNyYyhpLHRoaXMuaWNvblVSTCtlLmltYWdlc1syXSksdGhpcy5fdHh0aW1nKXJldHVybiB0LmlubmVySFRNTD0iWytdIn1lbHNlIHRoaXMuX3NldFNyYyhpLHRoaXMuaWNvblVSTCtlLmltYWdlc1swXSk7dmFyIG89MjtlLnRyZWVOb2QudHJlZUxpbmVzT24/KGUucGFyZW50T2JqZWN0JiYobz10aGlzLl9nZXRDb3VudFN0YXR1cyhlLmlkLGUucGFyZW50T2JqZWN0KSksdGhpcy5fc2V0U3JjKHQsdGhpcy5pbVBhdGgrbltvXSkpOnRoaXMuX3NldFNyYyh0LHRoaXMuaW1QYXRoK25bM10pfX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuX2NvcnJlY3RMaW5lPWZ1bmN0aW9uKGUpe2lmKGUuaHRtbE5vZGUpe3ZhciB0PWUucGFyZW50T2JqZWN0O2lmKHQpaWYoMCE9dGhpcy5fZ2V0TGluZVN0YXR1cyhlLmlkLHQpJiZ0aGlzLnRyZWVMaW5lc09uKWZvcih2YXIgaT0xO2k8PWUuY2hpbGRzQ291bnQmJmUuaHRtbE5vZGUuY2hpbGROb2Rlc1swXS5jaGlsZE5vZGVzW2ldO2krKyllLmh0bWxOb2RlLmNoaWxkTm9kZXNbMF0uY2hpbGROb2Rlc1tpXS5jaGlsZE5vZGVzWzBdLnN0eWxlLmJhY2tncm91bmRJbWFnZT0idXJsKCIrdGhpcy5pbVBhdGgrdGhpcy5saW5lQXJyYXlbNV0rIikiLGUuaHRtbE5vZGUuY2hpbGROb2Rlc1swXS5jaGlsZE5vZGVzW2ldLmNoaWxkTm9kZXNbMF0uc3R5bGUuYmFja2dyb3VuZFJlcGVhdD0icmVwZWF0LXkiO2Vsc2UgZm9yKHZhciBpPTE7aTw9ZS5jaGlsZHNDb3VudCYmZS5odG1sTm9kZS5jaGlsZE5vZGVzWzBdLmNoaWxkTm9kZXNbaV07aSsrKWUuaHRtbE5vZGUuY2hpbGROb2Rlc1swXS5jaGlsZE5vZGVzW2ldLmNoaWxkTm9kZXNbMF0uc3R5bGUuYmFja2dyb3VuZEltYWdlPSIiLGUuaHRtbE5vZGUuY2hpbGROb2Rlc1swXS5jaGlsZE5vZGVzW2ldLmNoaWxkTm9kZXNbMF0uc3R5bGUuYmFja2dyb3VuZFJlcGVhdD0iIn19LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLl9nZXRMaW5lU3RhdHVzPWZ1bmN0aW9uKGUsdCl7cmV0dXJuIHQuY2hpbGROb2Rlc1t0LmNoaWxkc0NvdW50LTFdLmlkPT1lPzA6MX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuX0hpZGVTaG93PWZ1bmN0aW9uKGUsdCl7aWYoIXRoaXMuX2xvY2tlcnx8dGhpcy5za2lwTG9ja3x8IXRoaXMuX2xvY2tlcltlLmlkXSl7aWYodGhpcy5YTUxzb3VyY2UmJiFlLlhNTGxvYWQpe2lmKDE9PXQpcmV0dXJuO3JldHVybiBlLlhNTGxvYWQ9MSx2b2lkIHRoaXMuX2xvYWREeW5YTUwoZS5pZCl9ZS51blBhcnNlZCYmdGhpcy5yZVBhcnNlKGUpO3ZhciBpPWUuaHRtbE5vZGUuY2hpbGROb2Rlc1swXS5jaGlsZE5vZGVzLG49aS5sZW5ndGg7aWYobj4xKXsibm9uZSI9PWlbMV0uc3R5bGUuZGlzcGxheSYmMSE9dHx8Mj09dD9ub2Rlc3R5bGU9IiI6KHRoaXMuYWxsVHJlZS5jaGlsZE5vZGVzWzBdLmJvcmRlcj0iMSIsdGhpcy5hbGxUcmVlLmNoaWxkTm9kZXNbMF0uYm9yZGVyPSIwIixub2Rlc3R5bGU9Im5vbmUiKTtmb3IodmFyIG89MTtuPm87bysrKWlbb10uc3R5bGUuZGlzcGxheT1ub2Rlc3R5bGV9dGhpcy5fY29ycmVjdFBsdXMoZSl9fSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5fZ2V0T3BlblN0YXRlPWZ1bmN0aW9uKGUpe2lmKCFlLmh0bWxOb2RlKXJldHVybiAwO3ZhciB0PWUuaHRtbE5vZGUuY2hpbGROb2Rlc1swXS5jaGlsZE5vZGVzO3JldHVybiB0Lmxlbmd0aDw9MT8wOiJub25lIiE9dFsxXS5zdHlsZS5kaXNwbGF5PzE6LTF9LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLm9uUm93Q2xpY2syPWZ1bmN0aW9uKCl7dmFyIGU9dGhpcy5wYXJlbnRPYmplY3QudHJlZU5vZDtyZXR1cm4gZS5jYWxsRXZlbnQoIm9uRGJsQ2xpY2siLFt0aGlzLnBhcmVudE9iamVjdC5pZCxlXSk/KHRoaXMucGFyZW50T2JqZWN0LmNsb3NlYmxlJiYiMCIhPXRoaXMucGFyZW50T2JqZWN0LmNsb3NlYmxlP2UuX0hpZGVTaG93KHRoaXMucGFyZW50T2JqZWN0KTplLl9IaWRlU2hvdyh0aGlzLnBhcmVudE9iamVjdCwyKSxlLmNoZWNrRXZlbnQoIm9uT3BlbkVuZCIpJiYoZS54bWxzdGF0ZT8oZS5fb2llX29uWExFLnB1c2goZS5vblhMRSksZS5vblhMRT1lLl9lcG5GSGUpOmUuY2FsbEV2ZW50KCJvbk9wZW5FbmQiLFt0aGlzLnBhcmVudE9iamVjdC5pZCxlLl9nZXRPcGVuU3RhdGUodGhpcy5wYXJlbnRPYmplY3QpXSkpLCExKTohMX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUub25Sb3dDbGljaz1mdW5jdGlvbigpe3ZhciBlPXRoaXMucGFyZW50T2JqZWN0LnRyZWVOb2Q7cmV0dXJuIGUuY2FsbEV2ZW50KCJvbk9wZW5TdGFydCIsW3RoaXMucGFyZW50T2JqZWN0LmlkLGUuX2dldE9wZW5TdGF0ZSh0aGlzLnBhcmVudE9iamVjdCldKT8odGhpcy5wYXJlbnRPYmplY3QuY2xvc2VibGUmJiIwIiE9dGhpcy5wYXJlbnRPYmplY3QuY2xvc2VibGU/ZS5fSGlkZVNob3codGhpcy5wYXJlbnRPYmplY3QpOmUuX0hpZGVTaG93KHRoaXMucGFyZW50T2JqZWN0LDIpLHZvaWQoZS5jaGVja0V2ZW50KCJvbk9wZW5FbmQiKSYmKGUueG1sc3RhdGU/KGUuX29pZV9vblhMRS5wdXNoKGUub25YTEUpLGUub25YTEU9ZS5fZXBuRkhlKTplLmNhbGxFdmVudCgib25PcGVuRW5kIixbdGhpcy5wYXJlbnRPYmplY3QuaWQsZS5fZ2V0T3BlblN0YXRlKHRoaXMucGFyZW50T2JqZWN0KV0pKSkpOjB9LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLmdldFNlbGVjdGVkSXRlbUlkPWZ1bmN0aW9uKCl7Zm9yKHZhciBlPW5ldyBBcnJheSx0PTA7dDx0aGlzLl9zZWxlY3RlZC5sZW5ndGg7dCsrKWVbdF09dGhpcy5fc2VsZWN0ZWRbdF0uaWQ7cmV0dXJuIGUuam9pbih0aGlzLmRsbXRyKX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuX3NlbGVjdEl0ZW09ZnVuY3Rpb24oZSx0KXtpZih0aGlzLmNoZWNrRXZlbnQoIm9uU2VsZWN0IikmJih0aGlzLl9vblNTQ0ZvbGQ9dGhpcy5nZXRTZWxlY3RlZEl0ZW1JZCgpKSx0aGlzLl9hbXNlbCYmdCYmKHQuY3RybEtleXx8dC5tZXRhS2V5fHx0LnNoaWZ0S2V5KXx8dGhpcy5fdW5zZWxlY3RJdGVtcygpLGUuaV9zZWwmJnRoaXMuX2Ftc2VsJiZ0JiYodC5jdHJsS2V5fHx0Lm1ldGFLZXkpKXRoaXMuX3Vuc2VsZWN0SXRlbShlKTtlbHNlIGlmKCEoZS5pX3NlbHx8dGhpcy5fYW1zZWxTJiYwIT10aGlzLl9zZWxlY3RlZC5sZW5ndGgmJnRoaXMuX3NlbGVjdGVkWzBdLnBhcmVudE9iamVjdCE9ZS5wYXJlbnRPYmplY3QpKWlmKHRoaXMuX2Ftc2VsJiZ0JiZ0LnNoaWZ0S2V5JiYwIT10aGlzLl9zZWxlY3RlZC5sZW5ndGgmJnRoaXMuX3NlbGVjdGVkW3RoaXMuX3NlbGVjdGVkLmxlbmd0aC0xXS5wYXJlbnRPYmplY3Q9PWUucGFyZW50T2JqZWN0KXt2YXIgaT10aGlzLl9nZXRJbmRleCh0aGlzLl9zZWxlY3RlZFt0aGlzLl9zZWxlY3RlZC5sZW5ndGgtMV0pLG49dGhpcy5fZ2V0SW5kZXgoZSk7aWYoaT5uKXt2YXIgbz1pO2k9bixuPW99Zm9yKHZhciByPWk7bj49cjtyKyspZS5wYXJlbnRPYmplY3QuY2hpbGROb2Rlc1tyXS5pX3NlbHx8dGhpcy5fbWFya0l0ZW0oZS5wYXJlbnRPYmplY3QuY2hpbGROb2Rlc1tyXSl9ZWxzZSB0aGlzLl9tYXJrSXRlbShlKTtpZih0aGlzLmNoZWNrRXZlbnQoIm9uU2VsZWN0Iikpe3ZhciBsPXRoaXMuZ2V0U2VsZWN0ZWRJdGVtSWQoKTtsIT10aGlzLl9vblNTQ0ZvbGQmJnRoaXMuY2FsbEV2ZW50KCJvblNlbGVjdCIsW2xdKX19LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLl9tYXJrSXRlbT1mdW5jdGlvbihlKXtlLnNjb2xvciYmKGUuc3Bhbi5zdHlsZS5jb2xvcj1lLnNjb2xvciksZS5zcGFuLmNsYXNzTmFtZT0ic2VsZWN0ZWRUcmVlUm93IixlLnNwYW4ucGFyZW50Tm9kZS5wYXJlbnROb2RlLmNsYXNzTmFtZT0ic2VsZWN0ZWRUcmVlUm93RnVsbCIsZS5pX3NlbD0hMCx0aGlzLl9zZWxlY3RlZFt0aGlzLl9zZWxlY3RlZC5sZW5ndGhdPWV9LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLmdldEluZGV4QnlJZD1mdW5jdGlvbihlKXt2YXIgdD10aGlzLl9nbG9iYWxJZFN0b3JhZ2VGaW5kKGUpO3JldHVybiB0P3RoaXMuX2dldEluZGV4KHQpOm51bGx9LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLl9nZXRJbmRleD1mdW5jdGlvbihlKXtmb3IodmFyIHQ9ZS5wYXJlbnRPYmplY3QsaT0wO2k8dC5jaGlsZHNDb3VudDtpKyspaWYodC5jaGlsZE5vZGVzW2ldPT1lKXJldHVybiBpfSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5fdW5zZWxlY3RJdGVtPWZ1bmN0aW9uKGUpe2lmKGUmJmUuaV9zZWwpe2Uuc3Bhbi5jbGFzc05hbWU9InN0YW5kYXJ0VHJlZVJvdyIsZS5zcGFuLnBhcmVudE5vZGUucGFyZW50Tm9kZS5jbGFzc05hbWU9IiIsZS5hY29sb3ImJihlLnNwYW4uc3R5bGUuY29sb3I9ZS5hY29sb3IpLGUuaV9zZWw9ITE7Zm9yKHZhciB0PTA7dDx0aGlzLl9zZWxlY3RlZC5sZW5ndGg7dCsrKWlmKCF0aGlzLl9zZWxlY3RlZFt0XS5pX3NlbCl7dGhpcy5fc2VsZWN0ZWQuc3BsaWNlKHQsMSk7YnJlYWt9fX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuX3Vuc2VsZWN0SXRlbXM9ZnVuY3Rpb24oKXtmb3IodmFyIGU9MDtlPHRoaXMuX3NlbGVjdGVkLmxlbmd0aDtlKyspe3ZhciB0PXRoaXMuX3NlbGVjdGVkW2VdO3Quc3Bhbi5jbGFzc05hbWU9InN0YW5kYXJ0VHJlZVJvdyIsdC5zcGFuLnBhcmVudE5vZGUucGFyZW50Tm9kZS5jbGFzc05hbWU9IiIsdC5hY29sb3ImJih0LnNwYW4uc3R5bGUuY29sb3I9dC5hY29sb3IpLHQuaV9zZWw9ITF9dGhpcy5fc2VsZWN0ZWQ9bmV3IEFycmF5fSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5vblJvd1NlbGVjdD1mdW5jdGlvbihlLHQsaSl7ZT1lfHx3aW5kb3cuZXZlbnQ7dmFyIG49dGhpcy5wYXJlbnRPYmplY3Q7dCYmKG49dC5wYXJlbnRPYmplY3QpO3ZhciBvPW4udHJlZU5vZCxyPW8uZ2V0U2VsZWN0ZWRJdGVtSWQoKTtlJiZlLnNraXBVblNlbHx8by5fc2VsZWN0SXRlbShuLGUpLGl8fChuLmFjdGlvbkhhbmRsZXI/bi5hY3Rpb25IYW5kbGVyKG4uaWQscik6by5jYWxsRXZlbnQoIm9uQ2xpY2siLFtuLmlkLHJdKSl9LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLl9jcmVhdGVJdGVtPWZ1bmN0aW9uKGUsdCxpKXt2YXIgbj1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCJ0YWJsZSIpO24uY2VsbFNwYWNpbmc9MCxuLmNlbGxQYWRkaW5nPTAsbi5ib3JkZXI9MCx0aGlzLmhmTW9kZSYmKG4uc3R5bGUudGFibGVMYXlvdXQ9ImZpeGVkIiksbi5zdHlsZS5tYXJnaW49MCxuLnN0eWxlLnBhZGRpbmc9MDt2YXIgbz1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCJ0Ym9keSIpLHI9ZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgidHIiKSxsPWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoInRkIik7aWYobC5jbGFzc05hbWU9InN0YW5kYXJ0VHJlZUltYWdlIix0aGlzLl90eHRpbWcpe3ZhciBzPWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoImRpdiIpO2wuYXBwZW5kQ2hpbGQocykscy5jbGFzc05hbWU9ImRoeF90cmVlX3RleHRTaWduIn1lbHNle3ZhciBzPXRoaXMuX2dldEltZyh0LmlkKTtzLmJvcmRlcj0iMCIsIklNRyI9PXMudGFnTmFtZSYmKHMuYWxpZ249ImFic21pZGRsZSIpLGwuYXBwZW5kQ2hpbGQocykscy5zdHlsZS5wYWRkaW5nPTAscy5zdHlsZS5tYXJnaW49MCxzLnN0eWxlLndpZHRoPXRoaXMuZGVmX2xpbmVfaW1nX3h9dmFyIGE9ZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgidGQiKSxkPXRoaXMuX2dldEltZyh0aGlzLmNCUk9mP3RoaXMucm9vdElkOnQuaWQpO2QuY2hlY2tlZD0wLHRoaXMuX3NldFNyYyhkLHRoaXMuaW1QYXRoK3RoaXMuY2hlY2tBcnJheVswXSksZC5zdHlsZS53aWR0aD0iMThweCIsZC5zdHlsZS5oZWlnaHQ9IjE4cHgiLGV8fChhLnN0eWxlLmRpc3BsYXk9Im5vbmUiKSxhLmFwcGVuZENoaWxkKGQpLHRoaXMuY0JST2Z8fCJJTUciIT1kLnRhZ05hbWV8fChkLmFsaWduPSJhYnNtaWRkbGUiKSxkLm9uY2xpY2s9dGhpcy5vbkNoZWNrQm94Q2xpY2ssZC50cmVlTm9kPXRoaXMsZC5wYXJlbnRPYmplY3Q9dCx3aW5kb3cuX0tIVE1McnY/YS53aWR0aD0iMTZweCI6YS53aWR0aD0iMjBweCI7dmFyIGg9ZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgidGQiKTtoLmNsYXNzTmFtZT0ic3RhbmRhcnRUcmVlSW1hZ2UiO3ZhciBjPXRoaXMuX2dldEltZyh0aGlzLnRpbWdlbj90LmlkOnRoaXMucm9vdElkKTtjLm9ubW91c2Vkb3duPXRoaXMuX3ByZXZlbnROc0RyYWcsYy5vbmRyYWdzdGFydD10aGlzLl9wcmV2ZW50TnNEcmFnLGMuYm9yZGVyPSIwIix0aGlzLl9haW1ncyYmKGMucGFyZW50T2JqZWN0PXQsCiJJTUciPT1jLnRhZ05hbWUmJihjLmFsaWduPSJhYnNtaWRkbGUiKSxjLm9uY2xpY2s9dGhpcy5vblJvd1NlbGVjdCksaXx8dGhpcy5fc2V0U3JjKGMsdGhpcy5pY29uVVJMK3RoaXMuaW1hZ2VBcnJheVswXSksaC5hcHBlbmRDaGlsZChjKSxjLnN0eWxlLnBhZGRpbmc9MCxjLnN0eWxlLm1hcmdpbj0wLHRoaXMudGltZ2VuPyhoLnN0eWxlLndpZHRoPWMuc3R5bGUud2lkdGg9dGhpcy5kZWZfaW1nX3gsYy5zdHlsZS5oZWlnaHQ9dGhpcy5kZWZfaW1nX3kpOihjLnN0eWxlLndpZHRoPSIwcHgiLGMuc3R5bGUuaGVpZ2h0PSIwcHgiLChfaXNPcGVyYXx8d2luZG93Ll9LSFRNTHJ2KSYmKGguc3R5bGUuZGlzcGxheT0ibm9uZSIpKTt2YXIgdT1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCJ0ZCIpO3JldHVybiB1LmNsYXNzTmFtZT0iZGh4VGV4dENlbGwgc3RhbmRhcnRUcmVlUm93Iix0LnNwYW49ZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgic3BhbiIpLHQuc3Bhbi5jbGFzc05hbWU9InN0YW5kYXJ0VHJlZVJvdyIsdGhpcy5tbGl0ZW1zPyh0LnNwYW4uc3R5bGUud2lkdGg9dGhpcy5tbGl0ZW1zLHQuc3Bhbi5zdHlsZS5kaXNwbGF5PSJibG9jayIpOnUubm9XcmFwPSEwLGRoeDQuaXNJRTg/dS5zdHlsZS53aWR0aD0iOTk5OTlweCI6d2luZG93Ll9LSFRNTHJ2fHwodS5zdHlsZS53aWR0aD0iMTAwJSIpLHQuc3Bhbi5pbm5lckhUTUw9dC5sYWJlbCx1LmFwcGVuZENoaWxkKHQuc3BhbiksdS5wYXJlbnRPYmplY3Q9dCxsLnBhcmVudE9iamVjdD10LHUub25jbGljaz10aGlzLm9uUm93U2VsZWN0LGwub25jbGljaz10aGlzLm9uUm93Q2xpY2ssdS5vbmRibGNsaWNrPXRoaXMub25Sb3dDbGljazIsdGhpcy5ldHRpcCYmKHIudGl0bGU9dC5sYWJlbCksdGhpcy5kcmFnQW5kRHJvcE9mZiYmKHRoaXMuX2FpbWdzJiYodGhpcy5kcmFnZ2VyLmFkZERyYWdnYWJsZUl0ZW0oaCx0aGlzKSxoLnBhcmVudE9iamVjdD10KSx0aGlzLmRyYWdnZXIuYWRkRHJhZ2dhYmxlSXRlbSh1LHRoaXMpKSx0LnNwYW4uc3R5bGUucGFkZGluZ0xlZnQ9IjVweCIsdC5zcGFuLnN0eWxlLnBhZGRpbmdSaWdodD0iNXB4Iix1LnN0eWxlLnZlcnRpY2FsQWxpZ249IiIsdS5zdHlsZS5mb250U2l6ZT0iMTBwdCIsdS5zdHlsZS5jdXJzb3I9dGhpcy5zdHlsZV9wb2ludGVyLHIuYXBwZW5kQ2hpbGQobCksci5hcHBlbmRDaGlsZChhKSxyLmFwcGVuZENoaWxkKGgpLHIuYXBwZW5kQ2hpbGQodSksby5hcHBlbmRDaGlsZChyKSxuLmFwcGVuZENoaWxkKG8pLCh0aGlzLmVobHR8fHRoaXMuY2hlY2tFdmVudCgib25Nb3VzZUluIil8fHRoaXMuY2hlY2tFdmVudCgib25Nb3VzZU91dCIpKSYmKHIub25tb3VzZW1vdmU9dGhpcy5faXRlbU1vdXNlSW4scltfaXNJRT8ib25tb3VzZWxlYXZlIjoib25tb3VzZW91dCJdPXRoaXMuX2l0ZW1Nb3VzZU91dCksbn0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuc2V0T25SaWdodENsaWNrSGFuZGxlcj1mdW5jdGlvbihlKXt0aGlzLmF0dGFjaEV2ZW50KCJvblJpZ2h0Q2xpY2siLGUpfSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5zZXRPbkNsaWNrSGFuZGxlcj1mdW5jdGlvbihlKXt0aGlzLmF0dGFjaEV2ZW50KCJvbkNsaWNrIixlKX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuc2V0T25TZWxlY3RTdGF0ZUNoYW5nZT1mdW5jdGlvbihlKXt0aGlzLmF0dGFjaEV2ZW50KCJvblNlbGVjdCIsZSl9LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLnNldFhNTEF1dG9Mb2FkaW5nPWZ1bmN0aW9uKGUpe3RoaXMuWE1Mc291cmNlPWV9LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLnNldE9uQ2hlY2tIYW5kbGVyPWZ1bmN0aW9uKGUpe3RoaXMuYXR0YWNoRXZlbnQoIm9uQ2hlY2siLGUpfSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5zZXRPbk9wZW5IYW5kbGVyPWZ1bmN0aW9uKGUpe3RoaXMuYXR0YWNoRXZlbnQoIm9uT3BlblN0YXJ0IixlKX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuc2V0T25PcGVuU3RhcnRIYW5kbGVyPWZ1bmN0aW9uKGUpe3RoaXMuYXR0YWNoRXZlbnQoIm9uT3BlblN0YXJ0IixlKX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuc2V0T25PcGVuRW5kSGFuZGxlcj1mdW5jdGlvbihlKXt0aGlzLmF0dGFjaEV2ZW50KCJvbk9wZW5FbmQiLGUpfSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5zZXRPbkRibENsaWNrSGFuZGxlcj1mdW5jdGlvbihlKXt0aGlzLmF0dGFjaEV2ZW50KCJvbkRibENsaWNrIixlKX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUub3BlbkFsbEl0ZW1zPWZ1bmN0aW9uKGUpe3ZhciB0PXRoaXMuX2dsb2JhbElkU3RvcmFnZUZpbmQoZSk7cmV0dXJuIHQ/dm9pZCB0aGlzLl94b3BlbkFsbCh0KTowfSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5nZXRPcGVuU3RhdGU9ZnVuY3Rpb24oZSl7dmFyIHQ9dGhpcy5fZ2xvYmFsSWRTdG9yYWdlRmluZChlKTtyZXR1cm4gdD90aGlzLl9nZXRPcGVuU3RhdGUodCk6IiJ9LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLmNsb3NlQWxsSXRlbXM9ZnVuY3Rpb24oZSl7ZT09PXdpbmRvdy51bmRlZmluZWQmJihlPXRoaXMucm9vdElkKTt2YXIgdD10aGlzLl9nbG9iYWxJZFN0b3JhZ2VGaW5kKGUpO3JldHVybiB0Pyh0aGlzLl94Y2xvc2VBbGwodCksdGhpcy5hbGxUcmVlLmNoaWxkTm9kZXNbMF0uYm9yZGVyPSIxIix2b2lkKHRoaXMuYWxsVHJlZS5jaGlsZE5vZGVzWzBdLmJvcmRlcj0iMCIpKTowfSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5zZXRVc2VyRGF0YT1mdW5jdGlvbihlLHQsaSl7dmFyIG49dGhpcy5fZ2xvYmFsSWRTdG9yYWdlRmluZChlLDAsITApO24mJigiaGludCI9PXQmJihuLmh0bWxOb2RlLmNoaWxkTm9kZXNbMF0uY2hpbGROb2Rlc1swXS50aXRsZT1pKSwidW5kZWZpbmVkIj09dHlwZW9mIG4udXNlckRhdGFbInRfIit0XSYmKG4uX3VzZXJkYXRhbGlzdD9uLl91c2VyZGF0YWxpc3QrPSIsIit0Om4uX3VzZXJkYXRhbGlzdD10KSxuLnVzZXJEYXRhWyJ0XyIrdF09aSl9LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLmdldFVzZXJEYXRhPWZ1bmN0aW9uKGUsdCl7dmFyIGk9dGhpcy5fZ2xvYmFsSWRTdG9yYWdlRmluZChlLDAsITApO2lmKGkpcmV0dXJuIGkudXNlckRhdGFbInRfIit0XX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuZ2V0SXRlbUNvbG9yPWZ1bmN0aW9uKGUpe3ZhciB0PXRoaXMuX2dsb2JhbElkU3RvcmFnZUZpbmQoZSk7aWYoIXQpcmV0dXJuIDA7dmFyIGk9bmV3IE9iamVjdDtyZXR1cm4gdC5hY29sb3ImJihpLmFjb2xvcj10LmFjb2xvciksdC5zY29sb3ImJihpLnNjb2xvcj10LnNjb2xvciksaX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuc2V0SXRlbUNvbG9yPWZ1bmN0aW9uKGUsdCxpKXtpZihlJiZlLnNwYW4pdmFyIG49ZTtlbHNlIHZhciBuPXRoaXMuX2dsb2JhbElkU3RvcmFnZUZpbmQoZSk7cmV0dXJuIG4/KG4uaV9zZWw/KGl8fHQpJiYobi5zcGFuLnN0eWxlLmNvbG9yPWl8fHQpOnQmJihuLnNwYW4uc3R5bGUuY29sb3I9dCksaSYmKG4uc2NvbG9yPWkpLHQmJihuLmFjb2xvcj10KSx2b2lkIDApOjB9LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLnNldE9uTW91c2VJbkhhbmRsZXI9ZnVuY3Rpb24oZSl7dGhpcy5laGx0PSEwLHRoaXMuYXR0YWNoRXZlbnQoIm9uTW91c2VJbiIsZSl9LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLnNldE9uTW91c2VPdXRIYW5kbGVyPWZ1bmN0aW9uKGUpe3RoaXMuZWhsdD0hMCx0aGlzLmF0dGFjaEV2ZW50KCJvbk1vdXNlT3V0IixlKX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuZW5hYmxlVHJlZUxpbmVzPWZ1bmN0aW9uKGUpe3RoaXMudHJlZUxpbmVzT249ZGh4NC5zMmIoZSl9LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLm9wZW5JdGVtPWZ1bmN0aW9uKGUpe3RoaXMuc2tpcExvY2s9ITA7dmFyIHQ9dGhpcy5fZ2xvYmFsSWRTdG9yYWdlRmluZChlKTtyZXR1cm4gdD90aGlzLl9vcGVuSXRlbSh0KTowfSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5fb3Blbkl0ZW09ZnVuY3Rpb24oZSl7dmFyIHQ9dGhpcy5fZ2V0T3BlblN0YXRlKGUpO2lmKDA+dHx8dGhpcy5YTUxzb3VyY2UmJiFlLlhNTGxvYWQpe2lmKCF0aGlzLmNhbGxFdmVudCgib25PcGVuU3RhcnQiLFtlLmlkLHRdKSlyZXR1cm4gMDt0aGlzLl9IaWRlU2hvdyhlLDIpLHRoaXMuY2hlY2tFdmVudCgib25PcGVuRW5kIikmJih0aGlzLm9uWExFPT10aGlzLl9lcG5GSGUmJnRoaXMuX2VwbkZIZSh0aGlzLGUuaWQsITApLHRoaXMueG1sc3RhdGUmJnRoaXMuWE1Mc291cmNlPyh0aGlzLl9vaWVfb25YTEUucHVzaCh0aGlzLm9uWExFKSx0aGlzLm9uWExFPXRoaXMuX2VwbkZIZSk6dGhpcy5jYWxsRXZlbnQoIm9uT3BlbkVuZCIsW2UuaWQsdGhpcy5fZ2V0T3BlblN0YXRlKGUpXSkpfWVsc2UgdGhpcy5fc3JuZCYmdGhpcy5fSGlkZVNob3coZSwyKTtlLnBhcmVudE9iamVjdCYmIXRoaXMuX3NraXBfb3Blbl9wYXJlbnQmJnRoaXMuX29wZW5JdGVtKGUucGFyZW50T2JqZWN0KX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuX2dldEFsbEZhdEl0ZW1zPWZ1bmN0aW9uKGUpe2Zvcih2YXIgdD0iIixpPTA7aTxlLmNoaWxkc0NvdW50O2krKylpZihlLmNoaWxkTm9kZXNbaV0udW5QYXJzZWR8fGUuY2hpbGROb2Rlc1tpXS5jaGlsZHNDb3VudD4wKXtpZih0P3QrPXRoaXMuZGxtdHIrZS5jaGlsZE5vZGVzW2ldLmlkOnQ9IiIrZS5jaGlsZE5vZGVzW2ldLmlkLGUuY2hpbGROb2Rlc1tpXS51blBhcnNlZCl2YXIgbj10aGlzLl9nZXRBbGxGYXRJdGVtc1hNTChlLmNoaWxkTm9kZXNbaV0udW5QYXJzZWQsMSk7ZWxzZSB2YXIgbj10aGlzLl9nZXRBbGxGYXRJdGVtcyhlLmNoaWxkTm9kZXNbaV0pO24mJih0Kz10aGlzLmRsbXRyK24pfXJldHVybiB0fSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5zZWxlY3RJdGVtPWZ1bmN0aW9uKGUsdCxpKXt0PWRoeDQuczJiKHQpO3ZhciBuPXRoaXMuX2dsb2JhbElkU3RvcmFnZUZpbmQoZSk7aWYoIW58fCFuLnBhcmVudE9iamVjdClyZXR1cm4gMDt0aGlzLlhNTGxvYWRpbmdXYXJuaW5nP24ucGFyZW50T2JqZWN0Lm9wZW5NZT0xOnRoaXMuX29wZW5JdGVtKG4ucGFyZW50T2JqZWN0KTt2YXIgbz1udWxsO2kmJihvPW5ldyBPYmplY3Qsby5jdHJsS2V5PSEwLG4uaV9zZWwmJihvLnNraXBVblNlbD0hMCkpLHQ/dGhpcy5vblJvd1NlbGVjdChvLG4uaHRtbE5vZGUuY2hpbGROb2Rlc1swXS5jaGlsZE5vZGVzWzBdLmNoaWxkTm9kZXNbM10sITEpOnRoaXMub25Sb3dTZWxlY3QobyxuLmh0bWxOb2RlLmNoaWxkTm9kZXNbMF0uY2hpbGROb2Rlc1swXS5jaGlsZE5vZGVzWzNdLCEwKX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuX2NvbXByZXNzQ2hpbGRMaXN0PWZ1bmN0aW9uKGUsdCl7ZS0tO2Zvcih2YXIgaT0wO2U+aTtpKyspMD09dFtpXSYmKHRbaV09dFtpKzFdLHRbaSsxXT0wKX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuX2RlbGV0ZU5vZGU9ZnVuY3Rpb24oZSx0LGkpe2lmKCF0fHwhdC5wYXJlbnRPYmplY3QpcmV0dXJuIDA7dmFyIG49MCxvPTA7dC50ci5uZXh0U2libGluZyYmKG49dC50ci5uZXh0U2libGluZy5ub2RlbSksdC50ci5wcmV2aW91c1NpYmxpbmcmJihvPXQudHIucHJldmlvdXNTaWJsaW5nLm5vZGVtKTtmb3IodmFyIHI9dC5wYXJlbnRPYmplY3QsbD1yLmNoaWxkc0NvdW50LHM9ci5jaGlsZE5vZGVzLGE9MDtsPmE7YSsrKWlmKHNbYV0uaWQ9PWUpe2l8fHIuaHRtbE5vZGUuY2hpbGROb2Rlc1swXS5yZW1vdmVDaGlsZChzW2FdLnRyKSxzW2FdPTA7YnJlYWt9dGhpcy5fY29tcHJlc3NDaGlsZExpc3QobCxzKSxpfHxyLmNoaWxkc0NvdW50LS0sbiYmKHRoaXMuX2NvcnJlY3RQbHVzKG4pLHRoaXMuX2NvcnJlY3RMaW5lKG4pKSxvJiYodGhpcy5fY29ycmVjdFBsdXMobyksdGhpcy5fY29ycmVjdExpbmUobykpLHRoaXMudHNjaGVjayYmdGhpcy5fY29ycmVjdENoZWNrU3RhdGVzKHIpLGl8fHRoaXMuX2dsb2JhbElkU3RvcmFnZVJlY1N1Yih0KX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuZGVsZXRlQ2hpbGRJdGVtcz1mdW5jdGlvbihlKXt2YXIgdD10aGlzLl9nbG9iYWxJZFN0b3JhZ2VGaW5kKGUpO2lmKHQpZm9yKHZhciBpPXQuY2hpbGRzQ291bnQsbj0wO2k+bjtuKyspdGhpcy5fZGVsZXRlTm9kZSh0LmNoaWxkTm9kZXNbMF0uaWQsdC5jaGlsZE5vZGVzWzBdKX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuX2dsb2JhbElkU3RvcmFnZVJlY1N1Yj1mdW5jdGlvbihlKXtmb3IodmFyIHQ9MDt0PGUuY2hpbGRzQ291bnQ7dCsrKXRoaXMuX2dsb2JhbElkU3RvcmFnZVJlY1N1YihlLmNoaWxkTm9kZXNbdF0pLHRoaXMuX2dsb2JhbElkU3RvcmFnZVN1YihlLmNoaWxkTm9kZXNbdF0uaWQpO3RoaXMuX2dsb2JhbElkU3RvcmFnZVN1YihlLmlkKTt2YXIgaT1lO2kuc3Bhbj1udWxsLGkudHIubm9kZW09bnVsbCxpLnRyPW51bGwsaS5odG1sTm9kZT1udWxsfSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5fYXV0b1Njcm9sbD1mdW5jdGlvbihlLHQsaSl7dGhpcy5hdXRvU2Nyb2xsJiYoZSYmKHQ9ZGh4NC5hYnNUb3AoZSksaT1kaHg0LmFic1RvcCh0aGlzLmFsbFRyZWUpLXRoaXMuYWxsVHJlZS5zY3JvbGxUb3ApLHQtaS1wYXJzZUludCh0aGlzLmFsbFRyZWUuc2Nyb2xsVG9wKT5wYXJzZUludCh0aGlzLmFsbFRyZWUub2Zmc2V0SGVpZ2h0KS01MCYmKHRoaXMuYWxsVHJlZS5zY3JvbGxUb3A9cGFyc2VJbnQodGhpcy5hbGxUcmVlLnNjcm9sbFRvcCkrMjApLHQtaTxwYXJzZUludCh0aGlzLmFsbFRyZWUuc2Nyb2xsVG9wKSszMCYmKHRoaXMuYWxsVHJlZS5zY3JvbGxUb3A9cGFyc2VJbnQodGhpcy5hbGxUcmVlLnNjcm9sbFRvcCktMjApKX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuZW5hYmxlVGV4dFNpZ25zPWZ1bmN0aW9uKGUpe3RoaXMuX3R4dGltZz1kaHg0LnMyYihlKX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUucHJldmVudElFQ2FjaGluZz1mdW5jdGlvbihlKXtkaHg0LmFqYXguY2FjaGU9IWV9LGRodG1sWFRyZWVPYmplY3QucHJvdG90eXBlLnByZXZlbnRJRUNhc2hpbmc9ZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUucHJldmVudElFQ2FjaGluZyxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5zZXRJY29uU2l6ZT1mdW5jdGlvbihlLHQsaSl7aWYoaSl7aWYoaSYmaS5zcGFuKXZhciBuPWk7ZWxzZSB2YXIgbj10aGlzLl9nbG9iYWxJZFN0b3JhZ2VGaW5kKGkpO2lmKCFuKXJldHVybiAwO3ZhciBvPW4uc3Bhbi5wYXJlbnROb2RlLnByZXZpb3VzU2libGluZy5jaGlsZE5vZGVzWzBdO2UmJihvLnN0eWxlLndpZHRoPWUrInB4Iix3aW5kb3cuX0tIVE1McnYmJihvLnBhcmVudE5vZGUuc3R5bGUud2lkdGg9ZSsicHgiKSksdCYmKG8uc3R5bGUuaGVpZ2h0PXQrInB4Iix3aW5kb3cuX0tIVE1McnYmJihvLnBhcmVudE5vZGUuc3R5bGUuaGVpZ2h0PXQrInB4IikpfWVsc2UgdGhpcy5kZWZfaW1nX3g9ZSsicHgiLHRoaXMuZGVmX2ltZ195PXQrInB4In0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuZW5hYmxlU2luZ2xlUmFkaW9Nb2RlPWZ1bmN0aW9uKGUpe3RoaXMuX2ZyYnRycz1kaHg0LnMyYihlKX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUub3Blbk9uSXRlbUFkZGVkPWZ1bmN0aW9uKGUpe3RoaXMuX2hBZEk9IWRoeDQuczJiKGUpfSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5vcGVuT25JdGVtQWRkaW5nPWZ1bmN0aW9uKGUpe3RoaXMuX2hBZEk9IWRoeDQuczJiKGUpfSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5nZXRBbGxJdGVtc1dpdGhLaWRzPWZ1bmN0aW9uKCl7cmV0dXJuIHRoaXMuX2dldEFsbEZhdEl0ZW1zKHRoaXMuaHRtbE5vZGUpfSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5zZXRTa2luPWZ1bmN0aW9uKGUpe3ZhciB0PXRoaXMucGFyZW50T2JqZWN0LmNsYXNzTmFtZS5yZXBsYWNlKC9kaHh0cmVlX1teIF0qL2dpLCIiKTt0aGlzLnBhcmVudE9iamVjdC5jbGFzc05hbWU9dCsiIGRoeHRyZWVfIitlLCJkaHhfdGVycmFjZSIhPWUmJiJkaHhfd2ViIiE9ZSYmIm1hdGVyaWFsIiE9ZXx8dGhpcy5lbmFibGVUcmVlTGluZXMoITEpLCJtYXRlcmlhbCI9PWUmJnRoaXMuc2V0SWNvblNpemUoIjI1IiwiMjUiKX0sanNvblBvaW50ZXIucHJvdG90eXBlPXt0ZXh0OmZ1bmN0aW9uKCl7dmFyIGU9ZnVuY3Rpb24oZSl7Zm9yKHZhciBpPVtdLG49MDtuPGUubGVuZ3RoO24rKylpLnB1c2goInsiK3QoZVtuXSkrIn0iKTtyZXR1cm4gaS5qb2luKCIsIil9LHQ9ZnVuY3Rpb24oaSl7dmFyIG49W107Zm9yKHZhciBvIGluIGkpIm9iamVjdCI9PXR5cGVvZiBpW29dP28ubGVuZ3RoP24ucHVzaCgnIicrbysnIjpbJytlKGlbb10pKyJdIik6bi5wdXNoKCciJytvKyciOnsnK3QoaVtvXSkrIn0iKTpuLnB1c2goJyInK28rJyI6IicraVtvXSsnIicpO3JldHVybiBuLmpvaW4oIiwiKX07cmV0dXJuInsiK3QodGhpcy5kKSsifSJ9LGdldDpmdW5jdGlvbihlKXtyZXR1cm4gdGhpcy5kW2VdfSxleGlzdHM6ZnVuY3Rpb24oKXtyZXR1cm4hIXRoaXMuZH0sY29udGVudDpmdW5jdGlvbigpe3JldHVybiB0aGlzLmQuY29udGVudH0sZWFjaDpmdW5jdGlvbihlLHQsaSl7dmFyIG49dGhpcy5kW2VdLG89bmV3IGpzb25Qb2ludGVyO2lmKG4pZm9yKHZhciByPTA7cjxuLmxlbmd0aDtyKyspby5kPW5bcl0sdC5hcHBseShpLFtvLHJdKX0sZ2V0X2FsbDpmdW5jdGlvbigpe3JldHVybiB0aGlzLmR9LHN1YjpmdW5jdGlvbihlKXtyZXR1cm4gbmV3IGpzb25Qb2ludGVyKHRoaXMuZFtlXSx0aGlzLmQpfSxzdWJfZXhpc3RzOmZ1bmN0aW9uKGUpe3JldHVybiEhdGhpcy5kW2VdfSxlYWNoX3g6ZnVuY3Rpb24oZSx0LGksbixvKXt2YXIgcj10aGlzLmRbZV0sbD1uZXcganNvblBvaW50ZXIoMCx0aGlzLmQpO2lmKHIpZm9yKG89b3x8MDtvPHIubGVuZ3RoO28rKylpZihyW29dW3RdJiYobC5kPXJbb10sLTE9PWkuYXBwbHkobixbbCxvXSkpKXJldHVybn0sdXA6ZnVuY3Rpb24oZSl7cmV0dXJuIG5ldyBqc29uUG9pbnRlcih0aGlzLmRwLHRoaXMuZCl9LHNldDpmdW5jdGlvbihlLHQpe3RoaXMuZFtlXT10fSxjbG9uZTpmdW5jdGlvbihlKXtyZXR1cm4gbmV3IGpzb25Qb2ludGVyKHRoaXMuZCx0aGlzLmRwKX0sdGhyb3VnaDpmdW5jdGlvbihlLHQsaSxuLG8pe3ZhciByPXRoaXMuZFtlXTtpZihyLmxlbmd0aClmb3IodmFyIGw9MDtsPHIubGVuZ3RoO2wrKyl7aWYobnVsbCE9cltsXVt0XSYmIiIhPXJbbF1bdF0mJighaXx8cltsXVt0XT09aSkpe3ZhciBzPW5ldyBqc29uUG9pbnRlcihyW2xdLHRoaXMuZCk7bi5hcHBseShvLFtzLGxdKX12YXIgYT10aGlzLmQ7dGhpcy5kPXJbbF0sdGhpcy5zdWJfZXhpc3RzKGUpJiZ0aGlzLnRocm91Z2goZSx0LGksbixvKSx0aGlzLmQ9YX19fSxkaHRtbFhUcmVlT2JqZWN0LnByb3RvdHlwZS5sb2FkSlNPTk9iamVjdD1mdW5jdGlvbihlLHQpe3JldHVybiB3aW5kb3cuY29uc29sZSYmd2luZG93LmNvbnNvbGUuaW5mbyYmd2luZG93LmNvbnNvbGUuaW5mbygibG9hZEpTT05PYmplY3Qgd2FzIGRlcHJlY2F0ZWQiLCJodHRwOi8vZG9jcy5kaHRtbHguY29tL21pZ3JhdGlvbl9faW5kZXguaHRtbCNtaWdyYXRpb25mcm9tNDN0bzQ0IiksdGhpcy5fbG9hZEpTT05PYmplY3QoZSx0KX0sZGh0bWxYVHJlZU9iamVjdC5wcm90b3R5cGUuX2xvYWRKU09OT2JqZWN0PWZ1bmN0aW9uKGUsdCl7dGhpcy5wYXJzQ291bnR8fHRoaXMuY2FsbEV2ZW50KCJvblhMUyIsW3RoaXMsbnVsbF0pLHRoaXMueG1sc3RhdGU9MTt2YXIgaT1uZXcganNvblBvaW50ZXIoZSk7dGhpcy5fcGFyc2UoaSksdGhpcy5fcD1pLHQmJnQoKX0sd2luZG93LmFkZEV2ZW50TGlzdGVuZXI/d2luZG93LmFkZEV2ZW50TGlzdGVuZXIoImxvYWQiLGRoeF9pbml0X3RyZWVzLCExKTp3aW5kb3cuYXR0YWNoRXZlbnQmJndpbmRvdy5hdHRhY2hFdmVudCgib25sb2FkIixkaHhfaW5pdF90cmVlcyk7dmFyIHN0eWxlPWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoInN0eWxlIik7c3R5bGUuaW5uZXJIVE1MPSdAa2V5ZnJhbWVzIGRoeF9sb2FkZXJfcm90YXRlezEwMCV7dHJhbnNmb3JtOnJvdGF0ZSgzNjBkZWcpO319QGtleWZyYW1lcyBkaHhfbG9hZGVyX2Rhc2h7MCV7c3Ryb2tlLWRhc2hhcnJheToxLDIwMDtzdHJva2UtZGFzaG9mZnNldDowO301MCV7c3Ryb2tlLWRhc2hhcnJheTo4OSwyMDA7c3Ryb2tlLWRhc2hvZmZzZXQ6LTM1cHg7fTEwMCV7c3Ryb2tlLWRhc2hhcnJheTo4OSwyMDA7c3Ryb2tlLWRhc2hvZmZzZXQ6LTEyNHB4O319LmRodG1seE1lbnVfbWF0ZXJpYWxfTWlkZGxle3Bvc2l0aW9uOnJlbGF0aXZlO2hlaWdodDoyOHB4O2xpbmUtaGVpZ2h0OjI4cHg7YmFja2dyb3VuZC1jb2xvcjojZjVmNWY1O292ZXJmbG93OmhpZGRlbjtib3JkZXI6bm9uZTtmb250LXNpemU6MTRweDtmb250LWZhbWlseTpSb2JvdG8sQXJpYWwsSGVsdmV0aWNhO2NvbG9yOiM0MDQwNDA7LXdlYmtpdC11c2VyLXNlbGVjdDpub25lOy1raHRtbC11c2VyLXNlbGVjdDpub25lOy1tb3otdXNlci1zZWxlY3Q6bm9uZTstbXMtdXNlci1zZWxlY3Q6bm9uZTstby11c2VyLXNlbGVjdDpub25lO3VzZXItc2VsZWN0Om5vbmU7fS5kaHRtbHhNZW51X21hdGVyaWFsX01pZGRsZSBkaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9Ub3BMZXZlbF9JdGVtX05vcm1hbCwuZGh0bWx4TWVudV9tYXRlcmlhbF9NaWRkbGUgZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfVG9wTGV2ZWxfSXRlbV9EaXNhYmxlZCwuZGh0bWx4TWVudV9tYXRlcmlhbF9NaWRkbGUgZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfVG9wTGV2ZWxfSXRlbV9TZWxlY3RlZHtwb3NpdGlvbjpyZWxhdGl2ZTtmbG9hdDpsZWZ0O2ZvbnQ6aW5oZXJpdDtoZWlnaHQ6MjhweDtsaW5lLWhlaWdodDoyOHB4O21hcmdpbjowO3BhZGRpbmc6MCA4cHg7Y3Vyc29yOmRlZmF1bHQ7d2hpdGUtc3BhY2U6bm93cmFwOy13ZWJraXQtdXNlci1zZWxlY3Q6bm9uZTsta2h0bWwtdXNlci1zZWxlY3Q6bm9uZTstbW96LXVzZXItc2VsZWN0Om5vbmU7LW1zLXVzZXItc2VsZWN0Om5vbmU7LW8tdXNlci1zZWxlY3Q6bm9uZTt1c2VyLXNlbGVjdDpub25lO30uZGh0bWx4TWVudV9tYXRlcmlhbF9NaWRkbGUgZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfVG9wTGV2ZWxfSXRlbV9Ob3JtYWwgZGl2LnRvcF9sZXZlbF90ZXh0LC5kaHRtbHhNZW51X21hdGVyaWFsX01pZGRsZSBkaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9Ub3BMZXZlbF9JdGVtX0Rpc2FibGVkIGRpdi50b3BfbGV2ZWxfdGV4dCwuZGh0bWx4TWVudV9tYXRlcmlhbF9NaWRkbGUgZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfVG9wTGV2ZWxfSXRlbV9TZWxlY3RlZCBkaXYudG9wX2xldmVsX3RleHR7ZmxvYXQ6bGVmdDttYXJnaW46MCAzcHg7fS5kaHRtbHhNZW51X21hdGVyaWFsX01pZGRsZSBkaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9Ub3BMZXZlbF9JdGVtX05vcm1hbCBpLC5kaHRtbHhNZW51X21hdGVyaWFsX01pZGRsZSBkaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9Ub3BMZXZlbF9JdGVtX0Rpc2FibGVkIGksLmRodG1seE1lbnVfbWF0ZXJpYWxfTWlkZGxlIGRpdi5kaHRtbHhNZW51X21hdGVyaWFsX1RvcExldmVsX0l0ZW1fU2VsZWN0ZWQgaXtoZWlnaHQ6aW5oZXJpdDtsaW5lLWhlaWdodDppbmhlcml0O2Zsb2F0OmxlZnQ7Y29sb3I6aW5oZXJpdDttYXJnaW46MCA0cHg7Zm9udC1zaXplOjEuMmVtO30uZGh0bWx4TWVudV9tYXRlcmlhbF9NaWRkbGUgZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfVG9wTGV2ZWxfSXRlbV9EaXNhYmxlZHtjb2xvcjojYTZhNmE2O30uZGh0bWx4TWVudV9tYXRlcmlhbF9NaWRkbGUgZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfVG9wTGV2ZWxfSXRlbV9TZWxlY3RlZHtiYWNrZ3JvdW5kLWNvbG9yOiNlYmViZWI7fS5kaHRtbHhNZW51X21hdGVyaWFsX01pZGRsZSBpbWcuZGh0bWx4TWVudV9Ub3BMZXZlbF9JdGVtX0ljb257ZmxvYXQ6bGVmdDttYXJnaW46NXB4IDNweCAwIDNweDt3aWR0aDoxOHB4O2hlaWdodDoxOHB4O2N1cnNvcjpkZWZhdWx0O30uZGh0bWx4TWVudV9tYXRlcmlhbF9NaWRkbGUgZGl2LnRvcF9zZXB7cG9zaXRpb246cmVsYXRpdmU7ZmxvYXQ6bGVmdDtoZWlnaHQ6MjJweDt3aWR0aDowO2JvcmRlci1sZWZ0OjFweCBzb2xpZCAjZGZkZmRmO21hcmdpbjozcHggOHB4IDAgOHB4O2ZvbnQtc2l6ZToxcHg7b3ZlcmZsb3c6aGlkZGVuO2N1cnNvcjpkZWZhdWx0Oy13ZWJraXQtdXNlci1zZWxlY3Q6bm9uZTsta2h0bWwtdXNlci1zZWxlY3Q6bm9uZTstbW96LXVzZXItc2VsZWN0Om5vbmU7LW1zLXVzZXItc2VsZWN0Om5vbmU7LW8tdXNlci1zZWxlY3Q6bm9uZTt1c2VyLXNlbGVjdDpub25lO30uZGh0bWx4TWVudV9tYXRlcmlhbF9NaWRkbGUgZGl2LmRodG1seE1lbnVfVG9wTGV2ZWxfVGV4dF9yaWdodCwuZGh0bWx4TWVudV9tYXRlcmlhbF9NaWRkbGUgZGl2LmRodG1seE1lbnVfVG9wTGV2ZWxfVGV4dF9sZWZ0e3Bvc2l0aW9uOmFic29sdXRlO3RvcDowO2hlaWdodDoyOHB4O2xpbmUtaGVpZ2h0OjI4cHg7Y3Vyc29yOmRlZmF1bHQ7Zm9udC1zaXplOjE0cHg7Zm9udC1mYW1pbHk6Um9ib3RvLEFyaWFsLEhlbHZldGljYTtjb2xvcjojNDA0MDQwOy13ZWJraXQtdXNlci1zZWxlY3Q6bm9uZTsta2h0bWwtdXNlci1zZWxlY3Q6bm9uZTstbW96LXVzZXItc2VsZWN0Om5vbmU7LW1zLXVzZXItc2VsZWN0Om5vbmU7LW8tdXNlci1zZWxlY3Q6bm9uZTt1c2VyLXNlbGVjdDpub25lO30uZGh0bWx4TWVudV9tYXRlcmlhbF9NaWRkbGUgZGl2LmRodG1seE1lbnVfVG9wTGV2ZWxfVGV4dF9yaWdodHtyaWdodDo2cHg7fS5kaHRtbHhNZW51X21hdGVyaWFsX01pZGRsZSBkaXYuZGh0bWx4TWVudV9Ub3BMZXZlbF9UZXh0X2xlZnR7bGVmdDo2cHg7fWRpdi5kaHRtbHhNZW51X21hdGVyaWFsX1N1YkxldmVsQXJlYV9Qb2x5Z29ue3Bvc2l0aW9uOmFic29sdXRlO3BhZGRpbmc6NXB4IDA7YmFja2dyb3VuZC1jb2xvcjojZmFmYWZhO292ZXJmbG93OmhpZGRlbjtjdXJzb3I6ZGVmYXVsdDtsaW5lLWhlaWdodDpub3JtYWw7b3ZlcmZsb3cteTphdXRvOy13ZWJraXQtb3ZlcmZsb3ctc2Nyb2xsaW5nOnRvdWNoOy13ZWJraXQtdGFwLWhpZ2hsaWdodC1jb2xvcjpyZ2JhKDAsMCwwLDApO2JveC1zaGFkb3c6MCAxcHggM3B4IHJnYmEoMCwwLDAsMC4xMiksMCAxcHggMnB4IHJnYmEoMCwwLDAsMC4yNCk7LXdlYmtpdC11c2VyLXNlbGVjdDpub25lOy1raHRtbC11c2VyLXNlbGVjdDpub25lOy1tb3otdXNlci1zZWxlY3Q6bm9uZTstbXMtdXNlci1zZWxlY3Q6bm9uZTstby11c2VyLXNlbGVjdDpub25lO3VzZXItc2VsZWN0Om5vbmU7fWRpdi5kaHRtbHhNZW51X21hdGVyaWFsX1N1YkxldmVsQXJlYV9Qb2x5Z29uIHRke3BhZGRpbmc6MDttYXJnaW46MDtsaW5lLWhlaWdodDpub3JtYWw7d2hpdGUtc3BhY2U6bm93cmFwO2ZvbnQtc2l6ZToxNHB4O2ZvbnQtZmFtaWx5OlJvYm90byxBcmlhbCxIZWx2ZXRpY2E7Y29sb3I6IzQwNDA0MDt9ZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfU3ViTGV2ZWxBcmVhX1BvbHlnb24gdGQuc3ViX2l0ZW1faWNvbnt3aWR0aDoxOHB4O3RleHQtYWxpZ246Y2VudGVyO31kaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9TdWJMZXZlbEFyZWFfUG9seWdvbiB0ZC5zdWJfaXRlbV9pY29uIGltZy5zdWJfaWNvbnttYXJnaW46NHB4IDZweCAwIDZweDt3aWR0aDoxOHB4O2hlaWdodDoxOHB4O31kaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9TdWJMZXZlbEFyZWFfUG9seWdvbiB0ZC5zdWJfaXRlbV9pY29uIGl7d2lkdGg6MThweDtoZWlnaHQ6MzBweDtsaW5lLWhlaWdodDoyOXB4O21hcmdpbjowIDZweDtmb250LXNpemU6MS4yZW07dGV4dC1hbGlnbjpjZW50ZXI7Y29sb3I6aW5oZXJpdDt9ZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfU3ViTGV2ZWxBcmVhX1BvbHlnb24gdGQuc3ViX2l0ZW1faWNvbiBkaXYuc3ViX2ljb257bWFyZ2luOjAgNnB4O3dpZHRoOjE4cHg7aGVpZ2h0OjMwcHg7bGluZS1oZWlnaHQ6MzBweDtiYWNrZ3JvdW5kLXBvc2l0aW9uOjAgNXB4O2JhY2tncm91bmQtcmVwZWF0Om5vLXJlcGVhdDtiYWNrZ3JvdW5kLWltYWdlOnVybCgiaW1ncy9kaHhtZW51X21hdGVyaWFsL2RoeG1lbnVfY2hyZC5wbmciKTt9ZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfU3ViTGV2ZWxBcmVhX1BvbHlnb24gdGQuc3ViX2l0ZW1faWNvbiBkaXYuc3ViX2ljb24uY2hieF8we2JhY2tncm91bmQtcG9zaXRpb246MCA1cHg7fWRpdi5kaHRtbHhNZW51X21hdGVyaWFsX1N1YkxldmVsQXJlYV9Qb2x5Z29uIHRkLnN1Yl9pdGVtX2ljb24gZGl2LnN1Yl9pY29uLmNoYnhfMXtiYWNrZ3JvdW5kLXBvc2l0aW9uOi0xOHB4IDVweDt9ZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfU3ViTGV2ZWxBcmVhX1BvbHlnb24gdGQuc3ViX2l0ZW1faWNvbiBkaXYuc3ViX2ljb24ucmRidF8we2JhY2tncm91bmQtcG9zaXRpb246LTcycHggNXB4O31kaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9TdWJMZXZlbEFyZWFfUG9seWdvbiB0ZC5zdWJfaXRlbV9pY29uIGRpdi5zdWJfaWNvbi5yZGJ0XzF7YmFja2dyb3VuZC1wb3NpdGlvbjotOTBweCA1cHg7fWRpdi5kaHRtbHhNZW51X21hdGVyaWFsX1N1YkxldmVsQXJlYV9Qb2x5Z29uIHRkLnN1Yl9pdGVtX3RleHQgZGl2LnN1Yl9pdGVtX3RleHR7cG9zaXRpb246cmVsYXRpdmU7aGVpZ2h0OjMwcHg7bGluZS1oZWlnaHQ6MzBweDtwYWRkaW5nOjAgMjJweCAwIDFweDtvdmVyZmxvdzpoaWRkZW47fWRpdi5kaHRtbHhNZW51X21hdGVyaWFsX1N1YkxldmVsQXJlYV9Qb2x5Z29uIHRkLnN1Yl9pdGVtX2hre3BhZGRpbmc6MCAxMHB4IDAgOHB4O31kaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9TdWJMZXZlbEFyZWFfUG9seWdvbiB0ZC5zdWJfaXRlbV9oayBkaXYuc3ViX2l0ZW1faGt7Y29sb3I6IzhkOGQ4ZDtmb250LXNpemU6MTJweDt0ZXh0LWFsaWduOnJpZ2h0O31kaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9TdWJMZXZlbEFyZWFfUG9seWdvbiB0ZCBkaXYuY29tcGxleF9hcnJvd3tmbG9hdDpyaWdodDt3aWR0aDoxMHB4O21hcmdpbjowIDFweCAwIDExcHg7aGVpZ2h0OjMwcHg7bGluZS1oZWlnaHQ6MzBweDtiYWNrZ3JvdW5kLWltYWdlOnVybCgiaW1ncy9kaHhtZW51X21hdGVyaWFsL2RoeG1lbnVfc3ViYXIucG5nIik7YmFja2dyb3VuZC1yZXBlYXQ6bm8tcmVwZWF0O2JhY2tncm91bmQtcG9zaXRpb246MCAxMHB4O292ZXJmbG93OmhpZGRlbjtmb250LXNpemU6MXB4O31kaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9TdWJMZXZlbEFyZWFfUG9seWdvbiB0ZCBkaXYuY29tcGxleF9hcnJvd19sb2FkaW5ne3dpZHRoOjE2cHg7aGVpZ2h0OjMwcHg7bGluZS1oZWlnaHQ6MzBweDtiYWNrZ3JvdW5kLXBvc2l0aW9uOmNlbnRlciBjZW50ZXI7YmFja2dyb3VuZC1yZXBlYXQ6bm8tcmVwZWF0O2JhY2tncm91bmQtaW1hZ2U6dXJsKCJpbWdzL2RoeG1lbnVfbWF0ZXJpYWwvZGh4bWVudV9sb2FkZXIuZ2lmIik7ZmxvYXQ6cmlnaHQ7fWRpdi5kaHRtbHhNZW51X21hdGVyaWFsX1N1YkxldmVsQXJlYV9Qb2x5Z29uIHRyLnN1Yl9pdGVtX3NlbGVjdGVkIHRke2JhY2tncm91bmQtY29sb3I6I2ViZWJlYjt9ZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfU3ViTGV2ZWxBcmVhX1BvbHlnb24gdHIuc3ViX2l0ZW1fc2VsZWN0ZWQgdGQgZGl2LmNvbXBsZXhfYXJyb3d7YmFja2dyb3VuZC1wb3NpdGlvbjotMTBweCAxMHB4O31kaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9TdWJMZXZlbEFyZWFfUG9seWdvbiB0ci5zdWJfaXRlbV9kaXMgdGQuc3ViX2l0ZW1faGsgZGl2LnN1Yl9pdGVtX2hre2NvbG9yOiNjMGMwYzA7fWRpdi5kaHRtbHhNZW51X21hdGVyaWFsX1N1YkxldmVsQXJlYV9Qb2x5Z29uIHRyLnN1Yl9pdGVtX2RpcyB0ZCBkaXYuc3ViX2l0ZW1fdGV4dCxkaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9TdWJMZXZlbEFyZWFfUG9seWdvbiB0ci5zdWJfaXRlbV9kaXMgdGQgdGQuc3ViX2l0ZW1faWNvbiBpe2NvbG9yOiNhNmE2YTY7fWRpdi5kaHRtbHhNZW51X21hdGVyaWFsX1N1YkxldmVsQXJlYV9Qb2x5Z29uIHRyLnN1Yl9pdGVtX2RpcyB0ZCBkaXYuY29tcGxleF9hcnJvd3tiYWNrZ3JvdW5kLXBvc2l0aW9uOi0yMHB4IDEwcHg7fWRpdi5kaHRtbHhNZW51X21hdGVyaWFsX1N1YkxldmVsQXJlYV9Qb2x5Z29uIHRyLnN1Yl9pdGVtX2RpcyB0ZCBkaXYuc3ViX2ljb24uY2hieF8we2JhY2tncm91bmQtcG9zaXRpb246LTM2cHggNXB4O31kaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9TdWJMZXZlbEFyZWFfUG9seWdvbiB0ci5zdWJfaXRlbV9kaXMgdGQgZGl2LnN1Yl9pY29uLmNoYnhfMXtiYWNrZ3JvdW5kLXBvc2l0aW9uOi01NHB4IDVweDt9ZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfU3ViTGV2ZWxBcmVhX1BvbHlnb24gdHIuc3ViX2l0ZW1fZGlzIHRkIGRpdi5zdWJfaWNvbi5yZGJ0XzB7YmFja2dyb3VuZC1wb3NpdGlvbjotMTA4cHggNXB4O31kaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9TdWJMZXZlbEFyZWFfUG9seWdvbiB0ci5zdWJfaXRlbV9kaXMgdGQgZGl2LnN1Yl9pY29uLnJkYnRfMXtiYWNrZ3JvdW5kLXBvc2l0aW9uOi0xMjZweCA1cHg7fWRpdi5kaHRtbHhNZW51X21hdGVyaWFsX1N1YkxldmVsQXJlYV9Qb2x5Z29uIHRyLnN1Yl9pdGVtX2RpcyB0ZCBpe2NvbG9yOiNhNmE2YTY7fWRpdi5kaHRtbHhNZW51X21hdGVyaWFsX1N1YkxldmVsQXJlYV9Qb2x5Z29uIHRyLnN1Yl9zZXAgdGR7cGFkZGluZzo1cHggM3B4O31kaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9TdWJMZXZlbEFyZWFfUG9seWdvbiB0ci5zdWJfc2VwIHRkIGRpdi5zdWJfc2Vwe3Bvc2l0aW9uOnJlbGF0aXZlO2ZvbnQtc2l6ZToxcHg7bGluZS1oZWlnaHQ6MXB4O2hlaWdodDowO3dpZHRoOjEwMCU7Ym9yZGVyLXRvcDoxcHggc29saWQgI2RmZGZkZjt9ZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfU3ViTGV2ZWxBcmVhX1BvbHlnb24gZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfU3ViTGV2ZWxBcmVhX0Fycm93VXAsZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfU3ViTGV2ZWxBcmVhX1BvbHlnb24gZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfU3ViTGV2ZWxBcmVhX0Fycm93VXBfT3ZlcixkaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9TdWJMZXZlbEFyZWFfUG9seWdvbiBkaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9TdWJMZXZlbEFyZWFfQXJyb3dVcF9EaXNhYmxlZHtwb3NpdGlvbjpyZWxhdGl2ZTtmb250LXNpemU6MXB4O2JvcmRlci1ib3R0b206MXB4IHNvbGlkICNkZmRmZGY7YmFja2dyb3VuZC1pbWFnZTp1cmwoImltZ3MvZGh4bWVudV9tYXRlcmlhbC9kaHhtZW51X2Fycm93X3VwLnBuZyIpO2JhY2tncm91bmQtcmVwZWF0Om5vLXJlcGVhdDtiYWNrZ3JvdW5kLXBvc2l0aW9uOmNlbnRlciAycHg7cGFkZGluZzo4cHggMDttYXJnaW4tYm90dG9tOjNweDt9ZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfU3ViTGV2ZWxBcmVhX1BvbHlnb24gZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfU3ViTGV2ZWxBcmVhX0Fycm93VXBfRGlzYWJsZWR7YmFja2dyb3VuZC1pbWFnZTp1cmwoImltZ3MvZGh4bWVudV9tYXRlcmlhbC9kaHhtZW51X2Fycm93X3VwX2Rpcy5wbmciKTt9ZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfU3ViTGV2ZWxBcmVhX1BvbHlnb24gZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfU3ViTGV2ZWxBcmVhX0Fycm93RG93bixkaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9TdWJMZXZlbEFyZWFfUG9seWdvbiBkaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9TdWJMZXZlbEFyZWFfQXJyb3dEb3duX092ZXIsZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfU3ViTGV2ZWxBcmVhX1BvbHlnb24gZGl2LmRodG1seE1lbnVfbWF0ZXJpYWxfU3ViTGV2ZWxBcmVhX0Fycm93RG93bl9EaXNhYmxlZHtwb3NpdGlvbjpyZWxhdGl2ZTtmb250LXNpemU6MXB4O2JvcmRlci10b3A6MXB4IHNvbGlkICNkZmRmZGY7YmFja2dyb3VuZC1pbWFnZTp1cmwoImltZ3MvZGh4bWVudV9tYXRlcmlhbC9kaHhtZW51X2Fycm93X2Rvd24ucG5nIik7YmFja2dyb3VuZC1yZXBlYXQ6bm8tcmVwZWF0O2JhY2tncm91bmQtcG9zaXRpb246Y2VudGVyIDZweDtwYWRkaW5nOjhweCAwO21hcmdpbi10b3A6M3B4O31kaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9TdWJMZXZlbEFyZWFfUG9seWdvbiBkaXYuZGh0bWx4TWVudV9tYXRlcmlhbF9TdWJMZXZlbEFyZWFfQXJyb3dEb3duX0Rpc2FibGVke2JhY2tncm91bmQtaW1hZ2U6dXJsKCJpbWdzL2RoeG1lbnVfbWF0ZXJpYWwvZGh4bWVudV9hcnJvd19kb3duX2Rpcy5wbmciKTt9aWZyYW1lLmRodG1seE1lbnVfSUU2Q292ZXJGaXhfbWF0ZXJpYWx7cG9zaXRpb246YWJzb2x1dGU7Ym9yZGVyOm5vbmU7YmFja2dyb3VuZDojMDAwO2ZpbHRlcjpwcm9naWQ6RFhJbWFnZVRyYW5zZm9ybS5NaWNyb3NvZnQuQWxwaGEob3BhY2l0eT0xMDApO30uZGh0bWx4TWVudV9tYXRlcmlhbF9NaWRkbGUuZGlyX2xlZnQgZGl2LmFsaWduX2xlZnR7ZmxvYXQ6bGVmdDt9LmRodG1seE1lbnVfbWF0ZXJpYWxfTWlkZGxlLmRpcl9sZWZ0IGRpdi5hbGlnbl9yaWdodHtmbG9hdDpyaWdodDt9LmRoeG1lbnVfc2tpbl9kZXRlY3R7cG9zaXRpb246YWJzb2x1dGU7bGVmdDowO3RvcDotMTAwcHg7bWFyZ2luOjA7cGFkZGluZzowO2JvcmRlcjowIHNvbGlkIHdoaXRlO3dpZHRoOjQwcHg7aGVpZ2h0OjEwcHg7b3ZlcmZsb3c6aGlkZGVuO31Aa2V5ZnJhbWVzIGRoeF9sb2FkZXJfcm90YXRlezEwMCV7dHJhbnNmb3JtOnJvdGF0ZSgzNjBkZWcpO319QGtleWZyYW1lcyBkaHhfbG9hZGVyX2Rhc2h7MCV7c3Ryb2tlLWRhc2hhcnJheToxLDIwMDtzdHJva2UtZGFzaG9mZnNldDowO301MCV7c3Ryb2tlLWRhc2hhcnJheTo4OSwyMDA7c3Ryb2tlLWRhc2hvZmZzZXQ6LTM1cHg7fTEwMCV7c3Ryb2tlLWRhc2hhcnJheTo4OSwyMDA7c3Ryb2tlLWRhc2hvZmZzZXQ6LTEyNHB4O319LmRlZmF1bHRUcmVlVGFibGV7bWFyZ2luOjA7cGFkZGluZzowO2JvcmRlcjowO30uY29udGFpbmVyVGFibGVTdHlsZXtvdmVyZmxvdzphdXRvOy13ZWJraXQtb3ZlcmZsb3ctc2Nyb2xsaW5nOnRvdWNoO3Bvc2l0aW9uOnJlbGF0aXZlO3RvcDowO2ZvbnQtc2l6ZToxMnB4Oy1raHRtbC11c2VyLXNlbGVjdDpub25lO30uY29udGFpbmVyVGFibGVTdHlsZVJUTCBzcGFue2RpcmVjdGlvbjpydGw7dW5pY29kZS1iaWRpOmJpZGktb3ZlcnJpZGU7fS5jb250YWluZXJUYWJsZVN0eWxlUlRMe2RpcmVjdGlvbjpydGw7b3ZlcmZsb3c6YXV0bztwb3NpdGlvbjpyZWxhdGl2ZTt0b3A6MDtmb250LXNpemU6MTJweDt9LnN0YW5kYXJ0VHJlZVJvd3tmb250LWZhbWlseTpSb2JvdG8sQXJpYWwsSGVsdmV0aWNhO2ZvbnQtc2l6ZTo7LW1vei11c2VyLXNlbGVjdDpub25lO2xpbmUtaGVpZ2h0OjI0cHg7fS5zZWxlY3RlZFRyZWVSb3d7Zm9udC1mYW1pbHk6Um9ib3RvLEFyaWFsLEhlbHZldGljYTtmb250LXNpemU6Oy1tb3otdXNlci1zZWxlY3Q6bm9uZTtiYWNrZ3JvdW5kLWNvbG9yOiNlZWU7Y29sb3I6IzM5Yzt9LmRoeHRyZWVfbWF0ZXJpYWwgLnNlbGVjdGVkVHJlZVJvd0Z1bGwgLmRoeFRleHRDZWxse2JhY2tncm91bmQtY29sb3I6I2VlZTtjb2xvcjojMzljO30uZHJhZ0FuZERyb3BSb3d7Y29sb3I6IzM5Yzt9LnN0YW5kYXJ0VHJlZVJvd19sb3J7dGV4dC1kZWNvcmF0aW9uOnVuZGVybGluZTtiYWNrZ3JvdW5kLWNvbG9yOjtmb250LWZhbWlseTpSb2JvdG8sQXJpYWwsSGVsdmV0aWNhO2ZvbnQtc2l6ZTo7LW1vei11c2VyLXNlbGVjdDpub25lO30uc3RhbmRhcnRUcmVlSW1hZ2V7aGVpZ2h0OjI0cHg7b3ZlcmZsb3c6aGlkZGVuO2JvcmRlcjowO3BhZGRpbmc6MDttYXJnaW46MDtmb250LXNpemU6MXB4O30uc3RhbmRhcnRUcmVlSW1hZ2UgaW1ne3dpZHRoOjE4cHg7aGVpZ2h0OjI0cHg7YmFja2dyb3VuZC1wb3NpdGlvbjpjZW50ZXIgY2VudGVyO2JhY2tncm91bmQtcmVwZWF0Om5vLXJlcGVhdDtib3JkZXI6MDtwYWRkaW5nOjA7bWFyZ2luOjA7Zm9udC1zaXplOjFweDstd2Via2l0LXVzZXItc2VsZWN0Om5vbmU7LWtodG1sLXVzZXItc2VsZWN0Om5vbmU7LW1vei11c2VyLXNlbGVjdDpub25lOy1tcy11c2VyLXNlbGVjdDpub25lOy1vLXVzZXItc2VsZWN0Om5vbmU7dXNlci1zZWxlY3Q6bm9uZTt9LmhpZGRlblJvd3t3aWR0aDoxcHg7b3ZlcmZsb3c6aGlkZGVuO30uZHJhZ1NwYW5EaXYsLmRyYWdTcGFuRGl2IHRke2ZvbnQtZmFtaWx5OlJvYm90byxBcmlhbCxIZWx2ZXRpY2E7Zm9udC1zaXplOjtsaW5lLWhlaWdodDo7dmVydGljYWwtYWxpZ246Y2VudGVyO2JhY2tncm91bmQtY29sb3I6d2hpdGU7ei1pbmRleDo5OTk7fS5kcmFnU3BhbkRpdiB0ZHtwYWRkaW5nOjVweDt9LmFfZGh4X2hpZGRlbl9pbnB1dHtwb3NpdGlvbjphYnNvbHV0ZTt0b3A6LTFweDtsZWZ0Oi0xcHg7d2lkdGg6MXB4O2hlaWdodDoxcHg7Ym9yZGVyOm5vbmU7YmFja2dyb3VuZDpub25lO30uYV9kaHhfaGlkZGVuX2lucHV0e3Bvc2l0aW9uOmFic29sdXRlO3RvcDotMXB4O2xlZnQ6LTFweDt3aWR0aDoxcHg7aGVpZ2h0OjFweDtib3JkZXI6bm9uZTtiYWNrZ3JvdW5kOm5vbmU7fS5zZWxlY3Rpb25CYXJ7dG9wOjA7YmFja2dyb3VuZC1jb2xvcjpibGFjaztwb3NpdGlvbjphYnNvbHV0ZTtvdmVyZmxvdzpoaWRkZW47aGVpZ2h0OjJweDt6LWluZGV4OjExO30uaW50cmVlZWRpdFJvd3tmb250LXNpemU6OHB0O2hlaWdodDoxNnB4O2JvcmRlcjoxcHggc29saWQgc2lsdmVyO3BhZGRpbmc6MDttYXJnaW46MDttYXJnaW4tbGVmdDo0cHg7LW1vei11c2VyLXNlbGVjdDp0ZXh0Oy1raHRtbC11c2VyLXNlbGVjdDp0ZXh0O30uZGh4X3RyZWVfdGV4dFNpZ257Zm9udC1zaXplOjhwdDtmb250LWZhbWlseTptb25vc3BhY2U7d2lkdGg6MjFweDtjb2xvcjo7cGFkZGluZzowO21hcmdpbjowO2N1cnNvcjpwb2ludGVyO3RleHQtYWxpZ246Y2VudGVyO30uZGh4X3RyZWVfb3BhY2l0eXtvcGFjaXR5OjA7ZmlsdGVyOnByb2dpZDpEWEltYWdlVHJhbnNmb3JtLk1pY3Jvc29mdC5BbHBoYShvcGFjaXR5PTApOy13ZWJraXQtdXNlci1zZWxlY3Q6bm9uZTsta2h0bWwtdXNlci1zZWxlY3Q6bm9uZTstbW96LXVzZXItc2VsZWN0Om5vbmU7LW1zLXVzZXItc2VsZWN0Om5vbmU7LW8tdXNlci1zZWxlY3Q6bm9uZTt1c2VyLXNlbGVjdDpub25lO30uZGh4X2JnX2ltZ19maXh7d2lkdGg6MThweDtoZWlnaHQ6MjRweDtiYWNrZ3JvdW5kLXJlcGVhdDpuby1yZXBlYXQ7YmFja2dyb3VuZC1wb3NpdGlvbjpjZW50ZXI7YmFja2dyb3VuZC1wb3NpdGlvbi14OmNlbnRlcjtiYWNrZ3JvdW5kLXBvc2l0aW9uLXk6Y2VudGVyO30uZGh4dHJlZV9za2luX2RldGVjdHtwb3NpdGlvbjphYnNvbHV0ZTtsZWZ0OjA7dG9wOi0xMDBweDttYXJnaW46MDtwYWRkaW5nOjA7Ym9yZGVyOjAgc29saWQgd2hpdGU7d2lkdGg6NDBweDtoZWlnaHQ6MTBweDtvdmVyZmxvdzpoaWRkZW47fScsZG9jdW1lbnQuaGVhZC5hcHBlbmRDaGlsZChzdHlsZSk7dmFyIGxheWFhaXJfZGVidWdfdmlldz17fTt3aW5kb3cubGF5YWFpcl9kZWJ1Z192aWV3PWxheWFhaXJfZGVidWdfdmlldyxsYXlhYWlyX2RlYnVnX3ZpZXcuaW5pdExheWFBaXJEZWJ1Z1ZpZXc9ZnVuY3Rpb24oZSl7ZS5zdHlsZS5ib3JkZXI9IjFweCBzb2xpZCBibGFjayI7dmFyIHQ9TWF0aC5taW4oMjUwLC4zKmUub2Zmc2V0V2lkdGgpLGk9JzxkaXYgY2xhc3M9InRvcC1iYW5uZXIiPlxuPC9kaXY+XG48ZGl2PlxuPGRpdiBzdHlsZT0ib3ZlcmZsb3c6aGlkZGVuOyBib3JkZXItYm90dG9tOjFweCBzb2xpZCAjNDQ0OyBwYWRkaW5nOjVweCI+XG48ZGl2IHN0eWxlPSJmbG9hdDpsZWZ0Ij5cbjxidXR0b24gaWQ9Im5vZGVfZnVuY3Rpb25hbGl0eV9jb250cm9sIj7lrqHmn6XlhYPntKA8L2J1dHRvbj5cbjxidXR0b24gaWQ9InJlZnJlc2hfY29udHJvbCI+5Yi35pawPC9idXR0b24+XG48L2Rpdj5cbjxkaXYgc3R5bGU9ImZsb2F0OnJpZ2h0Ij5cbjxpbnB1dCB0eXBlPSJjaGVja2JveCIgaWQ9InNob3dfY3VycmVudF9jYWNoZV9jb250cm9sIj7mmL7npLrlvZPliY1jYWNoZemHjee7mDwvaW5wdXQ+XG48aW5wdXQgdHlwZT0iY2hlY2tib3giIGlkPSJzaG93X2FsbF9jYWNoZV9jb250cm9sIj7mmL7npLrmiYDmnIljYWNoZeWMuuWfnzwvaW5wdXQ+XG48aW5wdXQgdHlwZT0iY2hlY2tib3giIGlkPSJzaG93X2F0bGFzX2NvbnRyb2wiPuaYvuekuuWkp+WbvuWQiOmbhjwvaW5wdXQ+XG48L2Rpdj5cbjwvZGl2PlxuPGRpdiBjbGFzcz0iaGdyb3VwIj5cbjxkaXYgc3R5bGU9ImZsb2F0OmxlZnQ7d2lkdGg6Jyt0KydweDsgYm9yZGVyLXJpZ2h0OjFweCBzb2xpZCBibGFjayIgaWQ9InRyZWVfY29udGFpbmVyIj48L2Rpdj5cbjxkaXYgc3R5bGU9Im92ZXJmbG93OmhpZGRlbiI+XG48ZGl2IGlkPSJjb250ZW50X3Rvb2xiYXIiIHN0eWxlPSJ3aWR0aDoxMDAlO21hcmdpbjoxMHB4Ij48aW5wdXQgdHlwZT0iY2hlY2tib3giIGlkPSJ2aXNpYmlsaXR5X2NvbnRyb2wiPuWPr+ingTwvaW5wdXQ+XG48aW5wdXQgdHlwZT0iY2hlY2tib3giIGlkPSJzaG93X2JvcmRlcl9jb250cm9sIj7mmL7npLrovrnmoYY8L2lucHV0PlxuPGJ1dHRvbiBpZD0ibG9nX2luZm9fY29udHJvbCI+5omT5Y2w5Yiw5o6n5Yi25Y+wPC9idXR0b24+XG48YnV0dG9uIGlkPSJlbmFibGVkX25vZGVfY2hhaW5fY29udHJvbCI+ZW5hYmxl6ZO+PC9idXR0b24+XG48YnV0dG9uIGlkPSJzaXplX2NoYWluX2NvbnRyb2wiPnNpemXpk748L2J1dHRvbj5cbjwvZGl2PjxkaXYgc3R5bGU9Im92ZXJmbG93OmF1dG8iPjx0YWJsZSBpZD0iY29udGVudF90YWJsZSIgc3R5bGU9ImJvcmRlcjoxcHggc29saWQgI2NjY2NjYztib3JkZXItY29sbGFwc2U6Y29sbGFwc2UiPjwvdGFibGU+XG48L2Rpdj48L2Rpdj5cbjwvZGl2PlxuPC9kaXY+JztlLmlubmVySFRNTD1pLHRoaXMuY29udGFpbmVyPWUsdGhpcy50cmVlPW5ldyBkaHRtbFhUcmVlT2JqZWN0KHRyZWVfY29udGFpbmVyLCIxMDAlIiwiMTAwJSIsMCksbm9kZV9mdW5jdGlvbmFsaXR5X2NvbnRyb2wub25jbGljaz1mdW5jdGlvbihlKXtlLnN0b3BQcm9wYWdhdGlvbigpLGxheWFhaXJfZGVidWdfdmlldy5vbl9pbnNwZWN0X2VsZW1lbnRfY2FsbGJhY2soKSxub2RlX2Z1bmN0aW9uYWxpdHlfY29udHJvbC5zdHlsZS5iYWNrZ3JvdW5kQ29sb3I9IiNGRkYiLG5vZGVfZnVuY3Rpb25hbGl0eV9jb250cm9sLnN0eWxlLmNvbG9yPSJyZ2IoMTA3LCAxNjMsIDI1NSkifX0sbGF5YWFpcl9kZWJ1Z192aWV3LnNldFRyZWU9ZnVuY3Rpb24oZSl7Zm9yKHZhciB0PXRoaXMudHJlZS5nZXRBbGxJdGVtc1dpdGhLaWRzKCkuc3BsaXQoIiwiKSxpPVtdLG49MDtuPHQubGVuZ3RoO24rKyl7dmFyIG89dFtuXSxyPXRoaXMudHJlZS5nZXRPcGVuU3RhdGUobyk7MT09ciYmaS5wdXNoKG8pfXRoaXMudHJlZS5kZWxldGVDaGlsZEl0ZW1zKDApLHRoaXMudHJlZS5wYXJzZShlLCJqc29uIik7Zm9yKHZhciBuPTA7bjxpLmxlbmd0aDtuKyspdGhpcy50cmVlLm9wZW5JdGVtKGlbbl0pfSxsYXlhYWlyX2RlYnVnX3ZpZXcucmVzaXplPWZ1bmN0aW9uKGUsdCl7dGhpcy5jb250YWluZXIuc3R5bGUud2lkdGg9ZSsicHgiLHRoaXMuY29udGFpbmVyLnN0eWxlLmhlaWdodD10KyJweCI7dmFyIGk9dGhpcy5jb250YWluZXIub2Zmc2V0SGVpZ2h0LXRyZWVfY29udGFpbmVyLm9mZnNldFRvcDt0cmVlX2NvbnRhaW5lci5zdHlsZS5oZWlnaHQ9aSsicHgiLGNvbnRlbnRfdG9vbGJhci5zdHlsZS53aWR0aD1lLXRyZWVfY29udGFpbmVyLm9mZnNldFdpZHRoKyJweCIsY29udGVudF90YWJsZS5wYXJlbnRFbGVtZW50LnN0eWxlLmhlaWdodD1pLWNvbnRlbnRfdG9vbGJhci5vZmZzZXRIZWlnaHQtMjErInB4Iixjb250ZW50X3RhYmxlLnN0eWxlLndpZHRoPWUtdHJlZV9jb250YWluZXIub2Zmc2V0V2lkdGgtMTYrInB4In0sbGF5YWFpcl9kZWJ1Z192aWV3LmJvdW5jZVVwSW5zcGVjdEJ1dHRvbj1mdW5jdGlvbigpe25vZGVfZnVuY3Rpb25hbGl0eV9jb250cm9sLnN0eWxlLmJhY2tncm91bmRDb2xvcj0iYnV0dG9uZmFjZSIsbm9kZV9mdW5jdGlvbmFsaXR5X2NvbnRyb2wuc3R5bGUuY29sb3I9ImJsYWNrIn0sbGF5YWFpcl9kZWJ1Z192aWV3LnNldFZhbHVlSW5wdXRIYW5kbGVyPWZ1bmN0aW9uKGUpe3RoaXMudmFsdWVfaW5wdXRfY2FsbGJhY2s9ZX0sbGF5YWFpcl9kZWJ1Z192aWV3LnNldFZhbHVlQ2hhbmdlSGFuZGxlcj1mdW5jdGlvbihlKXt0aGlzLnZhbHVlX2NoYW5nZV9jYWxsYmFjaz1lfSxsYXlhYWlyX2RlYnVnX3ZpZXcuYWRkQ29udGVudD1mdW5jdGlvbihlKXt2YXIgdD1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCJ0ciIpO3QuaW5uZXJIVE1MPSc8dGQgc3R5bGU9IndpZHRoOjEwMHB4O2ZvbnQtc2l6ZToxM3B4O2JvcmRlcjoxcHggc29saWQgI0NDQztwYWRkaW5nLWxlZnQ6MTBweCI+JytlLmtleSsnPC90ZD5cbjx0ZCBzdHlsZT0id2lkdGg6MjAwcHg7Ym9yZGVyOjFweCBzb2xpZCAjQ0NDOyI+PGlucHV0IHN0eWxlPSJib3JkZXI6bm9uZTt3aWR0aDoxMDAlO2hlaWdodDoyNXB4O3BhZGRpbmctbGVmdDoxMHB4OyIgdmFsdWU9JytlLnZhbHVlKyI+PC90ZD4iLGNvbnRlbnRfdGFibGUuYXBwZW5kQ2hpbGQodCk7dmFyIGk9dC5sYXN0RWxlbWVudENoaWxkLmxhc3RFbGVtZW50Q2hpbGQ7aS5kYXRhPWUsaS5vbmlucHV0PWZ1bmN0aW9uKGUpe3RoaXMudmFsdWVfaW5wdXRfY2FsbGJhY2smJnRoaXMudmFsdWVfaW5wdXRfY2FsbGJhY2soZS50YXJnZXQuZGF0YSxlLnRhcmdldC52YWx1ZSl9LmJpbmQodGhpcyksaS5vbmNoYW5nZT1mdW5jdGlvbihlKXt0aGlzLnZhbHVlX2NoYW5nZV9jYWxsYmFjayYmdGhpcy52YWx1ZV9jaGFuZ2VfY2FsbGJhY2soZS50YXJnZXQuZGF0YSxlLnRhcmdldC52YWx1ZSl9LmJpbmQodGhpcyl9LGxheWFhaXJfZGVidWdfdmlldy5zZXRDb250ZW50cz1mdW5jdGlvbihlKXtjb250ZW50X3RhYmxlLmlubmVySFRNTD0iIjtmb3IodmFyIHQ9MDt0PGUubGVuZ3RoO3QrKyl7dmFyIGk9ZVt0XTt0aGlzLmFkZENvbnRlbnQoaSl9fSxsYXlhYWlyX2RlYnVnX3ZpZXcuY2hhbmdlVmFsdWVBdD1mdW5jdGlvbihlLHQpe2NvbnRlbnRfdGFibGUuY2hpbGRyZW5bZV0ubGFzdEVsZW1lbnRDaGlsZC5maXJzdEVsZW1lbnRDaGlsZC52YWx1ZT10fSxsYXlhYWlyX2RlYnVnX3ZpZXcuY2hhbmdlVmFsdWVCeUxhYmVsPWZ1bmN0aW9uKGUsdCl7Zm9yKHZhciBpPWNvbnRlbnRfdGFibGUuY2hpbGRyZW4ubGVuZ3RoLTE7aT49MDtpLS0paWYoY29udGVudF90YWJsZS5jaGlsZHJlbltpXS5maXJzdEVsZW1lbnRDaGlsZC5pbm5lclRleHQ9PWUpe2NvbnRlbnRfdGFibGUuY2hpbGRyZW5baV0ubGFzdEVsZW1lbnRDaGlsZC5maXJzdEVsZW1lbnRDaGlsZC52YWx1ZT10O2JyZWFrfX0sbGF5YWFpcl9kZWJ1Z192aWV3LnNldFZpc2liaWxpdHk9ZnVuY3Rpb24oZSl7dmlzaWJpbGl0eV9jb250cm9sLmNoZWNrZWQ9ISFlfSxsYXlhYWlyX2RlYnVnX3ZpZXcuc2V0U2hvd0RlYnVnQm9yZGVyPWZ1bmN0aW9uKGUpe3Nob3dfYm9yZGVyX2NvbnRyb2wuY2hlY2tlZD0hIWV9LGxheWFhaXJfZGVidWdfdmlldy5nZXRWaXNpYmlsaXR5PWZ1bmN0aW9uKCl7cmV0dXJuIHZpc2liaWxpdHlfY29udHJvbC5jaGVja2VkfSxsYXlhYWlyX2RlYnVnX3ZpZXcuZ2V0U2hvd0RlYnVnQm9yZGVyPWZ1bmN0aW9uKCl7cmV0dXJuIHNob3dfYm9yZGVyX2NvbnRyb2wuY2hlY2tlZH0sbGF5YWFpcl9kZWJ1Z192aWV3LmdldFNob3dDdXJyZW50Q2FjaGU9ZnVuY3Rpb24oKXtyZXR1cm4gc2hvd19jdXJyZW50X2NhY2hlX2NvbnRyb2wuY2hlY2tlZH0sbGF5YWFpcl9kZWJ1Z192aWV3LmdldFNob3dBbGxDYWNoZT1mdW5jdGlvbigpe3JldHVybiBzaG93X2FsbF9jYWNoZV9jb250cm9sLmNoZWNrZWR9LGxheWFhaXJfZGVidWdfdmlldy5nZXRTaG93QXRsYXM9ZnVuY3Rpb24oKXtyZXR1cm4gc2hvd19hdGxhc19jb250cm9sLmNoZWNrZWR9LGxheWFhaXJfZGVidWdfdmlldy5vbkluc3BlY3RFbGVtZW50PWZ1bmN0aW9uKGUpe3RoaXMub25faW5zcGVjdF9lbGVtZW50X2NhbGxiYWNrPWV9LGxheWFhaXJfZGVidWdfdmlldy5vbkxvZ0luZm89ZnVuY3Rpb24oZSl7bG9nX2luZm9fY29udHJvbC5vbmNsaWNrPWV9LGxheWFhaXJfZGVidWdfdmlldy5vblJlZnJlc2g9ZnVuY3Rpb24oZSl7cmVmcmVzaF9jb250cm9sLm9uY2xpY2s9ZX0sbGF5YWFpcl9kZWJ1Z192aWV3Lm9uUHJpbnRFbmFibGVkTm9kZUNoYWluPWZ1bmN0aW9uKGUpe2VuYWJsZWRfbm9kZV9jaGFpbl9jb250cm9sLm9uY2xpY2s9ZX0sbGF5YWFpcl9kZWJ1Z192aWV3Lm9uUHJpbnRTaXplQ2hhaW49ZnVuY3Rpb24oZSl7c2l6ZV9jaGFpbl9jb250cm9sLm9uY2xpY2s9ZX0sbGF5YWFpcl9kZWJ1Z192aWV3Lm9uVG9nZ2xlVmlzaWJpbGl0eT1mdW5jdGlvbihlKXt2aXNpYmlsaXR5X2NvbnRyb2wub25jaGFuZ2U9ZX0sbGF5YWFpcl9kZWJ1Z192aWV3Lm9uVG9nZ2xlRGVidWdCb3JkZXI9ZnVuY3Rpb24oZSl7c2hvd19ib3JkZXJfY29udHJvbC5vbmNoYW5nZT1lfSxsYXlhYWlyX2RlYnVnX3ZpZXcub25Ub2dnbGVTaG93Q3VycmVudENhY2hlPWZ1bmN0aW9uKGUpe3Nob3dfY3VycmVudF9jYWNoZV9jb250cm9sLm9uY2hhbmdlPWV9LGxheWFhaXJfZGVidWdfdmlldy5vblRvZ2dsZVNob3dBbGxDYWNoZT1mdW5jdGlvbihlKXtzaG93X2FsbF9jYWNoZV9jb250cm9sLm9uY2hhbmdlPWV9LGxheWFhaXJfZGVidWdfdmlldy5vblRvZ2dsZVNob3dBdGxhcz1mdW5jdGlvbihlKXtzaG93X2F0bGFzX2NvbnRyb2wub25jaGFuZ2U9ZX07";
+		return DivScripts;
+	})()
+
+
+	/**
+	*tianpeng
+	*@author
+	*/
+	//class laya.debug.tools.AtlasTools
+	var AtlasTools=(function(){
+		function AtlasTools(){
+			this.mSprite=null;
+			this.mIndex=0;
+			this.mTextureDic={};
+		}
+
+		__class(AtlasTools,'laya.debug.tools.AtlasTools');
+		var __proto=AtlasTools.prototype;
+		__proto.start=function(){
+			if (!Render.isWebGL)return;
+			if (this.mSprite==null){
+				this.mSprite=new Sprite();
+			}
+			Laya.stage.addChild(this.mSprite);
+			this.showNext();
+		}
+
+		__proto.end=function(){
+			if (!Render.isWebGL)return;
+			if (this.mSprite){
+				Laya.stage.removeChild(this.mSprite);
+			}
+		}
+
+		__proto.showNext=function(){
+			if (!Render.isWebGL)return;
+			if (this.mSprite==null){
+				this.mSprite=new Sprite();
+			}
+			Laya.stage.addChild(this.mSprite);
+			this.mIndex++;
+			var resManager;
+			resManager=laya.webgl.atlas.AtlasResourceManager.instance;;
+			var tCount=resManager.getAtlaserCount();
+			if (this.mIndex >=tCount){
+				this.mIndex=0;
+			};
+			var tTexture;
+			if (this.mTextureDic[this.mIndex]){
+				tTexture=this.mTextureDic[this.mIndex];
+				}else {
+				var tAtlaser=resManager.getAtlaserByIndex(this.mIndex);
+				if (tAtlaser && tAtlaser.texture){
+					tTexture=Texture.create(tAtlaser.texture,0,0,2048,2048);
+					this.mTextureDic[this.mIndex]=tTexture;
+				}
+			}
+			if (tTexture){
+				this.mSprite.graphics.clear();
+				this.mSprite.graphics.save();
+				this.mSprite.graphics.alpha(0.9);
+				this.mSprite.graphics.drawRect(0,0,1024,1024,"#efefefe");
+				this.mSprite.graphics.restore();
+				this.mSprite.graphics.drawTexture(tTexture,0,0,1024,1024);
+				this.mSprite.graphics.fillText((this.mIndex+1).toString()+"/"+tCount.toString(),25,100,"40px Arial","#ff0000","left");
+			}
+		}
+
+		AtlasTools.getInstance=function(){
+			return AtlasTools.mInstance=AtlasTools.mInstance|| new AtlasTools();
+		}
+
+		AtlasTools.mInstance=null
+		return AtlasTools;
+	})()
+
+
+	/**
+	*...
+	*@author ww
+	*/
 	//class laya.debug.tools.Base64Atlas
 	var Base64Atlas=(function(){
 		function Base64Atlas(data,idKey){
@@ -9489,6 +11016,95 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		return Base64ImageTool;
+	})()
+
+
+	/**
+	*base64编码解码类
+	*@author ww
+	*/
+	//class laya.debug.tools.Base64Tool
+	var Base64Tool=(function(){
+		function Base64Tool(){}
+		__class(Base64Tool,'laya.debug.tools.Base64Tool');
+		Base64Tool.init=function(){
+			if (Base64Tool.lookup)
+				return;
+			Base64Tool.lookup=new Uint8Array(256)
+			for (var i=0;i < Base64Tool.chars.length;i++){
+				Base64Tool.lookup[Base64Tool.chars.charCodeAt(i)]=i;
+			}
+		}
+
+		Base64Tool.encode=function(arraybuffer){
+			var bytes=new Uint8Array(arraybuffer),i=0,len=bytes.length,base64="";
+			for (i=0;i < len;i+=3){
+				base64+=Base64Tool.chars[bytes[i] >> 2];
+				base64+=Base64Tool.chars[((bytes[i] & 3)<< 4)| (bytes[i+1] >> 4)];
+				base64+=Base64Tool.chars[((bytes[i+1] & 15)<< 2)| (bytes[i+2] >> 6)];
+				base64+=Base64Tool.chars[bytes[i+2] & 63];
+			}
+			if ((len % 3)===2){
+				base64=base64.substring(0,base64.length-1)+"=";
+			}
+			else if (len % 3===1){
+				base64=base64.substring(0,base64.length-2)+"==";
+			}
+			return base64;
+		}
+
+		Base64Tool.encodeStr=function(str){
+			var byte;
+			byte=new Byte();
+			byte.writeUTFString(str);
+			return Base64Tool.encodeByte(byte);
+		}
+
+		Base64Tool.encodeStr2=function(str){
+			var byte;
+			byte=new Byte();
+			byte.writeUTFBytes(str);
+			return Base64Tool.encodeByte(byte);
+		}
+
+		Base64Tool.encodeByte=function(byte,start,end){
+			(start===void 0)&& (start=0);
+			(end===void 0)&& (end=-1);
+			if (end < 0){
+				end=byte.length;
+			}
+			return Base64Tool.encode(byte.buffer.slice(start,end));
+		}
+
+		Base64Tool.decodeToByte=function(base64){
+			return new Byte(Base64Tool.decode(base64));
+		}
+
+		Base64Tool.decode=function(base64){
+			Base64Tool.init();
+			var bufferLength=base64.length *0.75,len=base64.length,i=0,p=0,encoded1=0,encoded2=0,encoded3=0,encoded4=0;
+			if (base64[base64.length-1]==="="){
+				bufferLength--;
+				if (base64[base64.length-2]==="="){
+					bufferLength--;
+				}
+			};
+			var arraybuffer=new ArrayBuffer(bufferLength),bytes=new Uint8Array(arraybuffer);
+			for (i=0;i < len;i+=4){
+				encoded1=Base64Tool.lookup[base64.charCodeAt(i)];
+				encoded2=Base64Tool.lookup[base64.charCodeAt(i+1)];
+				encoded3=Base64Tool.lookup[base64.charCodeAt(i+2)];
+				encoded4=Base64Tool.lookup[base64.charCodeAt(i+3)];
+				bytes[p++]=(encoded1 << 2)| (encoded2 >> 4);
+				bytes[p++]=((encoded2 & 15)<< 4)| (encoded3 >> 2);
+				bytes[p++]=((encoded3 & 3)<< 6)| (encoded4 & 63);
+			}
+			return arraybuffer;
+		}
+
+		Base64Tool.chars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+		Base64Tool.lookup=null;
+		return Base64Tool;
 	})()
 
 
@@ -9898,6 +11514,88 @@ var Laya=window.Laya=(function(window,document){
 	*...
 	*@author ww
 	*/
+	//class laya.debug.tools.ClickSelectTool
+	var ClickSelectTool=(function(){
+		function ClickSelectTool(){
+			this.completeHandler=null;
+			this.tSelectTar=null;
+			this._selectTip=new Sprite();
+			this._selectTip.setBounds(new Rectangle(0,0,0,0));
+			Notice.listen("ItemClicked",this,this.itemClicked);
+		}
+
+		__class(ClickSelectTool,'laya.debug.tools.ClickSelectTool');
+		var __proto=ClickSelectTool.prototype;
+		__proto.beginClickSelect=function(complete){
+			this.completeHandler=complete;
+			ClickSelectTool.isClickSelectState=true;
+			this.clickSelectChange();
+		}
+
+		__proto.clickSelectChange=function(){
+			if (!Browser.onPC)return;
+			this.tSelectTar=null;
+			this.clearSelectTip();
+			if (ClickSelectTool.isClickSelectState){
+				Laya.timer.loop(200,this,this.updateSelectTar,null,true);
+				}else{
+				Laya.timer.clear(this,this.updateSelectTar);
+			}
+		}
+
+		__proto.clearSelectTip=function(){
+			this._selectTip.removeSelf();
+		}
+
+		__proto.updateSelectTar=function(){
+			this.clearSelectTip();
+			this.tSelectTar=DisplayHook.instance.getDisUnderMouse();
+			if (!this.tSelectTar){
+				return;
+			}
+			if (DebugInfoLayer.I.isDebugItem(this.tSelectTar))return;
+			var g;
+			g=this._selectTip.graphics;
+			g.clear();
+			var rec;
+			rec=NodeUtils.getGRec(this.tSelectTar);
+			DebugInfoLayer.I.popLayer.addChild(this._selectTip);
+			g.drawRect(0,0,rec.width,rec.height,null,DebugConsts.CLICK_SELECT_COLOR,2);
+			this._selectTip.pos(rec.x,rec.y);
+		}
+
+		__proto.itemClicked=function(tar){
+			if (!ClickSelectTool.isClickSelectState)return;
+			if (ClickSelectTool.ignoreDebugTool){
+				if (DebugInfoLayer.I.isDebugItem(tar))return;
+			}
+			if ((tar instanceof laya.debug.uicomps.ContextMenuItem )|| (tar.parent instanceof laya.debug.uicomps.ContextMenuItem )){
+				return;
+			}
+			DebugTool.showDisBound(tar);
+			if (this.completeHandler){
+				this.completeHandler.runWith(tar);
+			}
+			ClickSelectTool.isClickSelectState=false;
+			this.clickSelectChange();
+		}
+
+		__getset(1,ClickSelectTool,'I',function(){
+			if (!ClickSelectTool._I)ClickSelectTool._I=new ClickSelectTool();
+			return ClickSelectTool._I;
+		});
+
+		ClickSelectTool._I=null
+		ClickSelectTool.isClickSelectState=false;
+		ClickSelectTool.ignoreDebugTool=false;
+		return ClickSelectTool;
+	})()
+
+
+	/**
+	*...
+	*@author ww
+	*/
 	//class laya.debug.tools.ColorTool
 	var ColorTool=(function(){
 		function ColorTool(){
@@ -10142,61 +11840,6 @@ var Laya=window.Laya=(function(window,document){
 
 		]);
 		return DebugExport;
-	})()
-
-
-	/**
-	*...
-	*@author ww
-	*/
-	//class laya.debug.tools.DebugTxt
-	var DebugTxt=(function(){
-		function DebugTxt(){}
-		__class(DebugTxt,'laya.debug.tools.DebugTxt');
-		DebugTxt.init=function(){
-			if (DebugTxt._txt)return;
-			DebugTxt._txt=new Text();
-			DebugTxt._txt.pos(100,100);
-			DebugTxt._txt.color="#ff00ff";
-			DebugTxt._txt.zOrder=999;
-			DebugTxt._txt.fontSize=24;
-			DebugTxt._txt.text="debugTxt inited";
-			Laya.stage.addChild(DebugTxt._txt);
-		}
-
-		DebugTxt.getArgArr=function(arg){
-			var rst;
-			rst=[];
-			var i=0,len=arg.length;
-			for(i=0;i<len;i++){
-				rst.push(arg[i]);
-			}
-			return rst;
-		}
-
-		DebugTxt.dTrace=function(__arg){
-			var arg=arguments;
-			arg=DebugTxt.getArgArr(arg);
-			var str;
-			str=arg.join(" ");
-			if (DebugTxt._txt){
-				DebugTxt._txt.text=str+"\n"+DebugTxt._txt.text;
-			}
-		}
-
-		DebugTxt.show=function(__arg){
-			var arg=arguments;
-			arg=DebugTxt.getArgArr(arg);
-			var str;
-			str=arg.join(" ");
-			if (DebugTxt._txt){
-				DebugTxt._txt.text=str;
-			}
-		}
-
-		DebugTxt._txt=null
-		DebugTxt.I=null
-		return DebugTxt;
 	})()
 
 
@@ -12361,29 +14004,13 @@ var Laya=window.Laya=(function(window,document){
 			IDTools.idObj(sp);
 			var isInAnlyseChain=false;
 			isInAnlyseChain=MouseEventAnalyser.nodeO[IDTools.getObjID(sp)];
-			var transform=sp.transform || MouseEventAnalyser._matrix;
-			var pivotX=sp.pivotX;
-			var pivotY=sp.pivotY;
-			if (pivotX===0 && pivotY===0){
-				transform.setTranslate(sp.x,sp.y);
-			}
-			else{
-				if (transform===MouseEventAnalyser._matrix){
-					transform.setTranslate(sp.x-pivotX,sp.y-pivotY);
-				}
-				else{
-					var cos=transform.cos;
-					var sin=transform.sin;
-					transform.setTranslate(sp.x-(pivotX *cos-pivotY *sin)*sp.scaleX,sp.y-(pivotX *sin+pivotY *cos)*sp.scaleY);
-				}
-			}
-			transform.invertTransformPoint(MouseEventAnalyser._point.setTo(mouseX,mouseY));
-			transform.setTranslate(0,0);
+			MouseEventAnalyser._point.setTo(mouseX,mouseY);
+			sp.fromParentPoint(MouseEventAnalyser._point);
 			mouseX=MouseEventAnalyser._point.x;
 			mouseY=MouseEventAnalyser._point.y;
 			var scrollRect=sp.scrollRect;
 			if (scrollRect){
-				MouseEventAnalyser._rect.setTo(0,0,scrollRect.width,scrollRect.height);
+				MouseEventAnalyser._rect.setTo(scrollRect.x,scrollRect.y,scrollRect.width,scrollRect.height);
 				var isHit=MouseEventAnalyser._rect.contains(mouseX,mouseY);
 				if (!isHit){
 					if (isInAnlyseChain){
@@ -12426,7 +14053,7 @@ var Laya=window.Laya=(function(window,document){
 					coverByOthers=false;
 				}
 				if (child.mouseEnabled && child.visible){
-					flag=MouseEventAnalyser.check(child,mouseX+(scrollRect ? scrollRect.x :0),mouseY+(scrollRect ? scrollRect.y :0),callBack);
+					flag=MouseEventAnalyser.check(child,mouseX ,mouseY,callBack);
 					if (flag){
 						MouseEventAnalyser.hitO[IDTools.getObjID(sp)]=true;
 						MouseEventAnalyser.infoO[IDTools.getObjID(sp)]="子对象被击中";
@@ -12486,6 +14113,9 @@ var Laya=window.Laya=(function(window,document){
 
 		MouseEventAnalyser.hitTest=function(sp,mouseX,mouseY){
 			var isHit=false;
+			if ((sp.hitArea instanceof laya.utils.HitArea )){
+				return sp.hitArea.isHit(mouseX,mouseY);
+			}
 			if (sp.width > 0 && sp.height > 0 || sp.mouseThrough || sp.hitArea){
 				var hitRect=MouseEventAnalyser._rect;
 				if (!sp.mouseThrough){
@@ -12623,6 +14253,9 @@ var Laya=window.Laya=(function(window,document){
 			var rst={};
 			var key;
 			for(key in obj){
+				if(obj[key]===null||obj[key]===undefined){
+					rst[key]=obj[key];
+				}else
 				if(((obj[key])instanceof Array)){
 					rst[key]=ObjectTools.copyArr(obj[key]);
 				}
@@ -12844,7 +14477,10 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		ObjectTools.getAutoValue=function(value){
-			if (parseFloat(value)==value)return parseFloat(value);
+			var tFloat=parseFloat(value);
+			if(typeof(value)=="string"){
+				if(tFloat+""===StringTool.trimSide(value))return tFloat;
+			}
 			return value;
 		}
 
@@ -13508,6 +15144,17 @@ var Laya=window.Laya=(function(window,document){
 			DTrace.timeEnd(sign);
 		}
 
+		RunProfile.runTest2=function(fun,count,sign){
+			(sign===void 0)&& (sign="runTest");
+			var preTime=NaN;
+			preTime=Browser.now();
+			var i=0;
+			for(i=0;i<count;i++){
+				fun();
+			}
+			return Browser.now()-preTime;
+		}
+
 		RunProfile.infoDic={};
 		RunProfile._runShowDic={};
 		return RunProfile;
@@ -14125,19 +15772,27 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		TimeTool.runAllCallLater=function(){
+			if(TimeTool._deep>0)debugger;
+			TimeTool._deep++;
 			var timer;
 			timer=Laya.timer;
 			var laters=timer["_laters"];
 			for (var i=0,n=laters.length-1;i <=n;i++){
 				var handler=laters[i];
-				handler.method!==null && handler.run(false);
-				timer["_recoverHandler"](handler);
+				if(handler){
+					handler.method!==null && handler.run(false);
+					timer["_recoverHandler"](handler);
+					}else{
+					debugger;
+				}
 				i===n && (n=laters.length-1);
 			}
 			laters.length=0;
+			TimeTool._deep--;
 		}
 
 		TimeTool.timeDic={};
+		TimeTool._deep=0;
 		return TimeTool;
 	})()
 
@@ -15427,7 +17082,6 @@ var Laya=window.Laya=(function(window,document){
 			this.path=path;
 			this.oTxt=ToolFuns.readTxtFile(path);
 			if(!this.oTxt)return;
-			console.log("work:"+path);
 			this.setClassStr(this.oTxt);
 		}
 
@@ -15471,7 +17125,6 @@ var Laya=window.Laya=(function(window,document){
 			var tLineWords;
 			tLineWords=StringTool$1.getSplitLine(tline.lineStr);
 			this.parseClassInfo(tLineWords,this.type);
-			this.traceMyInfo();
 			if(this.type=="class")
 				this.parseClassBody(i);
 			this.importList=[];
@@ -15506,7 +17159,8 @@ var Laya=window.Laya=(function(window,document){
 			var preLine=0;
 			preLine=0;
 			tPos.line=this.findFirstMatchLine(" function ",i);
-			tPair=StringTool$1.findPair("{","}",tPos,this.lines);
+			if(tPos.line>=0)
+				tPair=StringTool$1.findPair("{","}",tPos,this.lines);
 			this.codeT="";
 			var tFun;
 			while(tPair&&tPair.length>1){
@@ -15556,9 +17210,9 @@ var Laya=window.Laya=(function(window,document){
 			if(!tMember.modifiesO["static"]){
 				this.memberDic[tMember.name]=tMember;
 			}
-			console.log("add mem:"+tMember.name+" type:"+tMember.type);
 		}
 
+		//trace("add mem:"+tMember.name+" type:"+tMember.type);
 		__proto.getFunctionHold=function(funID){
 			return "{functionHolder_"+funID+"}";
 		}
@@ -15695,24 +17349,20 @@ var Laya=window.Laya=(function(window,document){
 				var data;
 				data=asfile.code;
 				if(data.indexOf("/*[COMPILER OPTIONS:DISABLE2SYNC]*/")<0){
-					Tracer.myTrace("insertSign:"+filePath);
 					data=StringTool$1.insertAfter(data,"\n"+"/*[COMPILER OPTIONS:DISABLE2SYNC]*/","{");
 				}
 				data=StringTool$1.structfy(data);
 				ToolFuns.saveTxtFile(outPutPath,data);
-				Tracer.myTrace("done:"+filePath);
 			}
 		}
 
 		AsFileParser.workFileList=function(fileList){
-			Tracer.myTrace("workAsFile:"+fileList.length);
 			var i=0;
 			var len=0;
 			len=fileList.length;
 			for(i=0;i<len;i++){
 				AsFileParser.workAFile(fileList[i]);
 			}
-			Tracer.myTrace("workFileList done");
 		}
 
 		AsFileParser.insertSign="/*[COMPILER OPTIONS:DISABLE2SYNC]*/";
@@ -15823,7 +17473,6 @@ var Laya=window.Laya=(function(window,document){
 				}
 			}
 			this.oCode=StringTool$1.getPiecesCode(lines);
-			console.log("oCode:",this.oCode);
 			this.posStart.line=(lines [0]).getStartLine();
 			this.posEnd.line=(lines [lines.length-1]).getEndLine();
 		}
@@ -15878,7 +17527,6 @@ var Laya=window.Laya=(function(window,document){
 			len=e.charCodeAt(0);
 			for(i=s;i<=len;i++){
 				tar[String.fromCharCode(i)]=true;
-				console.log("add :"+String.fromCharCode(i));
 			}
 		}
 
@@ -16621,13 +18269,15 @@ var Laya=window.Laya=(function(window,document){
 			while(i<len){
 				tLineItem=lines[i];
 				adptLine=tLine=tLineItem.lineStr;
-				if((index=tLine.indexOf("/*"))&&(index>=0)){
+				index=tLine.indexOf("/*");
+				if(index>=0){
 					adptLine=tLine.substring(0,index-1);
 					StringTool.addIfNotEmptyS(rst,adptLine,tLineItem);
 					while(i<len){
 						tLineItem=lines[i];
 						adptLine=tLine=tLineItem.lineStr;
-						if((index=tLine.indexOf("*/"))&&(index>=0)){
+						index=tLine.indexOf("*/");
+						if(index>=0){
 							adptLine=tLine.substring(index+2);
 							StringTool.addIfNotEmptyS(rst,adptLine,tLineItem);
 							break ;
@@ -17140,6 +18790,127 @@ var Laya=window.Laya=(function(window,document){
 		__class(Tracer,'as3analyser.Tracer');
 		Tracer.myTrace=function(msg){}
 		return Tracer;
+	})()
+
+
+	/**
+	*
+	*@author ww
+	*@version 1.0
+	*
+	*@created 2017-5-17 下午3:43:28
+	*/
+	//class laya.editor.core.align.AlignTool
+	var AlignTool=(function(){
+		function AlignTool(){}
+		__class(AlignTool,'laya.editor.core.align.AlignTool');
+		AlignTool.getAlignV=function(sp,valueType){
+			var rst=NaN;
+			switch(valueType){
+				case "x":
+				case "y":
+					rst=sp[valueType]
+					break ;
+				case "right":
+					rst=sp.x+sp.width;
+					break ;
+				case "xCenter":
+					rst=sp.x+sp.width*0.5;
+					break ;
+				case "bottom":
+					rst=sp.y+sp.height;
+					break ;
+				case "yCenter":
+					rst=sp.y+sp.height*0.5;
+					break ;
+				}
+			return rst;
+		}
+
+		AlignTool.getMinType=function(sp,tar,xDir,rst,isAlignLine){
+			(xDir===void 0)&& (xDir=true);
+			(isAlignLine===void 0)&& (isAlignLine=false);
+			var vKeys;
+			if(xDir){
+				vKeys=AlignTool.xValues;
+				}else{
+				vKeys=AlignTool.yValues;
+			};
+			var tMinV=NaN;
+			var i=0,iLen=0;
+			var j=0,jLen=0;
+			iLen=vKeys.length;
+			jLen=vKeys.length;
+			if(isAlignLine)jLen=1;
+			var mV=NaN;
+			var tV=NaN;
+			var tDv=NaN;
+			tMinV=999;
+			var tAlignInfo;
+			tAlignInfo=rst||new MinAlignInfo();
+			tAlignInfo.sp=sp;
+			tAlignInfo.tar=tar;
+			tAlignInfo.minD=tMinV;
+			for(i=0;i<iLen;i++){
+				mV=AlignTool.getAlignV(sp,vKeys[i]);
+				for(j=0;j<jLen;j++){
+					tV=AlignTool.getAlignV(tar,vKeys[j]);
+					tDv=tV-mV;
+					if(Math.abs(tDv)<tMinV){
+						tAlignInfo.spType=vKeys[i];
+						tAlignInfo.tarType=vKeys[j];
+						tAlignInfo.minD=tDv;
+						tMinV=Math.abs(tDv);
+					}
+				}
+			}
+			return tAlignInfo;
+		}
+
+		AlignTool.getAlignLine=function(type,value){
+			var rst;
+			rst=Pool.getItemByClass("TempAlignLine",Object);
+			rst.type=type;
+			rst[type]=value;
+			return rst;
+		}
+
+		__static(AlignTool,
+		['xValues',function(){return this.xValues=["x","xCenter","right"];},'yValues',function(){return this.yValues=["y","yCenter","bottom"];}
+		]);
+		return AlignTool;
+	})()
+
+
+	/**
+	*
+	*@author ww
+	*@version 1.0
+	*
+	*@created 2017-5-17 下午3:53:57
+	*/
+	//class laya.editor.core.align.MinAlignInfo
+	var MinAlignInfo=(function(){
+		function MinAlignInfo(){
+			this.sp=null;
+			this.tar=null;
+			this.minD=NaN;
+			this.spType=null;
+			this.tarType=null;
+			console.log("create MinAlignInfo");
+		}
+
+		__class(MinAlignInfo,'laya.editor.core.align.MinAlignInfo');
+		var __proto=MinAlignInfo.prototype;
+		__getset(0,__proto,'minAbs',function(){
+			return Math.abs(this.minD);
+		});
+
+		__getset(0,__proto,'tValue',function(){
+			return AlignTool.getAlignV(this.tar,this.tarType);
+		});
+
+		return MinAlignInfo;
 	})()
 
 
@@ -17892,6 +19663,30 @@ var Laya=window.Laya=(function(window,document){
 			return treeData;
 		}
 
+		TreeData.removeNodeFromNodeTree=function(nodeTree,compId){
+			if(!nodeTree)return;
+			var childs;
+			childs=nodeTree.child;
+			if(!childs)return;
+			var i=0,len=0;
+			var tChild;
+			len=childs.length;
+			for(i=0;i<len;i++){
+				tChild=childs[i];
+				if(tChild&&tChild.compId==compId){
+					childs.splice(i,1);
+					return;
+				}
+			}
+			len=childs.length;
+			for(i=0;i<len;i++){
+				tChild=childs[i];
+				if(tChild){
+					TreeData.removeNodeFromNodeTree(tChild,compId);
+				}
+			}
+		}
+
 		__static(TreeData,
 		['_cleanNames',function(){return this._cleanNames=
 			[
@@ -18088,6 +19883,8 @@ var Laya=window.Laya=(function(window,document){
 		__proto.onStageKeyDown=function(e){
 			switch(e.keyCode){
 				case 27:
+					Laya.stage.off("mousemove",this,this.onStageMouseMove);
+					Laya.stage.off("mouseup",this,this.onStageMouseUp);
 					this.clears();
 					break ;
 				}
@@ -18103,6 +19900,10 @@ var Laya=window.Laya=(function(window,document){
 			DragManager.prePos.setTo(Laya.stage.mouseX,Laya.stage.mouseY);
 			this._dragInitiator=dragInitiator;
 			this._dragImage=dragImage ? dragImage :dragInitiator;
+			if((this._dragImage instanceof laya.ui.Clip )){
+				this._dragImage.width*=0.5;
+				this._dragImage.height*=0.5;
+			}
 			DragManager._data=data || {};
 			offset=null;
 			if(offset){
@@ -19622,6 +21423,10 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		CodeManager.objToUI=function(obj,pagePath){
+			var pageType;
+			pageType=TypeManager.getFileType(pagePath);
+			var isEfc=false;
+			isEfc=pageType=="MoveEffect";
 			var isPreset=false;
 			var className=FileManager.getFileName(pagePath)+"UI";
 			var pack=CodeManager.getPackage(pagePath);
@@ -19660,6 +21465,9 @@ var Laya=window.Laya=(function(window,document){
 				}
 			};
 			var str="";
+			if(isEfc){
+				obj.type="EffectAnimation";
+			};
 			var baseName=obj.type;
 			var uiObj;
 			uiObj=ObjectTools.copyObjFast(uiXml);
@@ -19686,6 +21494,13 @@ var Laya=window.Laya=(function(window,document){
 			classObj["viewClassMap"]=viewClassMap;
 			classObj["uiObj"]=JSON.stringify(uiObj);
 			classObj["uiPath"]=uiPath;
+			var fullClassname;
+			if(!pack){
+				fullClassname=className;
+				}else{
+				fullClassname=pack+"."+className;
+			}
+			classObj["fullClassname"]=fullClassname;
 			var pageExportType;
 			pageExportType=PageStyleManager.getPageFinalExportType(pageLink);
 			switch(pageExportType){
@@ -19719,7 +21534,7 @@ var Laya=window.Laya=(function(window,document){
 				classObj["importsPre"]="";
 			};
 			var tplStr;
-			tplStr=CodeTplManager.getCodeTpl(ProjectSetting.codeType,isPreset,PageExportType.isLoadType(pageExportType));
+			tplStr=CodeTplManager.getCodeTpl(ProjectSetting.codeType,isPreset,PageExportType.isLoadType(pageExportType),isEfc);
 			str=CodeManager.createExportCode(tplStr,classObj);
 			return str;
 		}
@@ -19766,6 +21581,11 @@ var Laya=window.Laya=(function(window,document){
 				for(tkey in CodeManager.propkeysRemove){
 					delete props[tkey];
 				}
+				for(tkey in CodeManager.NumKeys){
+					if(tkey in props){
+						props[tkey]=parseFloat(props[tkey]);
+					}
+				}
 			}
 			if(node.compId&&compIdNeedDic&&!compIdNeedDic[node.compId]){
 				delete node.compId;
@@ -19807,6 +21627,9 @@ var Laya=window.Laya=(function(window,document){
 					str+="		public var "+a[0]+":"+compType+";\n";
 					}else{
 					var lib=viewMap[compType];
+					if(CodeManager.getRunClass(lib)){
+						lib=CodeManager.getRunClass(lib);
+					};
 					var libName=lib.substring(lib.lastIndexOf(".")+1,lib.length);
 					str+="		public var "+a[0]+":"+libName+";\n";
 				}
@@ -19882,7 +21705,7 @@ var Laya=window.Laya=(function(window,document){
 				len=animations.length;
 				for(i=0;i<len;i++){
 					if(animations[i].nodes&&animations[i].nodes.length>0)
-						arr.push([String(animations[i].name),"FrameClip"]);
+						arr.push([String(animations[i].name),"FrameAnimation"]);
 				}
 			}
 			if(obj.props["var"]){
@@ -19980,11 +21803,11 @@ var Laya=window.Laya=(function(window,document){
 				var effect=obj.props.effect;
 				effect=FileManager.getPath(SystemSetting.pagesPath,effect);
 				var effectName=FileManager.getFileName(effect);
-				obj.props.effectClass=CodeManager.getPackage(effect)+"."+effectName+"UI";
+				obj.props.runtime=CodeManager.getPackage(effect)+"."+effectName+"UI";
 				obj.type="Script";
-				obj.props.runtime=CodeManager.getRunClass("EffectAnimation");
 				delete obj.props.effect;
-				viewMap[obj.props.effectClass]=obj.props.effectClass;
+				delete obj.props.skin;
+				viewMap[obj.props.runtime]=obj.props.runtime;
 			}
 			delete obj.props.layers;
 			delete obj.props.layer;
@@ -20064,7 +21887,7 @@ var Laya=window.Laya=(function(window,document){
 				"presetID":true,
 				"presetPre":true,
 				"presetIDPre":true
-		};}
+		};},'NumKeys',function(){return this.NumKeys={"fontSize":true,"stateNum":true};}
 
 		]);
 		return CodeManager;
@@ -20086,12 +21909,15 @@ var Laya=window.Laya=(function(window,document){
 			(type===void 0)&& (type="");
 			CodeTplManager.jsCodeTpl=FileManager.readTxtFile(FileManager.getAppPath(Paths.JSCodeTemplate+type));
 			CodeTplManager.jsCodeTplPst=FileManager.readTxtFile(FileManager.getAppPath(Paths.JSCodeTemplate+".preset"));
+			CodeTplManager.jsCodeTplEfc=FileManager.readTxtFile(FileManager.getAppPath(Paths.JSCodeTemplate+".efc"));
 			CodeTplManager.jsCodePre=FileManager.readTxtFile(FileManager.getAppPath(Paths.JSCodePreTemplate));
 			CodeTplManager.tsCodeTpl=FileManager.readTxtFile(FileManager.getAppPath(Paths.TSCodeTemplate+type));
 			CodeTplManager.tsCodeTplPst=FileManager.readTxtFile(FileManager.getAppPath(Paths.TSCodeTemplate+".preset"));
+			CodeTplManager.tsCodeTplEfc=FileManager.readTxtFile(FileManager.getAppPath(Paths.TSCodeTemplate+".efc"));
 			CodeTplManager.tsCodePre=FileManager.readTxtFile(FileManager.getAppPath(Paths.TSCodePreTemplate));
 			CodeTplManager.asCodeTpl=FileManager.readTxtFile(FileManager.getAppPath(Paths.ASCodeTemplate+type));
 			CodeTplManager.asCodeTplPst=FileManager.readTxtFile(FileManager.getAppPath(Paths.ASCodeTemplate+".preset"));
+			CodeTplManager.asCodeTplEfc=FileManager.readTxtFile(FileManager.getAppPath(Paths.ASCodeTemplate+".efc"));
 			CodeTplManager.parsePublishConfig();
 		}
 
@@ -20129,7 +21955,8 @@ var Laya=window.Laya=(function(window,document){
 			CodeTplManager.recordCodeTpls("Load");
 		}
 
-		CodeTplManager.getCodeTpl=function(codeType,isPreset,isLoad){
+		CodeTplManager.getCodeTpl=function(codeType,isPreset,isLoad,isEfc){
+			(isEfc===void 0)&& (isEfc=false);
 			if(isLoad){
 				CodeTplManager.setCodeTpls("Load");
 				}else{
@@ -20140,6 +21967,10 @@ var Laya=window.Laya=(function(window,document){
 			switch(codeType){
 				case 0:
 					tplStr=CodeTplManager.asCodeTpl;
+					if(isEfc){
+						tplStr=CodeTplManager.asCodeTplEfc;
+					}
+					else
 					if(isPreset){
 						tplStr=CodeTplManager.asCodeTplPst;
 					}
@@ -20147,12 +21978,20 @@ var Laya=window.Laya=(function(window,document){
 				case 2:
 				case 2:
 					tplStr=CodeTplManager.jsCodeTpl;
+					if(isEfc){
+						tplStr=CodeTplManager.jsCodeTplEfc;
+					}
+					else
 					if(isPreset){
 						tplStr=CodeTplManager.jsCodeTplPst;
 					}
 					break ;
 				case 1:
 					tplStr=CodeTplManager.tsCodeTpl;
+					if(isEfc){
+						tplStr=CodeTplManager.tsCodeTplEfc;
+					}
+					else
 					if(isPreset){
 						tplStr=CodeTplManager.tsCodeTplPst;
 					}
@@ -20202,12 +22041,15 @@ var Laya=window.Laya=(function(window,document){
 
 		CodeTplManager.jsCodeTpl="";
 		CodeTplManager.jsCodeTplPst="";
+		CodeTplManager.jsCodeTplEfc="";
 		CodeTplManager.jsCodePre="";
 		CodeTplManager.tsCodeTpl="";
 		CodeTplManager.tsCodeTplPst="";
+		CodeTplManager.tsCodeTplEfc="";
 		CodeTplManager.tsCodePre="";
 		CodeTplManager.asCodeTpl="";
 		CodeTplManager.asCodeTplPst="";
+		CodeTplManager.asCodeTplEfc="";
 		CodeTplManager.codeTplsDic={};
 		CodeTplManager.codeModeType=null
 		CodeTplManager.base64path="src/data/Base64AtlasManager.as";
@@ -20216,12 +22058,15 @@ var Laya=window.Laya=(function(window,document){
 		['_codeTplsNames',function(){return this._codeTplsNames=[
 			"jsCodeTpl",
 			"jsCodeTplPst",
+			"jsCodeTplEfc",
 			"jsCodePre",
 			"tsCodeTpl",
 			"tsCodeTplPst",
+			"tsCodeTplEfc",
 			"tsCodePre",
 			"asCodeTpl",
-			"asCodeTplPst"];}
+			"asCodeTplPst",
+			"asCodeTplEfc"];}
 		]);
 		return CodeTplManager;
 	})()
@@ -20262,7 +22107,7 @@ var Laya=window.Laya=(function(window,document){
 			ExportManager.clearRes=force||ExportManager.configChanged;
 			laya.editor.manager.ExportManager.complete=complete;
 			if (UIPanel.instance.hasChange){
-				Confirm.show(Sys.lang("在发布代码之前，有页面还未保存，是否保存然后发布？"),Sys.lang("有页面未保存"),ExportManager.confirmBack,[release]);
+				Confirm.show(Sys.lang("在发布代码之前，有页面还未保存，是否保存然后发布？"),Sys.lang("有页面未保存"),ExportManager.confirmBack,[release],Sys.lang("保存并发布"),Sys.lang("直接发布"));
 				}else {
 				ExportManager.doExport(release);
 			}
@@ -20356,6 +22201,11 @@ var Laya=window.Laya=(function(window,document){
 			return str.split(",");
 		}
 
+		ExportManager.exportCodeOnly=function(){
+			Waiting.show(Sys.lang("发布中，请稍等。。"),Sys.lang("发布代码"));
+			Laya.timer.once(500,this,ExportManager.doExportLater,[false,true,false]);
+		}
+
 		ExportManager.doExportLater=function(release,exportUICode,exportRes){
 			(exportUICode===void 0)&& (exportUICode=true);
 			(exportRes===void 0)&& (exportRes=true);
@@ -20390,7 +22240,7 @@ var Laya=window.Laya=(function(window,document){
 			notPackFilePath=FileManager.getWorkPath(ExportManager.adptCallPath(ProjectSetting.asynResExportPath)+"/unpack.json");
 			FileManager.createJSONFile(notPackFilePath,allNotPacks);
 			var oldPathPackPath="libs/TP/TileAtlasPacker";
-			var newPathPackPath="libs/TP/AtlasGenerator";
+			var newPathPackPath="libs/TP/atlas-generator";
 			if (SystemSetting.isCMDVer){
 				oldPathPackPath=oldPathPackPath.replace("libs/","");
 				newPathPackPath=newPathPackPath.replace("libs/","");
@@ -20425,27 +22275,43 @@ var Laya=window.Laya=(function(window,document){
 			packObj["includeList"]=ExportManager.getNewParamList(whilteList);
 			packObj["excludeList"]=ExportManager.getNewParamList(blackList);
 			packObj["extrudeList"]=ExportManager.getNewParamList(repeatList);
+			if(ProjectSetting.copyRes!="true"){
+				packObj["resDir"]="";
+			};
 			var atlas;
 			atlas={};
 			atlas["width"]=ProjectSetting.textureWidth;
 			atlas["height"]=ProjectSetting.textureHeight;
+			atlas["size"]=parseInt(ProjectSetting.textureWidth);
+			atlas["quality"]=-1;
+			atlas["pixelFormat"]=ProjectSetting.picType==0?"ARGB32":"Indexed8";
 			atlas["powerOfTwo"]=ProjectSetting.power2=="true";
 			console.log("picType:",ProjectSetting.picType);
-			atlas["textureFormat"]=ProjectSetting.picType==0?"png32":"png8";
+			atlas["textureFormat"]="PNG";
 			packObj["atlas"]=atlas;
+			var dataParam;
+			dataParam={};
+			dataParam["format"]=ProjectSetting.atlasType==0?"json":"atlas";
+			dataParam["compact"]=false;
+			packObj["data"]=dataParam;
 			var spriteConfig;
 			spriteConfig={};
 			spriteConfig["width"]=ProjectSetting.picWidth;
 			spriteConfig["height"]=ProjectSetting.picHeight;
+			spriteConfig["size"]=parseInt(ProjectSetting.picWidth);
+			spriteConfig["rotation"]=false;
+			spriteConfig["extrude"]=1;
+			spriteConfig["padding"]=1;
 			spriteConfig["cropAlpha"]=ProjectSetting.trimempty=="true";
 			packObj["sprite"]=spriteConfig;
 			FileManager.createJSONFile(packFilePath,packObj);
 			var option;
 			option={encoding:"binary",maxBuffer:1024*1024*20};;
-			option.cwd=FileManager.getAppPath(newPathPackPath).replace("AtlasGenerator","");
 			var newCmd;
-			newCmd="AtlasGenerator --config "+"\""+ExportManager.adptCallPath(packFilePath)+"\"";
-			newCmd="\""+FileManager.getAppPath(newPathPackPath)+"\""+" --config "+"\""+ExportManager.adptCallPath(packFilePath)+"\"";
+			newCmd="AtlasGenerator  "+"\""+ExportManager.adptCallPath(packFilePath)+"\"";
+			newCmd="\""+FileManager.adptToCommonUrl(FileManager.getAppPath(newPathPackPath))+"\""+" "+"\""+ExportManager.adptCallPath(packFilePath)+"\"";
+			newCmd="\""+FileManager.adptToCommonUrl(FileManager.getAppPath(newPathPackPath))+"\""+" "+"\""+FileManager.adptToCommonUrl(ExportManager.adptCallPath(packFilePath))+"\"";
+			console.log("newCmd:",newCmd);
 			cmd=newCmd;
 			console.log("Waiting for pics packing");
 			FileManager.createDirectory(FileManager.getWorkPath(ProjectSetting.resExportPath));
@@ -20458,6 +22324,7 @@ var Laya=window.Laya=(function(window,document){
 				}
 				ExportManager.packingEndHandler(err,stdOut,stdErr);
 			},option);
+			return true;
 		}
 
 		ExportManager.swfMap=null
@@ -20470,6 +22337,64 @@ var Laya=window.Laya=(function(window,document){
 		ExportManager._packingEndHandler=null
 		ExportManager.powerOfTwo=false;
 		return ExportManager;
+	})()
+
+
+	/**
+	*
+	*@author ww
+	*@version 1.0
+	*
+	*@created 2017-5-15 下午2:55:06
+	*/
+	//class laya.editor.manager.IDESettingResTypeManager
+	var IDESettingResTypeManager=(function(){
+		function IDESettingResTypeManager(){}
+		__class(IDESettingResTypeManager,'laya.editor.manager.IDESettingResTypeManager');
+		IDESettingResTypeManager.getTypeRes=function(type){
+			return IDESettingResTypeManager.typeDic[type];
+		}
+
+		IDESettingResTypeManager.getResType=function(res){
+			return IDESettingResTypeManager.resTypeDic[res.toLocaleLowerCase()];
+		}
+
+		IDESettingResTypeManager.loadConfig=function(){
+			var filePath;
+			filePath=Paths.getResTypeConfigPath();
+			if(FileManager.exists(filePath)){
+				try{
+					IDESettingResTypeManager.typeDic=FileManager.readJSONFile(filePath);
+					}catch(e){
+					IDESettingResTypeManager.typeDic={};
+				}
+				}else{
+				IDESettingResTypeManager.typeDic={};
+			}
+			IDESettingResTypeManager.updateTypeDic();
+		}
+
+		IDESettingResTypeManager.updateTypeDic=function(){
+			IDESettingResTypeManager.resTypeDic={};
+			var key;
+			var tV;
+			for(key in IDESettingResTypeManager.typeDic){
+				tV=IDESettingResTypeManager.typeDic[key];
+				if(tV){
+					IDESettingResTypeManager.resTypeDic[tV.toLocaleLowerCase()]=key;
+				}
+			}
+		}
+
+		IDESettingResTypeManager.saveConfig=function(){
+			var filePath;
+			filePath=Paths.getResTypeConfigPath();
+			FileManager.createJSONFile(filePath,IDESettingResTypeManager.typeDic);
+		}
+
+		IDESettingResTypeManager.typeDic={};
+		IDESettingResTypeManager.resTypeDic={};
+		return IDESettingResTypeManager;
 	})()
 
 
@@ -20599,7 +22524,7 @@ var Laya=window.Laya=(function(window,document){
 			try {
 				PageStyleManager.styleXML=new XMLElement(Boolean(txt)? txt :"<?xml version=\"1.0\" encoding=\"UTF-8\"?><page></page>");
 				}catch (e){
-				Alert.show(Sys.lang("PageStyleManager 读取文件{0}出错",SystemSetting.stylePath),Sys.lang("读取文件出错"));
+				Alert.show(Sys.lang("PageStyleManager 读取文件{0}出错",SystemSetting.pageStylePath),Sys.lang("读取文件出错"));
 			}
 			if (PageStyleManager.styleXML){
 				PageStyleManager.styleMap={};
@@ -20661,7 +22586,7 @@ var Laya=window.Laya=(function(window,document){
 			if(!ifExport){
 				ifExport="默认";
 			}
-			ifExport=Sys.lang("默认");
+			ifExport=Sys.lang(ifExport);
 			props=ResStyleManager.getPropStrByArr(props.split("\n"));
 			if (PageStyleManager.styleMap&&PageStyleManager.styleMap[name]){
 				PageStyleManager.styleMap[name].setAttribute('props',props);
@@ -21017,7 +22942,7 @@ var Laya=window.Laya=(function(window,document){
 			var relativePath;
 			relativePath=FileManager.getRelativePath(oBasePath,oPath);
 			var tarProjectFile;
-			tarProjectFile=FileManager.getPath(tarPath,ProjectConvertManager.getNewProjectRelativePath(relativePath));
+			tarProjectFile=FileManager.getPath(tarPath,"laya/.laya");
 			FileManager.copyFile(oPath,tarProjectFile);
 			var pagesFolder;
 			pagesFolder=FileManager.getPath(oBasePath,"morn/pages");
@@ -21269,6 +23194,7 @@ var Laya=window.Laya=(function(window,document){
 						ProjectManager.addProjectOpened(path);
 						RenderManager.I.setRenderPropByFont(ProjectSetting.defaultFont);
 						LanguageManager.loadProjectLanguageFile();
+						RenderManager.I.loadProjectCustomUIConfig();
 					}
 					else{
 						Alert.show(Sys.lang("项目不存在"));
@@ -21380,6 +23306,7 @@ var Laya=window.Laya=(function(window,document){
 			"uiType",
 			"codeType",
 			"picType",
+			"atlasType",
 			"defaultFont",
 			"uiExportPath",
 			"boxTypes",
@@ -21395,6 +23322,7 @@ var Laya=window.Laya=(function(window,document){
 			"picWidth",
 			"picHeight",
 			"power2",
+			"copyRes",
 			"trimempty"];},'SpecialXmlKeys',function(){return this.SpecialXmlKeys={
 				"codeImports":true,
 				"codeImportsJS":true,
@@ -21717,8 +23645,9 @@ var Laya=window.Laya=(function(window,document){
 			return rstArr.join(split);
 		}
 
-		ResStyleManager.getResCompType=function(asset,isIcon){
+		ResStyleManager.getResCompType=function(asset,isIcon,ignoreIDESetting){
 			(isIcon===void 0)&& (isIcon=false);
+			(ignoreIDESetting===void 0)&& (ignoreIDESetting=false);
 			if (!asset){
 				return "Image";
 			};
@@ -21733,7 +23662,7 @@ var Laya=window.Laya=(function(window,document){
 				if(compType)return compType;
 				var fileName=FileTools.getFileName(asset);
 				var res=fileName.split("_")[0];
-				compType=UIConfigManager.getCompTypeByResName(res,isIcon);
+				compType=UIConfigManager.getCompTypeByResName(res,isIcon,ignoreIDESetting);
 			}
 			return compType || "Image";
 		}
@@ -21840,6 +23769,7 @@ var Laya=window.Laya=(function(window,document){
 			if(Browser.window["layaideconfig"]){
 				if(Browser.window["layaideconfig"].mode=="0")return;
 			}
+			if(Input.isInputting)return;
 			ShortcutManager.exeKey(e.keyCode,KeyManager.I.isCommandKeyDown,e.shiftKey);
 		}
 
@@ -21904,6 +23834,7 @@ var Laya=window.Laya=(function(window,document){
 		function UIConfigManager(){}
 		__class(UIConfigManager,'laya.editor.manager.UIConfigManager');
 		UIConfigManager.addNewConfig=function(data){
+			UIConfigManager._fullConfigCache={};
 			if(!UIConfigManager.configMap){
 				UIConfigManager.configMap=data;
 				return;
@@ -22006,6 +23937,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		UIConfigManager.getFullConfig=function(type){
+			if(UIConfigManager._fullConfigCache[type])return UIConfigManager._fullConfigCache[type];
 			var rst;
 			rst=UIConfigManager.configMap[type];
 			if (!rst)return null;
@@ -22016,6 +23948,7 @@ var Laya=window.Laya=(function(window,document){
 				UIConfigManager.inherit(rst,UIConfigManager.getFullConfig(rst.p.inherit));
 			}
 			UIConfigManager.createPropDic(rst);
+			UIConfigManager._fullConfigCache[type]=rst;
 			return rst;
 		}
 
@@ -22038,8 +23971,10 @@ var Laya=window.Laya=(function(window,document){
 			var rst=[];
 			var key;
 			for(key in UIConfigManager.configMap){
+				if(UIConfigManager.NoCompDic[key])continue ;
 				rst.push(key);
 			}
+			rst.sort();
 			return rst;
 		}
 
@@ -22064,8 +23999,23 @@ var Laya=window.Laya=(function(window,document){
 			return prop;
 		}
 
-		UIConfigManager.getCompTypeByResName=function(res,isIcon){
+		UIConfigManager.getCompResStr=function(type){
+			return UIConfigManager.getCompProp(type,"resName");
+		}
+
+		UIConfigManager.getCompTypeByResNameOfIDESetting=function(res){
+			res=IDESettingResTypeManager.getResType(res);
+			return res;
+		}
+
+		UIConfigManager.getCompTypeByResName=function(res,isIcon,ignoreIDESetting){
 			(isIcon===void 0)&& (isIcon=false);
+			(ignoreIDESetting===void 0)&& (ignoreIDESetting=false);
+			var ideSettingType;
+			ideSettingType=UIConfigManager.getCompTypeByResNameOfIDESetting(res);
+			if(ideSettingType&&!ignoreIDESetting){
+				res=ideSettingType;
+			};
 			var type;
 			for(type in UIConfigManager.configMap){
 				if(UIConfigManager.configMap[type].p.resName==res||type.toLowerCase()==res.toLowerCase()){
@@ -22125,6 +24075,37 @@ var Laya=window.Laya=(function(window,document){
 		UIConfigManager.configMap={};
 		UIConfigManager.propKeysDic={};
 		UIConfigManager.defaultPropDic={};
+		UIConfigManager._fullConfigCache={};
+		__static(UIConfigManager,
+		['NoCompDic',function(){return this.NoCompDic={
+				"EffectAnimation":true,
+				"GraphicPic":true,
+				"GraphicNode":true,
+				"GraphicBase":true,
+				"MixItems":true,
+				"ParticlePlayer":true,
+				"FillTexture":true,
+				"Prefab":true,
+				"Props":true,
+				"Particle":true,
+				"PolyEmitter":true,
+				"Rect":true,
+				"Texture":true,
+				"FillTexture":true,
+				"Circle":true,
+				"Pie":true,
+				"Line":true,
+				"Lines":true,
+				"Curves":true,
+				"Poly":true,
+				"Curves":true,
+				"FillText":true,
+				"GridEditor":true,
+				"Curves":true,
+				"UIView":true
+		};}
+
+		]);
 		return UIConfigManager;
 	})()
 
@@ -22524,7 +24505,8 @@ var Laya=window.Laya=(function(window,document){
 		*@param aniO
 		*
 		*/
-		__proto.removeNode=function(compId,aniO){
+		__proto.removeNode=function(compId,aniO,onlyData){
+			(onlyData===void 0)&& (onlyData=false);
 			if(!aniO)aniO=this.tSelectAni;
 			var nodes;
 			nodes=aniO.nodes;
@@ -22534,7 +24516,12 @@ var Laya=window.Laya=(function(window,document){
 			for(i=0;i<len;i++){
 				tNode=nodes[i];
 				if(tNode.target==compId){
-					nodes.splice(i,1);
+					if(onlyData){
+						tNode.keyframes={};
+						tNode.frames={};
+						}else{
+						nodes.splice(i,1);
+					}
 					return;
 				}
 			}
@@ -22566,6 +24553,11 @@ var Laya=window.Laya=(function(window,document){
 		__proto.changeNodeId=function(preID,newID){
 			var node;
 			node=this.getAniNodeObj(preID);
+			var newNode;
+			newNode=this.getAniNodeObj(newID);
+			if(newNode){
+				this.removeNode(newID);
+			}
 			if(node){
 				node.target=newID;
 				var nodeO;
@@ -22632,6 +24624,57 @@ var Laya=window.Laya=(function(window,document){
 			}
 		}
 
+		__proto.getNodeIndex=function(nodeId,aniO){
+			if(!aniO)aniO=this.tSelectAni;
+			var nodes;
+			nodes=aniO.nodes;
+			var i=0,len=0;
+			len=nodes.length;
+			var tNode;
+			for(i=0;i<len;i++){
+				tNode=nodes[i];
+				if(tNode.target==nodeId){
+					return i;
+				}
+			}
+			return-1;
+		}
+
+		__proto.getNodeIDByIndex=function(index,aniO){
+			if(!aniO)aniO=this.tSelectAni;
+			var nodes;
+			nodes=aniO.nodes;
+			var i=0,len=0;
+			len=nodes.length;
+			var tNode;
+			if(nodes[index])return nodes[index].target;
+			return-1;
+		}
+
+		__proto.getNodeKeyFramesByNodeID=function(nodeId,frame){
+			var node;
+			node=this.getAniNodeObj(nodeId);
+			var key;
+			var keyFrameO;
+			var rst;
+			rst=[];
+			if(node&&node.keyframes){
+				keyFrameO=node.keyframes;
+				for(key in keyFrameO){
+					var keyFrameList;
+					keyFrameList=keyFrameO[key];
+					var i=0,len=0;
+					len=keyFrameList.length;
+					for(i=0;i<len;i++){
+						if(keyFrameList[i].index==frame){
+							rst.push(keyFrameList[i]);
+						}
+					}
+				}
+			}
+			return rst;
+		}
+
 		__proto.removeNodePropFrameByKeyAndFrame=function(nodeId,key,frame){
 			var node;
 			node=this.getAniNodeObj(nodeId);
@@ -22657,6 +24700,25 @@ var Laya=window.Laya=(function(window,document){
 			if(!preKeyFrame)return;
 			this.removeNodePropFrame(this.targetAnimation.getNodePropKeyFrames(nodeID+"",prop),newFrame);
 			preKeyFrame.index=newFrame;
+		}
+
+		__proto.addKeyFrameOToNode=function(nodeID,keyFrameO,offSetFrame){
+			var nodeO;
+			nodeO=this.getAniNodeObj(nodeID);
+			if(!nodeO)return;
+			var props;
+			props=nodeO.keyframes;
+			var propKey;
+			propKey=keyFrameO["key"];
+			var keyO;
+			keyO=this.targetAnimation.getNodePropKeyFrame(nodeID+"",parseInt(keyFrameO.index)+offSetFrame,keyFrameO.key,true);
+			var i=0,len=0;
+			len=AnimationDataWorker.keyCopyKeys.length;
+			var tKey;
+			for(i=0;i<len;i++){
+				tKey=AnimationDataWorker.keyCopyKeys[i];
+				keyO[tKey]=keyFrameO[tKey];
+			}
 		}
 
 		__proto.moveNodeFrameTo=function(nodeID,preFrame,newFrame){
@@ -22691,13 +24753,22 @@ var Laya=window.Laya=(function(window,document){
 		*@param frame
 		*
 		*/
-		__proto.addNodeFrame=function(node,prop,frame,force){
+		__proto.addNodeFrame=function(node,prop,frame,force,forceDelete){
 			(force===void 0)&& (force=false);
+			(forceDelete===void 0)&& (forceDelete=false);
 			if(!node.props.hasOwnProperty(prop)){
 				if(force){
 					node.props[prop]=this.targetAnimation.getNodeFrameProp(node.compId,frame,prop);
 					}else{
-					return;
+					if(!forceDelete)
+						return;
+					var preV;
+					preV=this.targetAnimation.getNodeFrameProp(node.compId,frame,prop);
+					if((typeof preV=='string')){
+						node.props[prop]="";
+						}else{
+						node.props[prop]=0;
+					}
 				}
 			};
 			var value;
@@ -22717,6 +24788,9 @@ var Laya=window.Laya=(function(window,document){
 			var keyFrame;
 			keyFrame=this.targetAnimation.getNodePropKeyFrame(nodeId+"",frame,prop,true);
 			keyFrame.value=this.targetAnimation.getNodeFrameProp(nodeId+"",frame,prop);
+			if((typeof keyFrame.value=='string')){
+				keyFrame.tween=false;
+			}
 			return keyFrame;
 		}
 
@@ -22740,6 +24814,8 @@ var Laya=window.Laya=(function(window,document){
 			var rootNode;
 			rootNode=this.treeData.root;
 			if(!rootNode)return;
+			this.makeNodeAnis(rootNode);
+			return;
 			var childs;
 			childs=rootNode.child;
 			var i=0,len=0;
@@ -22749,6 +24825,21 @@ var Laya=window.Laya=(function(window,document){
 				tChild=childs[i];
 				if(tChild.compId>0){
 					this.addNode(tChild.compId);
+				}
+			}
+		}
+
+		__proto.makeNodeAnis=function(rootNode){
+			var childs;
+			childs=rootNode.child;
+			var i=0,len=0;
+			len=childs.length;
+			for(i=0;i<len;i++){
+				var tChild;
+				tChild=childs[i];
+				if(tChild.compId>0){
+					this.addNode(tChild.compId);
+					this.makeNodeAnis(tChild);
 				}
 			}
 		}
@@ -22803,6 +24894,8 @@ var Laya=window.Laya=(function(window,document){
 				nodeFrameList=[];
 				var nodeFrameDic;
 				nodeFrameDic={};
+				var labelFrameDic;
+				labelFrameDic={};
 				if(!nodeO.childs)nodeO.childs=[];
 				childs=nodeO.childs;
 				childs.length=0;
@@ -22822,15 +24915,16 @@ var Laya=window.Laya=(function(window,document){
 					rst.push(propNode);
 					this.collectKeyFrames(props[propKey],nodeFrameDic);
 					this.collectKeyFrames(props[propKey],this.keyIndexDic);
+					this.collectLabelFrames(props[propKey],labelFrameDic);
 				}
-				nodeO.keyFrames=this.createNodeKeyFramesData(nodeFrameDic,tCompID);
+				nodeO.keyFrames=this.createNodeKeyFramesData(nodeFrameDic,tCompID,labelFrameDic);
 				nodeO.isDirectory=true;
 				nodeO.hasChild=true;
 			}
 			return rst;
 		}
 
-		__proto.createNodeKeyFramesData=function(keyFrameDic,target){
+		__proto.createNodeKeyFramesData=function(keyFrameDic,target,labelFrameDic){
 			var rst;
 			rst=SingleTool.I.getArr("keyframe:"+target);
 			rst.length=0;
@@ -22840,9 +24934,26 @@ var Laya=window.Laya=(function(window,document){
 				tKeyFrameData=SingleTool.I.getObject("keyframedata:"+target+"_"+key);
 				tKeyFrameData.target=target;
 				tKeyFrameData.index=key;
+				if(labelFrameDic[key]){
+					tKeyFrameData.label=labelFrameDic[key];
+					}else{
+					tKeyFrameData.label=null;
+				}
 				rst.push(tKeyFrameData);
 			}
 			return rst;
+		}
+
+		__proto.collectLabelFrames=function(frames,labelFrameDic){
+			var i=0,len=0;
+			len=frames.length;
+			var tIndex=0;
+			for(i=0;i<len;i++){
+				if(frames[i].label){
+					tIndex=frames[i].index;
+					labelFrameDic[tIndex]=frames[i].label;
+				}
+			}
 		}
 
 		__proto.collectKeyFrames=function(frames,keyFrameDic){
@@ -22899,6 +25010,52 @@ var Laya=window.Laya=(function(window,document){
 			return animationData;
 		}
 
+		AnimationDataWorker.removeWrongValueAniMationData=function(animationData){
+			var aniO;
+			var ii=0,iiLen=0;
+			var changed=false;
+			changed=false;
+			var tChange=false;
+			iiLen=animationData.length;
+			for(ii=0;ii<iiLen;ii++){
+				aniO=animationData[ii];
+				var nodes;
+				nodes=aniO.nodes;
+				var i=0,len=0;
+				len=nodes.length;
+				var tNode;
+				for(i=0;i<len;i++){
+					tNode=nodes[i];
+					var keyframes;
+					keyframes=tNode.keyframes;
+					var key;
+					if(keyframes){
+						for(key in keyframes){
+							tChange=AnimationDataWorker.removeWrongValueFromKeyFrames(keyframes[key]);
+							if(tChange)changed=true;
+						}
+					}
+				}
+			}
+			return changed;
+		}
+
+		AnimationDataWorker.removeWrongValueFromKeyFrames=function(keyFrames){
+			var i=0,len=0;
+			len=keyFrames.length;
+			var tKeyO;
+			var changed=false;
+			changed=false;
+			for(i=len-1;i>=0;i--){
+				tKeyO=keyFrames[i];
+				if(typeof(tKeyO.value)=="object"){
+					keyFrames.splice(i,1);
+					changed=true;
+				}
+			}
+			return changed;
+		}
+
 		AnimationDataWorker.removeNodeFromAnimationData=function(animationData,nodeID){
 			var aniO;
 			var ii=0,iiLen=0;
@@ -22951,6 +25108,9 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		AnimationDataWorker.selectLabels=[];
+		__static(AnimationDataWorker,
+		['keyCopyKeys',function(){return this.keyCopyKeys=["label","tween","tweenMethod","value"];}
+		]);
 		return AnimationDataWorker;
 	})()
 
@@ -23752,7 +25912,7 @@ var Laya=window.Laya=(function(window,document){
 		TimeLineStyles.FrameColor_KeyFrame="#13b5b1";
 		TimeLineStyles.FrameColor_Holder="#111111";
 		TimeLineStyles.FrameColor_Node="#ffffff";
-		TimeLineStyles.FrameColor_Label="#ff0000";
+		TimeLineStyles.FrameColor_Label="#f8b551";
 		TimeLineStyles.FrameColor_Circle="#f8b551";
 		TimeLineStyles.TitleBigLineColor="#009999";
 		TimeLineStyles.TitleSmallLineColor="#006666";
@@ -23904,6 +26064,8 @@ var Laya=window.Laya=(function(window,document){
 				tKey=ProjectSetting.UiPaths[i];
 				ProjectSetting[tKey]=StringTool.trimSide(ProjectSetting[tKey]+"");
 			}
+			laya.ide.config.ProjectSetting.atlasType=Sys.mParseInt(laya.ide.config.ProjectSetting.atlasType);
+			if(!laya.ide.config.ProjectSetting.atlasType)laya.ide.config.ProjectSetting.atlasType=0;
 			if(laya.ide.config.ProjectSetting.asynResExportPath==""){
 				if(ProjectSetting.codeType==0){
 					laya.ide.config.ProjectSetting.asynResExportPath="bin/h5";
@@ -23928,6 +26090,7 @@ var Laya=window.Laya=(function(window,document){
 		ProjectSetting.uiType=0;
 		ProjectSetting.codeType=0;
 		ProjectSetting.picType=0;
+		ProjectSetting.atlasType=0;
 		ProjectSetting.uiExportPath="bin/ui.json";
 		ProjectSetting.shareResPath="";
 		ProjectSetting.exportResType="swf";
@@ -23939,6 +26102,7 @@ var Laya=window.Laya=(function(window,document){
 		ProjectSetting.picHeight=512;
 		ProjectSetting.power2="true";
 		ProjectSetting.trimempty="false";
+		ProjectSetting.copyRes="true";
 		__static(ProjectSetting,
 		['resTypes',function(){return this.resTypes=["png","jpg"];},'codeImports',function(){return this.codeImports="import laya.ui.*;import laya.display.*; ";},'codeImportsJS',function(){return this.codeImportsJS="var View=laya.ui.View;\nvar Dialog=laya.ui.Dialog;";},'boxTypes',function(){return this.boxTypes=["Sprite","Box","List","Tab","RadioGroup","ViewStack","Panel","Tree","Vbox","Hbox"];},'pageTypes',function(){return this.pageTypes=["View","Dialog"];},'sceneTypes',function(){return this.sceneTypes=["Scene2D"];},'UiPaths',function(){return this.UiPaths=
 			[
@@ -23957,7 +26121,8 @@ var Laya=window.Laya=(function(window,document){
 			"power2",
 			"trimempty",
 			"langPath",
-			"picType"];}
+			"picType",
+			"atlasType"];}
 		]);
 		return ProjectSetting;
 	})()
@@ -24000,6 +26165,7 @@ var Laya=window.Laya=(function(window,document){
 		StyleConsts.IntRestrict="0-9-";
 		StyleConsts.DisplayIconWidth=16;
 		StyleConsts.DisplayIconHeight=16;
+		StyleConsts.AutoAlignLineColor="#00ffff";
 		return StyleConsts;
 	})()
 
@@ -24042,6 +26208,8 @@ var Laya=window.Laya=(function(window,document){
 		SystemSetting.lang="";
 		SystemSetting.ifShowRuleGrid=true;
 		SystemSetting.toCodeModeWhenPublicEnd=false;
+		SystemSetting.autoFocsEditRect=false;
+		SystemSetting.IDEFrameType=0;
 		SystemSetting.isCMDVer=false;
 		return SystemSetting;
 	})()
@@ -24105,6 +26273,7 @@ var Laya=window.Laya=(function(window,document){
 			(ignoreLock===void 0)&& (ignoreLock=false);
 			(ignoreHide===void 0)&& (ignoreHide=false);
 			if(!FilterFuns.isEditorSelectable(comp,ignoreLock,ignoreHide))return false;
+			return true;
 			if(!comp.parent)return true;
 			return FilterFuns.isEditorSelectableChain(comp.parent,ignoreLock,ignoreHide);
 		}
@@ -24187,7 +26356,7 @@ var Laya=window.Laya=(function(window,document){
 			PageExportType.ParticleGravity=Sys.lang("重力模式");
 			PageExportType.ParticleRad=Sys.lang("半径模式");
 			PageExportType.Particle3D=Sys.lang("粒子3D");
-			PageExportType.ParticleTypeList=[PageExportType.ParticleGravity,PageExportType.ParticleRad,PageExportType.Particle3D];
+			PageExportType.ParticleTypeList=[PageExportType.ParticleGravity,PageExportType.ParticleRad];
 			PageExportType.INCODE=Sys.lang("内嵌模式");
 			PageExportType.LOAD_PACK=Sys.lang("加载模式");
 			PageExportType.LOAD_ONE=Sys.lang("分离模式");
@@ -24252,6 +26421,10 @@ var Laya=window.Laya=(function(window,document){
 			return FileManager.getDataPath("builder.cfg");
 		}
 
+		Paths.getResTypeConfigPath=function(){
+			return FileManager.getDataPath("resconfig.cfg");
+		}
+
 		Paths.ParticleTmpGravity="laya/tpls/particle.json";
 		Paths.ParticleTmpRadial="laya/tpls/particle1.json";
 		Paths.ParticleTmp3D="laya/tpls/particle3d.json";
@@ -24270,6 +26443,7 @@ var Laya=window.Laya=(function(window,document){
 		Paths.AirTool="libs/LayaAirTool/LayaAirTool";
 		Paths.IDEConfigFile="builder.xml";
 		Paths.IDEConfigVars="builder.cfg";
+		Paths.IDEResTypeConfig="resconfig.cfg";
 		Paths.LogFile="log.txt";
 		Paths.PackParamFile="packParam.json";
 		Paths.LayoutFile_Default="layout/layout.config";
@@ -24851,11 +27025,21 @@ var Laya=window.Laya=(function(window,document){
 			return FileTools.fs.existsSync(path);
 		}
 
+		FileTools.isDirSimple=function(path){
+			if(!path)return false;
+			path=FileManager.adptToCommonUrl(path);
+			var arrs;
+			arrs=path.split("/");
+			return arrs[arrs.length-1].indexOf(".")<0;
+		}
+
 		FileTools.isDirectory=function(path){
+			path=FileManager.adptToCommonUrl(path);
 			var st;
 			try{
 				st=FileTools.fs.statSync(path);
 				}catch(e){
+				return FileTools.isDirSimple(path);
 				return false;
 			}
 			if(!st)return false;
@@ -24867,6 +27051,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		FileTools.getMTime=function(path){
+			if(!FileTools.exist(path))return "";
 			return FileTools.getStat(path).mtime;
 		}
 
@@ -25287,6 +27472,7 @@ var Laya=window.Laya=(function(window,document){
 		IDEEvent.PROPPANEL_INITBYOBJ="PROPPANEL_InitBYOBJ";
 		IDEEvent.PROP_CHANGE="Prop_change";
 		IDEEvent.PROP_CHANGEING="Prop_changeing";
+		IDEEvent.PROP_FORCESET="PROP_FORCESET";
 		IDEEvent.PROP_CHANGED="Prop_Changed";
 		IDEEvent.CUTOFF_PREFAB="CutOff_Prefab";
 		IDEEvent.DROP_RENDER="DROP_RENDER";
@@ -25334,6 +27520,7 @@ var Laya=window.Laya=(function(window,document){
 		IDEEvent.RULE_SHOW_CHANGE="RULE_SHOW_CHANGE";
 		IDEEvent.OPEN_LANGPANEL="LangPanel";
 		IDEEvent.OPEN_IDESETTING="OPEN_IDESETTING";
+		IDEEvent.CLOSE_IDESETTING="CLOSE_IDESETTING";
 		IDEEvent.IDEKEY_EVENT="IDEKey_Event";
 		IDEEvent.SELECT_RES_FILE="SelecteResFile";
 		IDEEvent.SHOW_LAYOUTTAB_BY_NAME="SHOW_LayoutTab_By_Name";
@@ -25363,14 +27550,59 @@ var Laya=window.Laya=(function(window,document){
 			return false;
 		});
 
+		__getset(1,IDEVars,'isPageView',function(){
+			if(UIPanel.instance.currViewer&&TypeManager.getFileType(UIPanel.instance.currViewer.pagePath)=="page"){
+				return true;
+			}
+			return false;
+		});
+
 		__getset(1,IDEVars,'isNewGraphicAnimationMode',function(){
 			return IDEVars.isGraphicAnimationMode&&IDEVars.enableNewAnimation;
+		});
+
+		// public static var enableAutoAlign:Boolean=true;
+		__getset(1,IDEVars,'enableAutoAlign',function(){
+			return KeyManager.I.isCommandKeyDown;
 		});
 
 		IDEVars.isAnimationEditMode=false;
 		IDEVars.enableNewAnimation=false;
 		IDEVars.cacheBothTreeAndAnimation=false;
 		return IDEVars;
+	})()
+
+
+	/**
+	*
+	*@author ww
+	*@version 1.0
+	*
+	*@created 2017-5-27 上午11:25:49
+	*/
+	//class laya.ide.hook.KeyBoardHook
+	var KeyBoardHook=(function(){
+		function KeyBoardHook(){}
+		__class(KeyBoardHook,'laya.ide.hook.KeyBoardHook');
+		KeyBoardHook.hook=function(){
+			KeyBoardManager["_addEvent"]=KeyBoardHook._addEvent;
+		}
+
+		KeyBoardHook._addEvent=function(type){
+			Browser.document.addEventListener(type,function(e){
+				if(KeyBoardHook.hasOverLays())return;
+				KeyBoardManager["_dispatch"](e,type);
+			},true);
+		}
+
+		KeyBoardHook.hasOverLays=function(){
+			if(Browser.window.hasOwnProperty("codeDivPopLayer")){
+				return Browser.window["codeDivPopLayer"];
+			}
+			return Browser.document.getElementsByClassName("compressJSFile").length>0;
+		}
+
+		return KeyBoardHook;
 	})()
 
 
@@ -25394,12 +27626,15 @@ var Laya=window.Laya=(function(window,document){
 		__proto.onMouseDown=function(ele){
 			if(Laya.stage.focus&&!(DisControlTool.isChildE(Laya.stage.focus,this._target))){
 				IDEAPIS.unFocusInput();
+				if(Input.isInputting){
+					if(Input["inputElement"]&&Input["inputElement"].target)
+						Input["inputElement"].target.focus=false;
+				}
 			}
 			MouseHook._preMouseDown.call(MouseManager.instance,ele);
 		}
 
 		MouseHook.hook=function(){
-			return;
 			MouseHook._preMouseDown=MouseManager.instance["onMouseDown"];
 			MouseManager.instance["onMouseDown"]=MouseHook.I.onMouseDown;
 		}
@@ -25439,7 +27674,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__proto.dialogClose=function(){
-			if(Dialog.manager.numChildren==1&&Dialog.manager.dialogLayer.numChildren<1){
+			if(Dialog.manager.numChildren==1&&Dialog.manager.numChildren<1){
 				JSTools.removeElement(this.dialogContainer.canvas.source);
 			}
 		}
@@ -26518,13 +28753,28 @@ var Laya=window.Laya=(function(window,document){
 			LanguageManager.saveLanguagePack(FileManager.getWorkPath(ProjectSetting.resExportPath));
 		}
 
+		LanguageManager.updateLangDic=function(oldLangDic,newLangDic){
+			var key;
+			for(key in oldLangDic){
+				newLangDic[key]=oldLangDic[key];
+			}
+			return newLangDic;
+		}
+
 		LanguageManager.saveLanguagePack=function(file){
 			try{
-				var langDic;
-				langDic=LanguageManager.createByDir(SystemSetting.pagesPath,null,null);
-				console.log("langDic:",langDic);
 				var outPath;
 				outPath=FileManager.getPath(file,"lang.lang");
+				var langDic;
+				langDic=LanguageManager.createByDir(SystemSetting.pagesPath,null,null);
+				var preLangDic;
+				if(FileManager.exists(outPath)){
+					preLangDic=FileManager.readJSONFile(outPath);
+					if(preLangDic){
+						LanguageManager.updateLangDic(preLangDic,langDic);
+					}
+				}
+				console.log("langDic:",langDic);
 				FileTools.createFile(outPath,ObjectTools.getJsonString(langDic));
 				MessageManager.instance.show(Sys.lang("生成语言包成功"));
 				}catch(e){
@@ -26585,6 +28835,7 @@ var Laya=window.Laya=(function(window,document){
 						var key=a[0];
 						var val=a[1];
 						var adptVal;
+						if(!LanguageManager.textKeysDefault[key])continue ;
 						adptVal=ObjectTools.getAutoValue(val);
 						if((typeof adptVal=='string')){
 							LanguageManager.addText(adptVal,textDic);
@@ -26649,8 +28900,9 @@ var Laya=window.Laya=(function(window,document){
 		['textKeysDefault',function(){return this.textKeysDefault={
 				"text":true,
 				"label":true,
+				"title":true,
 				"prompt":true
-				};},'defaultKeys',function(){return this.defaultKeys=["text","label","skin","title","prompt","toolTip"];},'collectConfigO',function(){return this.collectConfigO={
+				};},'defaultKeys',function(){return this.defaultKeys=["text","label","title","prompt","toolTip"];},'collectConfigO',function(){return this.collectConfigO={
 		};}
 
 		]);
@@ -27147,7 +29399,7 @@ var Laya=window.Laya=(function(window,document){
 			LayoutRecManager._ct.on("dragDrop",null,LayoutRecManager.onDragDrop);
 			LayerManager.stage.addChild(QuickTool.instance);
 			MenuBar.instance.pos(1,1);
-			QuickTool.instance.pos(LayoutRecManager.ctOffSetX+10,30);
+			QuickTool.instance.pos(LayoutRecManager.ctOffSetX+10,25);
 			LayoutRecManager.layoutToPageType("page");
 		}
 
@@ -28257,6 +30509,60 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
+	*
+	*@author ww
+	*@version 1.0
+	*
+	*@created 2017-4-6 上午10:07:48
+	*/
+	//class laya.ide.managers.NodeAtlasManager
+	var NodeAtlasManager=(function(){
+		function NodeAtlasManager(){}
+		__class(NodeAtlasManager,'laya.ide.managers.NodeAtlasManager');
+		NodeAtlasManager.getNodeAtlas=function(node){
+			var type;
+			type=node.type;
+			if(!type)return null;
+			if(NodeAtlasManager.isTextType(type)){
+				return "TextAtlas";
+			}
+			if(!node.props)return null;
+			var skinLabel;
+			skinLabel=UIConfigManager.getCompSkinLabel(type);
+			if(!skinLabel)return null;
+			return node.props[skinLabel];
+		}
+
+		NodeAtlasManager.isTextType=function(type){
+			return NodeAtlasManager._txtTypeDic[type];
+		}
+
+		NodeAtlasManager.getSkinPathColor=function(path){
+			if(!path)return null;
+			var folder;
+			folder=FileTools.getFolder(path);
+			if(!NodeAtlasManager._colorDic[folder]){
+				NodeAtlasManager._index++;
+				NodeAtlasManager._index=NodeAtlasManager._index%NodeAtlasManager._colors.length;
+				NodeAtlasManager._colorDic[folder]=NodeAtlasManager._colors[NodeAtlasManager._index];
+			}
+			return NodeAtlasManager._colorDic[folder];
+		}
+
+		NodeAtlasManager.getNodeAtlasColor=function(node){
+			return NodeAtlasManager.getSkinPathColor(NodeAtlasManager.getNodeAtlas(node));
+		}
+
+		NodeAtlasManager._colorDic={};
+		NodeAtlasManager._index=0;
+		__static(NodeAtlasManager,
+		['_txtTypeDic',function(){return this._txtTypeDic={"Text":true,"Label":true,"TextArea":true};},'_colors',function(){return this._colors=["#FFFF00","#FF8247","#EE82EE","#CD00CD","#C6E2FF","#A52A2A","#9ACD32","#8B4513","#76EE00","#0000CD","#2E8B57"];}
+		]);
+		return NodeAtlasManager;
+	})()
+
+
+	/**
 	*本类集中初始化各个模块监听的消息
 	*@author ww
 	*@version 1.0
@@ -28284,6 +30590,7 @@ var Laya=window.Laya=(function(window,document){
 			NoticeRouter._initsList.push(FramePropPanel.instance);
 			NoticeRouter._initsList.push(LangPanel.instance);
 			NoticeRouter._initsList.push(SetIDE.instance);
+			NoticeRouter._initsList.push(SetIDENew.instance);
 			NoticeRouter._initsList.push(BasicPanel.instance);
 			var i=0,len=NoticeRouter._initsList.length;
 			for (i=0;i < len;i++){
@@ -28464,9 +30771,14 @@ var Laya=window.Laya=(function(window,document){
 
 		__class(RenderManager,'laya.ide.managers.RenderManager');
 		var __proto=RenderManager.prototype;
-		__proto.initCustomUIConfig=function(path){
+		__proto.initCustomUIConfig=function(path,relative){
+			(relative===void 0)&& (relative=true);
 			var bPath;
-			bPath=FileManager.getAppPath(path);
+			if(relative){
+				bPath=FileManager.getAppPath(path);
+				}else{
+				bPath=path;
+			}
 			if(!FileTools.exist(bPath))return;
 			var fileList;
 			fileList=FileTools.getDirFiles(bPath);
@@ -28535,6 +30847,13 @@ var Laya=window.Laya=(function(window,document){
 			this.initCustomUIConfig("renders/");
 			this.initCustomUIConfig("renders/"+"/custom");
 			this.setRenderPropByFont(null);
+		}
+
+		__proto.loadProjectCustomUIConfig=function(){
+			var uiConfigPath;
+			uiConfigPath=FileManager.getWorkPath("laya/custom");
+			console.log("customUI:",uiConfigPath);
+			this.initCustomUIConfig(uiConfigPath,false);
 		}
 
 		RenderManager.addXMLConfig=function(path){
@@ -28764,6 +31083,9 @@ var Laya=window.Laya=(function(window,document){
 
 		ResFileManager.hookLoaderLoad=function(){}
 		ResFileManager.hasRes=function(url){
+			var fUrl;
+			fUrl=ResFileManager.formatURL(url);
+			if(!FileTools.exist(fUrl))return false;
 			if(ResFileManager.enableBinaryPic){
 				return ResFileManager.getRes(url);
 			}
@@ -28788,7 +31110,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		ResFileManager.getIDEResPath=function(url){
-			return FileTools.getAbsPath(FileManager.getPath(SystemSetting.assetsPath,url));
+			return FileManager.adptToCommonUrl(FileTools.getAbsPath(FileManager.getPath(SystemSetting.assetsPath,url)));
 		}
 
 		ResFileManager.getIDEPagePath=function(url){
@@ -29679,6 +32001,7 @@ var Laya=window.Laya=(function(window,document){
 		TypeManager.ParticlePlayer="Particle2D";
 		TypeManager.GraphicPic="Texture";
 		TypeManager.MoveEffectNode="EffectAnimation";
+		TypeManager.FrameAnimationNode="FrameAnimation";
 		__static(TypeManager,
 		['NoRenderTypeNodes',function(){return this.NoRenderTypeNodes={
 				"SoundNode":true,
@@ -29698,7 +32021,7 @@ var Laya=window.Laya=(function(window,document){
 				"prop":"prop",
 				"temp":"ui_template",
 				"efc":"MoveEffect"
-				};},'Res2D',function(){return this.Res2D=["Sprite","Animation","Text","HTMLDivElement"];},'GraphicRes',function(){return this.GraphicRes=["Circle","Curves","FillText","FillTexture","Graphic","Line","Lines","Pie","Poly","Rect","Texture"];},'UIRes',function(){return this.UIRes=["Button","CheckBox","Clip","ColorPicker","ComboBox","Dialog","HBox","HScrollBar","HSlider","Image","Label","List","Panel","ProgressBar","Radio","RadioGroup","Tab","Text","TextArea","TextInput","Tree","VBox","VScrollBar","VSlider","View","ViewStack","Box"];},'ResTypes',function(){return this.ResTypes={
+				};},'Res2D',function(){return this.Res2D=["Sprite","Animation","Text","HTMLDivElement"];},'GraphicRes',function(){return this.GraphicRes=["Circle","Curves","FillText","FillTexture","Graphic","Line","Lines","Pie","Poly","Rect","Texture"];},'UIRes',function(){return this.UIRes=["Button","CheckBox","Clip","ColorPicker","ComboBox","Dialog","FontClip","HBox","HScrollBar","HSlider","Image","Label","List","Panel","ProgressBar","Radio","RadioGroup","Tab","Text","TextArea","TextInput","Tree","VBox","VScrollBar","VSlider","View","ViewStack","Box"];},'ResTypes',function(){return this.ResTypes={
 				};},'UnEnterAbleType',function(){return this.UnEnterAbleType={
 				"GraphicPic":true,
 				"HTMLDivElement":true,
@@ -29742,7 +32065,7 @@ var Laya=window.Laya=(function(window,document){
 			ViewRenderManager.style["z-index"]=101;
 			ViewRenderManager.style.border="0";
 			ViewRenderManager.render=ViewRenderManager.renderFrame.contentWindow;
-			var passEventList=["mousemove","keydown","keypress","keyup"];
+			var passEventList=["mousemove","mouseup","keydown","keypress","keyup"];
 			ViewRenderManager.renderFrame.addEventListener("load",function(){
 				ViewRenderManager.render=ViewRenderManager.renderFrame.contentWindow.renderBinds;
 				ViewRenderManager.window=ViewRenderManager.renderFrame.contentWindow;
@@ -29775,7 +32098,10 @@ var Laya=window.Laya=(function(window,document){
 			evt.isFromIDE=true;
 			evt.clientX+=ViewRenderManager.offPos.x;
 			evt.clientY+=ViewRenderManager.offPos.y;
-			Render.canvas.dispatchEvent(evt);
+			evt.pageX=0;
+			evt.pageY=0;
+			if(!ViewRenderManager.isFromMe)
+				Render.canvas.dispatchEvent(evt);
 		}
 
 		ViewRenderManager.passEvent2=function(e){
@@ -29791,7 +32117,9 @@ var Laya=window.Laya=(function(window,document){
 					evt[key]=e[key];
 				}
 			}
+			ViewRenderManager.isFromMe=true;
 			ViewRenderManager.window.document.dispatchEvent(evt);
+			ViewRenderManager.isFromMe=false;
 		}
 
 		ViewRenderManager.renderDragDrop=function(e){
@@ -29873,6 +32201,7 @@ var Laya=window.Laya=(function(window,document){
 		ViewRenderManager.render=null
 		ViewRenderManager.style=null
 		ViewRenderManager.window=null
+		ViewRenderManager.isFromMe=false;
 		__static(ViewRenderManager,
 		['eDispatcher',function(){return this.eDispatcher=new EventDispatcher();},'renderHit',function(){return this.renderHit=new Sprite();},'hitBounds',function(){return this.hitBounds=new Rectangle(0,0);},'offPos',function(){return this.offPos=new Point();}
 		]);
@@ -30023,6 +32352,11 @@ var Laya=window.Laya=(function(window,document){
 		__proto.renderDragDrop=function(e){}
 		__proto.propChange=function(key,data){}
 		__proto.onResClick=function(data){}
+		__proto.getDesignData=function(){
+			return {};
+		}
+
+		__proto.changeDataO=function(dataO){}
 		__proto.goBack=function(){}
 		__proto.goForward=function(){}
 		__getset(0,__proto,'pagePath',function(){
@@ -30197,7 +32531,10 @@ var Laya=window.Laya=(function(window,document){
 	var Sys=(function(){
 		function Sys(){};
 		__class(Sys,'Sys');
-		Sys.mParseInt=function(v){}
+		Sys.mParseInt=function(v){
+			return parseInt(v);
+		}
+
 		Sys.log=function(__args){
 			var args=arguments;
 			Sys.print("log",args,"#0080C0");
@@ -30246,6 +32583,18 @@ var Laya=window.Laya=(function(window,document){
 				body=body.replace("{"+i+"}",args[i]);
 			}
 			return body;
+		}
+
+		Sys.adptLangPack=function(){
+			if(!Sys.langPack)return;
+			var key;
+			var newKey;
+			for(key in Sys.langPack){
+				if(key.indexOf("\\n")>=0){
+					newKey=StringTool.getReplace(key,"\\\\n","\n");
+					Sys.langPack[newKey]=StringTool.getReplace(Sys.langPack[key],"\\\\n","\n");
+				}
+			}
 		}
 
 		Sys.langArr=function(txtList){
@@ -30305,6 +32654,7 @@ var Laya=window.Laya=(function(window,document){
 				langData=Loader.getRes(IDELangManager.getLangPath());
 				console.log("lang:",langData);
 				Sys.langPack=langData;
+				Sys.adptLangPack();
 			}
 			PageExportType.init();
 			this.xmlLoaded(null);
@@ -31338,7 +33688,7 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*<code>Node</code> 类用于创建节点对象，节点是最基本的元素。
+	*<code>Node</code> 类是可放在显示列表中的所有对象的基类。该显示列表管理 Laya 运行时中显示的所有对象。使用 Node 类排列显示列表中的显示对象。Node 对象可以有子显示对象。
 	*/
 	//class laya.display.Node extends laya.events.EventDispatcher
 	var Node=(function(_super){
@@ -31368,14 +33718,14 @@ var Laya=window.Laya=(function(window,document){
 			}
 			if (value){
 				this._bits |=type;
-				}else{
+				}else {
 				this._bits &=~type;
 			}
 		}
 
 		/**@private */
 		__proto._getBit=function(type){
-			return this._bits & type;
+			return (this._bits & type)!=0;
 		}
 
 		/**@private */
@@ -31398,39 +33748,39 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*增加事件侦听器，以使侦听器能够接收事件通知。
-		*如果侦听鼠标事件，则会自动设置自己和父亲节点的属性 mouseEnabled 的值为 true(如果父节点mouseEnabled=false，则停止设置父节点mouseEnabled属性)。
+		*<p>增加事件侦听器，以使侦听器能够接收事件通知。</p>
+		*<p>如果侦听鼠标事件，则会自动设置自己和父亲节点的属性 mouseEnabled 的值为 true(如果父节点mouseEnabled=false，则停止设置父节点mouseEnabled属性)。</p>
 		*@param type 事件的类型。
 		*@param caller 事件侦听函数的执行域。
 		*@param listener 事件侦听函数。
-		*@param args 事件侦听函数的回调参数。
+		*@param args （可选）事件侦听函数的回调参数。
 		*@return 此 EventDispatcher 对象。
 		*/
 		__proto.on=function(type,caller,listener,args){
-			if (type==="display"||type==="undisplay"){
+			if (type==="display" || type==="undisplay"){
 				if (!this._getBit(0x1)){
 					this._setUpNoticeType(0x1);
 				}
 			}
-			return _super.prototype.on.call(this,type,caller,listener,args);
+			return this._createListener(type,caller,listener,args,false);
 		}
 
 		/**
-		*增加事件侦听器，以使侦听器能够接收事件通知，此侦听事件响应一次后则自动移除侦听。
-		*如果侦听鼠标事件，则会自动设置自己和父亲节点的属性 mouseEnabled 的值为 true(如果父节点mouseEnabled=false，则停止设置父节点mouseEnabled属性)。
+		*<p>增加事件侦听器，以使侦听器能够接收事件通知，此侦听事件响应一次后则自动移除侦听。</p>
+		*<p>如果侦听鼠标事件，则会自动设置自己和父亲节点的属性 mouseEnabled 的值为 true(如果父节点mouseEnabled=false，则停止设置父节点mouseEnabled属性)。</p>
 		*@param type 事件的类型。
 		*@param caller 事件侦听函数的执行域。
 		*@param listener 事件侦听函数。
-		*@param args 事件侦听函数的回调参数。
+		*@param args （可选）事件侦听函数的回调参数。
 		*@return 此 EventDispatcher 对象。
 		*/
 		__proto.once=function(type,caller,listener,args){
-			if (type==="display"||type==="undisplay"){
+			if (type==="display" || type==="undisplay"){
 				if (!this._getBit(0x1)){
 					this._setUpNoticeType(0x1);
 				}
 			}
-			return _super.prototype.once.call(this,type,caller,listener,args);
+			return this._createListener(type,caller,listener,args,true);
 		}
 
 		/**@private */
@@ -31440,7 +33790,8 @@ var Laya=window.Laya=(function(window,document){
 
 		/**
 		*<p>销毁此对象。destroy对象默认会把自己从父节点移除，并且清理自身引用关系，等待js自动垃圾回收机制回收。destroy后不能再使用。</p>
-		*@param destroyChild 是否同时销毁子节点，若值为true,则销毁子节点，否则不销毁子节点。
+		*<p>destroy时会移除自身的事情监听，自身的timer监听，移除子对象及从父节点移除自己。</p>
+		*@param destroyChild （可选）是否同时销毁子节点，若值为true,则销毁子节点，否则不销毁子节点。
 		*/
 		__proto.destroy=function(destroyChild){
 			(destroyChild===void 0)&& (destroyChild=true);
@@ -31453,6 +33804,7 @@ var Laya=window.Laya=(function(window,document){
 			this._childs=null;
 			this._$P=null;
 			this.offAll();
+			this.timer.clearAll(this);
 		}
 
 		/**
@@ -31556,9 +33908,11 @@ var Laya=window.Laya=(function(window,document){
 		*/
 		__proto.getChildByName=function(name){
 			var nodes=this._childs;
-			for (var i=0,n=nodes.length;i < n;i++){
-				var node=nodes[i];
-				if (node.name===name)return node;
+			if (nodes){
+				for (var i=0,n=nodes.length;i < n;i++){
+					var node=nodes[i];
+					if (node.name===name)return node;
+				}
 			}
 			return null;
 		}
@@ -31719,7 +34073,7 @@ var Laya=window.Laya=(function(window,document){
 					this._displayedInStage=ele._displayedInStage;
 					break ;
 				}
-				if (ele==stage||ele._displayedInStage){
+				if (ele==stage || ele._displayedInStage){
 					this._displayedInStage=true;
 					break ;
 				}
@@ -31759,9 +34113,9 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*当前容器是否包含 <code>node</code> 节点。
-		*@param node 某一个节点 <code>Node</code>。
-		*@return 一个布尔值表示是否包含<code>node</code>节点。
+		*当前容器是否包含指定的 <code>Node</code> 节点对象 。
+		*@param node 指定的 <code>Node</code> 节点对象 。
+		*@return 一个布尔值表示是否包含指定的 <code>Node</code> 节点对象 。
 		*/
 		__proto.contains=function(node){
 			if (node===this)return true;
@@ -31777,12 +34131,14 @@ var Laya=window.Laya=(function(window,document){
 		*@param delay 间隔时间(单位毫秒)。
 		*@param caller 执行域(this)。
 		*@param method 结束时的回调方法。
-		*@param args 回调参数。
-		*@param coverBefore 是否覆盖之前的延迟执行，默认为true。
+		*@param args （可选）回调参数。
+		*@param coverBefore （可选）是否覆盖之前的延迟执行，默认为true。
+		*@param jumpFrame 时钟是否跳帧。基于时间的循环回调，单位时间间隔内，如能执行多次回调，出于性能考虑，引擎默认只执行一次，设置jumpFrame=true后，则回调会连续执行多次
 		*/
-		__proto.timerLoop=function(delay,caller,method,args,coverBefore){
+		__proto.timerLoop=function(delay,caller,method,args,coverBefore,jumpFrame){
 			(coverBefore===void 0)&& (coverBefore=true);
-			this.timer._create(false,true,delay,caller,method,args,coverBefore);
+			(jumpFrame===void 0)&& (jumpFrame=false);
+			this.timer.loop(delay,caller,method,args,coverBefore,jumpFrame);
 		}
 
 		/**
@@ -31790,8 +34146,8 @@ var Laya=window.Laya=(function(window,document){
 		*@param delay 延迟时间(单位毫秒)。
 		*@param caller 执行域(this)。
 		*@param method 结束时的回调方法。
-		*@param args 回调参数。
-		*@param coverBefore 是否覆盖之前的延迟执行，默认为true。
+		*@param args （可选）回调参数。
+		*@param coverBefore （可选）是否覆盖之前的延迟执行，默认为true。
 		*/
 		__proto.timerOnce=function(delay,caller,method,args,coverBefore){
 			(coverBefore===void 0)&& (coverBefore=true);
@@ -31803,8 +34159,8 @@ var Laya=window.Laya=(function(window,document){
 		*@param delay 间隔几帧(单位为帧)。
 		*@param caller 执行域(this)。
 		*@param method 结束时的回调方法。
-		*@param args 回调参数。
-		*@param coverBefore 是否覆盖之前的延迟执行，默认为true。
+		*@param args （可选）回调参数。
+		*@param coverBefore （可选）是否覆盖之前的延迟执行，默认为true。
 		*/
 		__proto.frameLoop=function(delay,caller,method,args,coverBefore){
 			(coverBefore===void 0)&& (coverBefore=true);
@@ -31816,8 +34172,8 @@ var Laya=window.Laya=(function(window,document){
 		*@param delay 延迟几帧(单位为帧)。
 		*@param caller 执行域(this)
 		*@param method 结束时的回调方法
-		*@param args 回调参数
-		*@param coverBefore 是否覆盖之前的延迟执行，默认为true
+		*@param args （可选）回调参数
+		*@param coverBefore （可选）是否覆盖之前的延迟执行，默认为true
 		*/
 		__proto.frameOnce=function(delay,caller,method,args,coverBefore){
 			(coverBefore===void 0)&& (coverBefore=true);
@@ -31856,7 +34212,7 @@ var Laya=window.Laya=(function(window,document){
 					}else {
 					this.event("removed");
 					this._parent._childChanged();
-					if(this._getBit(0x1))this._displayChild(this,false);
+					if (this._getBit(0x1))this._displayChild(this,false);
 					this._parent=value;
 				}
 			}
@@ -32596,16 +34952,32 @@ var Laya=window.Laya=(function(window,document){
 		*
 		*/
 		__proto.load=function(url){
+			url=URL.formatURL(url);
 			this.url=url;
-			var ad=AudioSound._audioCache[url];
+			var ad;
+			if (url==SoundManager._tMusic){
+				AudioSound._initMusicAudio();
+				ad=AudioSound._musicAudio;
+				if (ad.src !=url){
+					AudioSound._audioCache[ad.src]=null;
+					ad=null;
+				}
+				}else{
+				ad=AudioSound._audioCache[url];
+			}
 			if (ad && ad.readyState >=2){
 				this.event("complete");
 				return;
 			}
 			if (!ad){
-				ad=Browser.createElement("audio");
-				ad.src=url;
+				if (url==SoundManager._tMusic){
+					AudioSound._initMusicAudio();
+					ad=AudioSound._musicAudio;
+					}else{
+					ad=Browser.createElement("audio");
+				}
 				AudioSound._audioCache[url]=ad;
+				ad.src=url;
 			}
 			ad.addEventListener("canplaythrough",onLoaded);
 			ad.addEventListener("error",onErr);
@@ -32644,11 +35016,29 @@ var Laya=window.Laya=(function(window,document){
 			(loops===void 0)&& (loops=0);
 			if (!this.url)return null;
 			var ad;
-			ad=AudioSound._audioCache[this.url];
+			if (this.url==SoundManager._tMusic){
+				ad=AudioSound._musicAudio;
+				}else{
+				ad=AudioSound._audioCache[this.url];
+			}
 			if (!ad)return null;
 			var tAd;
 			tAd=Pool.getItem("audio:"+this.url);
-			tAd=tAd?tAd:ad.cloneNode(true);
+			if (Render.isConchApp){
+				if (!tAd){
+					tAd=Browser.createElement("audio");
+					tAd.src=ad.src;
+				}
+			}
+			else {
+				if (this.url==SoundManager._tMusic){
+					AudioSound._initMusicAudio();
+					tAd=AudioSound._musicAudio;
+					tAd.src=this.url;
+					}else{
+					tAd=tAd ? tAd :ad.cloneNode(true);
+				}
+			};
 			var channel=new AudioSoundChannel(tAd);
 			channel.url=this.url;
 			channel.loops=loops;
@@ -32669,13 +35059,31 @@ var Laya=window.Laya=(function(window,document){
 			return ad.duration;
 		});
 
+		AudioSound._initMusicAudio=function(){
+			if (AudioSound._musicAudio)return;
+			if (!AudioSound._musicAudio)AudioSound._musicAudio=Browser.createElement("audio");
+			Browser.document.addEventListener("touchstart",AudioSound._makeMusicOK);
+		}
+
+		AudioSound._makeMusicOK=function(){
+			Browser.document.removeEventListener("touchstart",AudioSound._makeMusicOK);
+			if (!AudioSound._musicAudio.src){
+				AudioSound._musicAudio.src="";
+				AudioSound._musicAudio.load();
+				}else{
+				AudioSound._musicAudio.play();
+			}
+		}
+
 		AudioSound._audioCache={};
+		AudioSound._musicAudio=null
 		return AudioSound;
 	})(EventDispatcher)
 
 
 	/**
-	*<code>SoundChannel</code> 用来控制程序中的声音。
+	*<p> <code>SoundChannel</code> 用来控制程序中的声音。每个声音均分配给一个声道，而且应用程序可以具有混合在一起的多个声道。</p>
+	*<p> <code>SoundChannel</code> 类包含控制声音的播放、暂停、停止、音量的方法，以及获取声音的播放状态、总时间、当前播放时间、总循环次数、播放地址等信息的方法。</p>
 	*/
 	//class laya.media.SoundChannel extends laya.events.EventDispatcher
 	var SoundChannel=(function(_super){
@@ -32699,6 +35107,14 @@ var Laya=window.Laya=(function(window,document){
 		*/
 		__proto.stop=function(){}
 		/**
+		*暂停。
+		*/
+		__proto.pause=function(){}
+		/**
+		*继续播放。
+		*/
+		__proto.resume=function(){}
+		/**
 		*private
 		*/
 		__proto.__runComplete=function(handler){
@@ -32708,7 +35124,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*音量。
+		*音量范围从 0（静音）至 1（最大音量）。
 		*/
 		__getset(0,__proto,'volume',function(){
 			return 1;
@@ -32802,6 +35218,7 @@ var Laya=window.Laya=(function(window,document){
 		*/
 		__proto.load=function(url){
 			var me=this;
+			url=URL.formatURL(url);
 			this.url=url;
 			this.audioBuffer=WebAudioSound._dataCache[url];
 			if (this.audioBuffer){
@@ -32856,7 +35273,7 @@ var Laya=window.Laya=(function(window,document){
 			var tParams;
 			for (i=0;i < len;i++){
 				tParams=toPlays[i];
-				if(tParams[2]&&!(tParams [2]).isStopped){
+				if (tParams[2] && !(tParams [2]).isStopped){
 					this.play(tParams[0],tParams[1],tParams[2]);
 				}
 			}
@@ -32925,7 +35342,9 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		WebAudioSound._playEmptySound=function(){
-			if (WebAudioSound.ctx==null){return;};
+			if (WebAudioSound.ctx==null){
+				return;
+			};
 			var source=WebAudioSound.ctx.createBufferSource();
 			source.buffer=WebAudioSound._miniBuffer;
 			source.connect(WebAudioSound.ctx.destination);
@@ -32933,8 +35352,10 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		WebAudioSound._unlock=function(){
-			if (WebAudioSound._unlocked){return;}
-				WebAudioSound._playEmptySound();
+			if (WebAudioSound._unlocked){
+				return;
+			}
+			WebAudioSound._playEmptySound();
 			if (WebAudioSound.ctx.state=="running"){
 				Browser.document.removeEventListener("mousedown",WebAudioSound._unlock,true);
 				Browser.document.removeEventListener("touchend",WebAudioSound._unlock,true);
@@ -32964,7 +35385,8 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*<code>HttpRequest</code> 通过 HTTP 协议传送或接收 XML 及其他数据。
+	*<p> <code>HttpRequest</code> 通过封装 HTML <code>XMLHttpRequest</code> 对象提供了对 HTTP 协议的完全的访问，包括做出 POST 和 HEAD 请求以及普通的 GET 请求的能力。 <code>HttpRequest</code> 只提供以异步的形式返回 Web 服务器的响应，并且能够以文本或者二进制的形式返回内容。</p>
+	*<p><b>注意：</b>建议每次请求都使用新的 <code>HttpRequest</code> 对象，因为每次调用该对象的send方法时，都会清空之前设置的数据，并重置 HTTP 请求的状态，这会导致之前还未返回响应的请求被重置，从而得不到之前请求的响应结果。</p>
 	*/
 	//class laya.net.HttpRequest extends laya.events.EventDispatcher
 	var HttpRequest=(function(_super){
@@ -32978,12 +35400,12 @@ var Laya=window.Laya=(function(window,document){
 		__class(HttpRequest,'laya.net.HttpRequest',_super);
 		var __proto=HttpRequest.prototype;
 		/**
-		*发送请求。
-		*@param url 请求的地址。
-		*@param data 发送的数据，可选。
-		*@param method 发送数据方式，值为“get”或“post”，默认为 “get”方式。
-		*@param responseType 返回消息类型，可设置为"text"，"json"，"xml","arraybuffer"。
-		*@param headers 头信息，key value数组，比如["Content-Type","application/json"]。
+		*发送 HTTP 请求。
+		*@param url 请求的地址。大多数浏览器实施了一个同源安全策略，并且要求这个 URL 与包含脚本的文本具有相同的主机名和端口。
+		*@param data (default=null)发送的数据。
+		*@param method (default="get")用于请求的 HTTP 方法。值包括 "get"、"post"、"head"。
+		*@param responseType (default="text")Web 服务器的响应类型，可设置为 "text"、"json"、"xml"、"arraybuffer"。
+		*@param headers (default=null)HTTP 请求的头部信息。参数形如key-value数组：key是头部的名称，不应该包括空白、冒号或换行；value是头部的值，不应该包括换行。比如["Content-Type","application/json"]。
 		*/
 		__proto.send=function(url,data,method,responseType,headers){
 			(method===void 0)&& (method="get");
@@ -32997,7 +35419,7 @@ var Laya=window.Laya=(function(window,document){
 				for (var i=0;i < headers.length;i++){
 					http.setRequestHeader(headers[i++],headers[i]);
 				}
-				}else {
+				}else if (!Render.isConchApp){
 				if (!data || (typeof data=='string'))http.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
 				else http.setRequestHeader("Content-Type","application/json");
 			}
@@ -33105,7 +35527,9 @@ var Laya=window.Laya=(function(window,document){
 			return this._http.responseURL;
 		});
 
-		/**原生XMLHttpRequest引用*/
+		/**
+		*本对象所封装的原生 XMLHttpRequest 引用。
+		*/
 		__getset(0,__proto,'http',function(){
 			return this._http;
 		});
@@ -33117,74 +35541,6 @@ var Laya=window.Laya=(function(window,document){
 
 		return HttpRequest;
 	})(EventDispatcher)
-
-
-	/**
-	*<p><code>ColorFilter</code> 是颜色滤镜。</p>
-	*/
-	//class laya.filters.ColorFilter extends laya.filters.Filter
-	var ColorFilter=(function(_super){
-		function ColorFilter(mat){
-			//this._mat=null;
-			//this._alpha=null;
-			ColorFilter.__super.call(this);
-			if (!mat){
-				mat=[0.3,0.59,0.11,0,0,0.3,0.59,0.11,0,0,0.3,0.59,0.11,0,0,0,0,0,1,0];
-			}
-			this._mat=new Float32Array(16);
-			this._alpha=new Float32Array(4);
-			var j=0;
-			var z=0;
-			for (var i=0;i < 20;i++){
-				if (i % 5 !=4){
-					this._mat[j++]=mat[i];
-					}else {
-					this._alpha[z++]=mat[i];
-				}
-			}
-			this._action=RunDriver.createFilterAction(0x20);
-			this._action.data=this;
-		}
-
-		__class(ColorFilter,'laya.filters.ColorFilter',_super);
-		var __proto=ColorFilter.prototype;
-		Laya.imps(__proto,{"laya.filters.IFilter":true})
-		/**
-		*@private 通知微端
-		*/
-		__proto.callNative=function(sp){
-			var t=sp._$P.cf=this;
-			sp.conchModel && sp.conchModel.setFilterMatrix&&sp.conchModel.setFilterMatrix(this._mat,this._alpha);
-		}
-
-		/**@private */
-		__getset(0,__proto,'type',function(){
-			return 0x20;
-		});
-
-		/**@private */
-		__getset(0,__proto,'action',function(){
-			return this._action;
-		});
-
-		__getset(1,ColorFilter,'DEFAULT',function(){
-			if (!ColorFilter._DEFAULT){
-				ColorFilter._DEFAULT=new ColorFilter([1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0]);
-			}
-			return ColorFilter._DEFAULT;
-		},laya.filters.Filter._$SET_DEFAULT);
-
-		__getset(1,ColorFilter,'GRAY',function(){
-			if (!ColorFilter._GRAY){
-				ColorFilter._GRAY=new ColorFilter([0.3,0.59,0.11,0,0,0.3,0.59,0.11,0,0,0.3,0.59,0.11,0,0,0,0,0,1,0]);
-			}
-			return ColorFilter._GRAY;
-		},laya.filters.Filter._$SET_GRAY);
-
-		ColorFilter._DEFAULT=null
-		ColorFilter._GRAY=null
-		return ColorFilter;
-	})(Filter)
 
 
 	/**
@@ -33204,20 +35560,22 @@ var Laya=window.Laya=(function(window,document){
 		__class(Loader,'laya.net.Loader',_super);
 		var __proto=Loader.prototype;
 		/**
-		*加载资源。
-		*@param url 地址
-		*@param type 类型，如果为null，则根据文件后缀，自动分析类型。
-		*@param cache 是否缓存数据。
-		*@param group 分组。
-		*@param ignoreCache 是否忽略缓存，强制重新加载
+		*加载资源。加载错误会派发 Event.ERROR 事件，参数为错误信息。
+		*@param url 资源地址。
+		*@param type (default=null)资源类型。可选值为：Loader.TEXT、Loader.JSON、Loader.XML、Loader.BUFFER、Loader.IMAGE、Loader.SOUND、Loader.ATLAS、Loader.FONT。如果为null，则根据文件后缀分析类型。
+		*@param cache (default=true)是否缓存数据。
+		*@param group (default=null)分组名称。
+		*@param ignoreCache (default=false)是否忽略缓存，强制重新加载。
 		*/
 		__proto.load=function(url,type,cache,group,ignoreCache){
 			(cache===void 0)&& (cache=true);
 			(ignoreCache===void 0)&& (ignoreCache=false);
-			if (url.indexOf("data:image")===0)type="image";
-			url=URL.formatURL(url);
 			this._url=url;
-			this._type=type || (type=this.getTypeFromUrl(url));
+			if (url.indexOf("data:image")===0)this._type=type="image";
+			else {
+				this._type=type || (type=this.getTypeFromUrl(url));
+				url=URL.formatURL(url);
+			}
 			this._cache=cache;
 			this._data=null;
 			if (!ignoreCache && Loader.loadedMap[url]){
@@ -33234,6 +35592,13 @@ var Laya=window.Laya=(function(window,document){
 			}
 			if (type==="image" || type==="htmlimage" || type==="nativeimage")return this._loadImage(url);
 			if (type==="sound")return this._loadSound(url);
+			if (type=="atlas"){
+				if (Loader.preLoadedAtlasConfigMap[url]){
+					this.onLoaded(Loader.preLoadedAtlasConfigMap[url]);
+					delete Loader.preLoadedAtlasConfigMap[url];
+					return;
+				}
+			}
 			if (!this._http){
 				this._http=new HttpRequest();
 				this._http.on("progress",this,this.onProgress);
@@ -33262,7 +35627,7 @@ var Laya=window.Laya=(function(window,document){
 		__proto.getTypeFromUrl=function(url){
 			var type=Utils.getFileExtension(url);
 			if (type)return Loader.typeMap[type];
-			console.log("Not recognize the resources suffix",url);
+			console.warn("Not recognize the resources suffix",url);
 			return "text";
 		}
 
@@ -33272,11 +35637,13 @@ var Laya=window.Laya=(function(window,document){
 		*@param url 资源地址。
 		*/
 		__proto._loadImage=function(url){
+			url=URL.formatURL(url);
 			var _this=this;
 			var image;
 			function clear (){
 				image.onload=null;
 				image.onerror=null;
+				delete Loader.imgCache[url]
 			};
 			var onload=function (){
 				clear();
@@ -33292,9 +35659,11 @@ var Laya=window.Laya=(function(window,document){
 				image.onload=onload;
 				image.onerror=onerror;
 				image.src=url;
+				Loader.imgCache[url]=image;
 				}else {
 				new HTMLImage.create(url,{onload:onload,onerror:onerror,onCreate:function (img){
 						image=img;
+						Loader.imgCache[url]=img;
 				}});
 			}
 		}
@@ -33356,11 +35725,8 @@ var Laya=window.Laya=(function(window,document){
 							var split=this._url.indexOf("/")>=0 ? "/" :"\\";
 							var idx=this._url.lastIndexOf(split);
 							var folderPath=idx >=0 ? this._url.substr(0,idx+1):"";
-							idx=this._url.indexOf("?");
-							var ver;
-							ver=idx >=0 ? this._url.substr(idx):"";
 							for (var i=0,len=toloadPics.length;i < len;i++){
-								toloadPics[i]=folderPath+toloadPics[i]+ver;
+								toloadPics[i]=folderPath+toloadPics[i];
 							}
 							}else {
 							toloadPics=[this._url.replace(".json",".png")];
@@ -33370,37 +35736,38 @@ var Laya=window.Laya=(function(window,document){
 						data.pics=[];
 					}
 					this.event("progress",0.3+1 / toloadPics.length *0.6);
-					return this._loadImage(URL.formatURL(toloadPics.pop()));
+					return this._loadImage(toloadPics.pop());
 					}else {
 					this._data.pics.push(data);
 					if (this._data.toLoads.length > 0){
 						this.event("progress",0.3+1 / this._data.toLoads.length *0.6);
-						return this._loadImage(URL.formatURL(this._data.toLoads.pop()));
+						return this._loadImage(this._data.toLoads.pop());
 					};
 					var frames=this._data.frames;
 					var cleanUrl=this._url.split("?")[0];
-					var directory=(this._data.meta && this._data.meta.prefix)? URL.basePath+this._data.meta.prefix :cleanUrl.substring(0,cleanUrl.lastIndexOf("."))+"/";
+					var directory=(this._data.meta && this._data.meta.prefix)? this._data.meta.prefix :cleanUrl.substring(0,cleanUrl.lastIndexOf("."))+"/";
 					var pics=this._data.pics;
-					var map=Loader.atlasMap[this._url] || (Loader.atlasMap[this._url]=[]);
+					var atlasURL=URL.formatURL(this._url);
+					var map=Loader.atlasMap[atlasURL] || (Loader.atlasMap[atlasURL]=[]);
 					map.dir=directory;
 					for (var name in frames){
 						var obj=frames[name];
 						var tPic=pics[obj.frame.idx ? obj.frame.idx :0];
-						var url=directory+name;
+						var url=URL.formatURL(directory+name);
 						Loader.cacheRes(url,Texture.create(tPic,obj.frame.x,obj.frame.y,obj.frame.w,obj.frame.h,obj.spriteSourceSize.x,obj.spriteSourceSize.y,obj.sourceSize.w,obj.sourceSize.h));
 						Loader.loadedMap[url].url=url;
 						map.push(url);
 					}
+					delete this._data.pics;
 					this.complete(this._data);
 				}
 				}else if (type=="font"){
 				if (!data.src){
 					this._data=data;
 					this.event("progress",0.5);
-					return this._loadImage(URL.formatURL(this._url.replace(".fnt",".png")));
+					return this._loadImage(this._url.replace(".fnt",".png"));
 					}else {
-					var bFont;
-					bFont=new BitmapFont();
+					var bFont=new BitmapFont();
 					bFont.parseFont(this._data,data);
 					var tArr=this._url.split(".fnt")[0].split("/");
 					var fontName=tArr[tArr.length-1];
@@ -33463,7 +35830,7 @@ var Laya=window.Laya=(function(window,document){
 				Loader._loaders[Loader._startIndex].endLoad();
 				Loader._startIndex++;
 				if (Browser.now()-startTimer > Loader.maxTimeOut){
-					console.log("loader callback cost a long time:"+(Browser.now()-startTimer)+" url="+Loader._loaders[Loader._startIndex-1].url);
+					console.warn("loader callback cost a long time:"+(Browser.now()-startTimer)+" url="+Loader._loaders[Loader._startIndex-1].url);
 					Laya.timer.frameOnce(1,null,Loader.checkNext);
 					return;
 				}
@@ -33476,7 +35843,7 @@ var Laya=window.Laya=(function(window,document){
 		Loader.clearRes=function(url,forceDispose){
 			(forceDispose===void 0)&& (forceDispose=false);
 			url=URL.formatURL(url);
-			var arr=Loader.atlasMap[url];
+			var arr=Loader.getAtlas(url);
 			if (arr){
 				for (var i=0,n=arr.length;i < n;i++){
 					var resUrl=arr[i];
@@ -33496,6 +35863,10 @@ var Laya=window.Laya=(function(window,document){
 			}
 		}
 
+		Loader.setAtlasConfigs=function(url,config){
+			Loader.preLoadedAtlasConfigMap[URL.formatURL(url)]=config;
+		}
+
 		Loader.getRes=function(url){
 			return Loader.loadedMap[URL.formatURL(url)];
 		}
@@ -33507,7 +35878,7 @@ var Laya=window.Laya=(function(window,document){
 		Loader.cacheRes=function(url,data){
 			url=URL.formatURL(url);
 			if (Loader.loadedMap[url] !=null){
-				console.log("Resources already exist,is repeated loading:",url);
+				console.warn("Resources already exist,is repeated loading:",url);
 				}else {
 				Loader.loadedMap[url]=data;
 			}
@@ -33537,28 +35908,35 @@ var Laya=window.Laya=(function(window,document){
 		Loader.FONT="font";
 		Loader.typeMap={"png":"image","jpg":"image","jpeg":"image","txt":"text","json":"json","xml":"xml","als":"atlas","atlas":"atlas","mp3":"sound","ogg":"sound","wav":"sound","part":"json","fnt":"font"};
 		Loader.parserMap={};
-		Loader.loadedMap={};
 		Loader.groupMap={};
 		Loader.maxTimeOut=100;
+		Loader.loadedMap={};
+		Loader.preLoadedAtlasConfigMap={};
 		Loader.atlasMap={};
 		Loader._loaders=[];
 		Loader._isWorking=false;
 		Loader._startIndex=0;
+		Loader.imgCache={};
 		return Loader;
 	})(EventDispatcher)
 
 
 	/**
-	*<p> <code>LoaderManager</code> 类用于用于批量加载资源、数据。</p>
-	*<p>批量加载器，单例，可以通过Laya.loader访问。</p>
-	*多线程(默认5个线程)，5个优先级(0最快，4最慢,默认为1)
-	*某个资源加载失败后，会按照最低优先级重试加载(属性retryNum决定重试几次)，如果重试后失败，则调用complete函数，并返回null
+	*<p> <code>LoaderManager</code> 类用于用于批量加载资源。此类是单例，不要手动实例化此类，请通过Laya.loader访问。</p>
+	*<p>全部队列加载完成，会派发 Event.COMPLETE 事件；如果队列中任意一个加载失败，会派发 Event.ERROR 事件，事件回调参数值为加载出错的资源地址。</p>
+	*<p> <code>LoaderManager</code> 类提供了以下几种功能：<br/>
+	*多线程：默认5个加载线程，可以通过maxLoader属性修改线程数量；<br/>
+	*多优先级：有0-4共5个优先级，优先级高的优先加载。0最高，4最低；<br/>
+	*重复过滤：自动过滤重复加载（不会有多个相同地址的资源同时加载）以及复用缓存资源，防止重复加载；<br/>
+	*错误重试：资源加载失败后，会重试加载（以最低优先级插入加载队列），retryNum设定加载失败后重试次数，retryDelay设定加载重试的时间间隔。</p>
+	*@see laya.net.Loader
 	*/
 	//class laya.net.LoaderManager extends laya.events.EventDispatcher
 	var LoaderManager=(function(_super){
 		var ResInfo;
 		function LoaderManager(){
 			this.retryNum=1;
+			this.retryDelay=0;
 			this.maxLoader=5;
 			this._loaders=[];
 			this._loaderCount=0;
@@ -33573,14 +35951,16 @@ var Laya=window.Laya=(function(window,document){
 		__class(LoaderManager,'laya.net.LoaderManager',_super);
 		var __proto=LoaderManager.prototype;
 		/**
-		*根据clas定义创建一个资源空壳，随后进行异步加载，资源加载完成后，会调用资源类的onAsynLoaded方法回调真正的数据,套嵌资源的子资源会保留资源路径"?"后的部分
-		*@param url 资源地址或者数组，比如[{url:xx,clas:xx,priority:xx,params:xx},{url:xx,clas:xx,priority:xx,params:xx}]
-		*@param progress 进度回调，回调参数为当前文件加载的进度信息(0-1)。
-		*@param clas 资源类名，比如Texture
-		*@param type 资源类型
-		*@param priority 优先级
-		*@param cache 是否缓存
-		*@return 返回资源对象
+		*<p>根据clas类型创建一个未初始化资源的对象，随后进行异步加载，资源加载完成后，初始化对象的资源，并通过此对象派发 Event.LOADED 事件，事件回调参数值为此对象本身。套嵌资源的子资源会保留资源路径"?"后的部分。</p>
+		*<p>如果url为数组，返回true；否则返回指定的资源类对象，可以通过侦听此对象的 Event.LOADED 事件来判断资源是否已经加载完毕。</p>
+		*<p><b>注意：</b>cache参数只能对文件后缀为atlas的资源进行缓存控制，其他资源会忽略缓存，强制重新加载。</p>
+		*@param url 资源地址或者数组。如果url和clas同时指定了资源类型，优先使用url指定的资源类型。参数形如：[{url:xx,clas:xx,priority:xx,params:xx},{url:xx,clas:xx,priority:xx,params:xx}]。
+		*@param progress 资源加载进度回调，回调参数值为当前资源加载的进度信息(0-1)。
+		*@param clas 资源类名。如果url和clas同时指定了资源类型，优先使用url指定的资源类型。参数形如：Texture。
+		*@param type 资源类型。参数形如：Loader.IMAGE。
+		*@param priority (default=1)加载的优先级，优先级高的优先加载。有0-4共5个优先级，0最高，4最低。
+		*@param cache 是否缓存加载的资源。
+		*@return 如果url为数组，返回true；否则返回指定的资源类对象。
 		*/
 		__proto.create=function(url,complete,progress,clas,params,priority,cache){
 			(priority===void 0)&& (priority=1);
@@ -33624,6 +36004,7 @@ var Laya=window.Laya=(function(window,document){
 		__proto._create=function(url,complete,progress,clas,params,priority,cache){
 			(priority===void 0)&& (priority=1);
 			(cache===void 0)&& (cache=true);
+			url=URL.formatURL(url)
 			var item=this.getRes(url);
 			if (!item){
 				var extension=Utils.getFileExtension(url);
@@ -33635,42 +36016,48 @@ var Laya=window.Laya=(function(window,document){
 					}else {
 					if (clas===Texture)type="htmlimage";
 					item=clas ? new clas():null;
+					if (item.hasOwnProperty("_loaded"))
+						item._loaded=false;
 					this.load(url,Handler.create(null,onLoaded),progress,type,priority,false,null,true);
 					function onLoaded (data){
 						item && item.onAsynLoaded.call(item,url,data,params);
 						if (complete)complete.run();
+						Laya.loader.event(url);
 					}
 					if (cache){
-						var formatURL=URL.formatURL(url);
-						LoaderManager.cacheRes(formatURL,item);
-						item.url=formatURL;
+						this.cacheRes(url,item);
+						item.url=url;
 					}
 				}
 				}else {
-				progress && progress.runWith(1);
-				complete && complete.run();
+				if (!item.hasOwnProperty("loaded")|| item.loaded){
+					progress && progress.runWith(1);
+					complete && complete.run();
+					}else if (complete){
+					Laya.loader._createListener(url,complete.caller,complete.method,complete.args,true,false);
+				}
 			}
 			return item;
 		}
 
 		/**
-		*加载资源。
-		*@param url 地址，或者资源对象数组(简单数组：["a.png","b.png"]，复杂数组[{url:"a.png",type:Loader.IMAGE,size:100,priority:1},{url:"b.json",type:Loader.JSON,size:50,priority:1}])。
-		*@param complete 结束回调，如果加载失败，则返回 null 。
-		*@param progress 进度回调，回调参数为当前文件加载的进度信息(0-1)。
-		*@param type 资源类型。
-		*@param priority 优先级，0-4，五个优先级，0优先级最高，默认为1。
+		*<p>加载资源。资源加载错误时，本对象会派发 Event.ERROR 事件，事件回调参数值为加载出错的资源地址。</p>
+		*<p>因为返回值为 LoaderManager 对象本身，所以可以使用如下语法：Laya.loader.load(...).load(...);</p>
+		*@param url 要加载的单个资源地址或资源信息数组。比如：简单数组：["a.png","b.png"]；复杂数组[{url:"a.png",type:Loader.IMAGE,size:100,priority:1},{url:"b.json",type:Loader.JSON,size:50,priority:1}]。
+		*@param complete 加载结束回调。根据url类型不同分为2种情况：1. url为String类型，也就是单个资源地址，如果加载成功，则回调参数值为加载完成的资源，否则为null；2. url为数组类型，指定了一组要加载的资源，如果全部加载成功，则回调参数值为true，否则为false。
+		*@param progress 加载进度回调。回调参数值为当前资源的加载进度信息(0-1)。
+		*@param type 资源类型。比如：Loader.IMAGE。
+		*@param priority (default=1)加载的优先级，优先级高的优先加载。有0-4共5个优先级，0最高，4最低。
 		*@param cache 是否缓存加载结果。
-		*@param group 分组。
-		*@param ignoreCache 是否忽略缓存，强制重新加载
-		*@return 此 LoaderManager 对象。
+		*@param group 分组，方便对资源进行管理。
+		*@param ignoreCache 是否忽略缓存，强制重新加载。
+		*@return 此 LoaderManager 对象本身。
 		*/
 		__proto.load=function(url,complete,progress,type,priority,cache,group,ignoreCache){
 			(priority===void 0)&& (priority=1);
 			(cache===void 0)&& (cache=true);
 			(ignoreCache===void 0)&& (ignoreCache=false);
 			if ((url instanceof Array))return this._loadAssets(url,complete,progress,type,priority,cache,group);
-			url=URL.formatURL(url);
 			var content=Loader.getRes(url);
 			if (content !=null){
 				progress && progress.runWith(1);
@@ -33734,22 +36121,29 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__proto._endLoad=function(resInfo,content){
-			if (content===null){
-				var errorCount=this._failRes[resInfo.url] || 0;
+			var url=resInfo.url;
+			if (content==null){
+				var errorCount=this._failRes[url] || 0;
 				if (errorCount < this.retryNum){
-					console.log("[warn]Retry to load:",resInfo.url);
-					this._failRes[resInfo.url]=errorCount+1;
-					this._resInfos[this._maxPriority-1].push(resInfo);
+					console.warn("[warn]Retry to load:",url);
+					this._failRes[url]=errorCount+1;
+					Laya.timer.once(this.retryDelay,this,this._addReTry,[resInfo],false);
 					return;
 					}else {
-					console.log("[error]Failed to load:",resInfo.url);
-					this.event("error",resInfo.url);
+					console.warn("[error]Failed to load:",url);
+					this.event("error",url);
 				}
 			}
-			delete LoaderManager._resMap[resInfo.url];
+			if (this._failRes[url])this._failRes[url]=0;
+			delete LoaderManager._resMap[url];
 			resInfo.event("complete",content);
 			resInfo.offAll();
 			this._infoPool.push(resInfo);
+		}
+
+		__proto._addReTry=function(resInfo){
+			this._resInfos[this._maxPriority-1].push(resInfo);
+			this._next();
 		}
 
 		/**
@@ -33769,6 +36163,32 @@ var Laya=window.Laya=(function(window,document){
 		*/
 		__proto.getRes=function(url){
 			return Loader.getRes(url);
+		}
+
+		/**
+		*缓存资源。
+		*@param url 资源地址。
+		*@param data 要缓存的内容。
+		*/
+		__proto.cacheRes=function(url,data){
+			Loader.cacheRes(url,data);
+		}
+
+		/**
+		*设置资源分组。
+		*@param url 资源地址。
+		*@param group 分组名
+		*/
+		__proto.setGroup=function(url,group){
+			Loader.setGroup(url,group);
+		}
+
+		/**
+		*根据分组清理资源。
+		*@param group 分组名
+		*/
+		__proto.clearResByGroup=function(group){
+			Loader.clearResByGroup(group);
 		}
 
 		/**清理当前未完成的加载，所有未加载的内容全部停止加载。*/
@@ -33804,7 +36224,6 @@ var Laya=window.Laya=(function(window,document){
 		*@param url 资源地址
 		*/
 		__proto.cancelLoadByUrl=function(url){
-			url=URL.formatURL(url);
 			for (var i=0;i < this._maxPriority;i++){
 				var infos=this._resInfos[i];
 				for (var j=infos.length-1;j >-1;j--){
@@ -33830,10 +36249,10 @@ var Laya=window.Laya=(function(window,document){
 			var loadedCount=0;
 			var totalSize=0;
 			var items=[];
-			var defaultType=type || "image";
+			var success=true;
 			for (var i=0;i < itemCount;i++){
 				var item=arr[i];
-				if ((typeof item=='string'))item={url:item,type:defaultType,size:1,priority:priority};
+				if ((typeof item=='string'))item={url:item,type:type,size:1,priority:priority};
 				if (!item.size)item.size=1;
 				item.progress=0;
 				totalSize+=item.size;
@@ -33845,8 +36264,9 @@ var Laya=window.Laya=(function(window,document){
 			function loadComplete (item,content){
 				loadedCount++;
 				item.progress=1;
+				if (!content)success=false;
 				if (loadedCount===itemCount && complete){
-					complete.run();
+					complete.runWith(success);
 				}
 			}
 			function loadProgress (item,value){
@@ -33893,23 +36313,79 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
+	*<p><code>ColorFilter</code> 是颜色滤镜。使用 ColorFilter 类可以将 4 x 5 矩阵转换应用于输入图像上的每个像素的 RGBA 颜色和 Alpha 值，以生成具有一组新的 RGBA 颜色和 Alpha 值的结果。该类允许饱和度更改、色相旋转、亮度转 Alpha 以及各种其他效果。您可以将滤镜应用于任何显示对象（即，从 Sprite 类继承的对象）。</p>
+	*<p>注意：对于 RGBA 值，最高有效字节代表红色通道值，其后的有效字节分别代表绿色、蓝色和 Alpha 通道值。</p>
+	*/
+	//class laya.filters.ColorFilter extends laya.filters.Filter
+	var ColorFilter=(function(_super){
+		function ColorFilter(mat){
+			//this._mat=null;
+			//this._alpha=null;
+			ColorFilter.__super.call(this);
+			if (!mat){
+				mat=[0.3,0.59,0.11,0,0,0.3,0.59,0.11,0,0,0.3,0.59,0.11,0,0,0,0,0,1,0];
+			}
+			this._mat=new Float32Array(16);
+			this._alpha=new Float32Array(4);
+			var j=0;
+			var z=0;
+			for (var i=0;i < 20;i++){
+				if (i % 5 !=4){
+					this._mat[j++]=mat[i];
+					}else {
+					this._alpha[z++]=mat[i];
+				}
+			}
+			this._action=RunDriver.createFilterAction(0x20);
+			this._action.data=this;
+		}
+
+		__class(ColorFilter,'laya.filters.ColorFilter',_super);
+		var __proto=ColorFilter.prototype;
+		Laya.imps(__proto,{"laya.filters.IFilter":true})
+		/**
+		*@private 通知微端
+		*/
+		__proto.callNative=function(sp){
+			var t=sp._$P.cf=this;
+			sp.conchModel && sp.conchModel.setFilterMatrix && sp.conchModel.setFilterMatrix(this._mat,this._alpha);
+		}
+
+		/**@private */
+		__getset(0,__proto,'type',function(){
+			return 0x20;
+		});
+
+		/**@private */
+		__getset(0,__proto,'action',function(){
+			return this._action;
+		});
+
+		return ColorFilter;
+	})(Filter)
+
+
+	/**
+	*@private
 	*<code>Resource</code> 资源存取类。
 	*/
 	//class laya.resource.Resource extends laya.events.EventDispatcher
 	var Resource=(function(_super){
 		function Resource(){
-			this._id=0;
-			this._lastUseFrameCount=0;
-			this._memorySize=0;
-			this._name=null;
-			this._url=null;
-			this._loaded=false;
-			this._released=false;
-			this._disposed=false;
-			this._resourceManager=null;
-			this.lock=false;
+			//this._id=0;
+			//this._lastUseFrameCount=0;
+			//this._memorySize=0;
+			//this._name=null;
+			//this._url=null;
+			//this.__loaded=false;
+			//this._released=false;
+			//this._disposed=false;
+			//this._resourceManager=null;
+			//this.lock=false;
 			Resource.__super.call(this);
 			this._id=++Resource._uniqueIDCounter;
+			this.__loaded=true;
+			this._disposed=false;
 			Resource._loadedResources.push(this);
 			Resource._isLoadedResourcesSorted=false;
 			this._released=true;
@@ -33922,6 +36398,14 @@ var Laya=window.Laya=(function(window,document){
 		__class(Resource,'laya.resource.Resource',_super);
 		var __proto=Resource.prototype;
 		Laya.imps(__proto,{"laya.resource.ICreateResource":true,"laya.resource.IDispose":true})
+		/**
+		*@private
+		*/
+		__proto._endLoaded=function(){
+			this.__loaded=true;
+			this.event("loaded",this);
+		}
+
 		/**重新创建资源,override it，同时修改memorySize属性、处理startCreate()和compoleteCreate()方法。*/
 		__proto.recreateResource=function(){
 			this.startCreate();
@@ -34020,29 +36504,36 @@ var Laya=window.Laya=(function(window,document){
 			this.event("recovered",this);
 		}
 
-		__getset(0,__proto,'loaded',function(){
-			return this._loaded;
+		/**
+		*占用内存尺寸。
+		*/
+		__getset(0,__proto,'memorySize',function(){
+			return this._memorySize;
+			},function(value){
+			var offsetValue=value-this._memorySize;
+			this._memorySize=value;
+			this.resourceManager && this.resourceManager.addSize(offsetValue);
 		});
 
 		/**
-		*获取唯一标识ID(通常用于优化或识别)。
+		*@private
+		*/
+		__getset(0,__proto,'_loaded',null,function(value){
+			this.__loaded=value;
+		});
+
+		/**
+		*获取是否已加载完成。
+		*/
+		__getset(0,__proto,'loaded',function(){
+			return this.__loaded;
+		});
+
+		/**
+		*获取唯一标识ID,通常用于识别。
 		*/
 		__getset(0,__proto,'id',function(){
 			return this._id;
-		});
-
-		/**
-		*色湖之资源的URL地址。
-		*@param value URL地址。
-		*/
-		/**
-		*获取资源的URL地址。
-		*@return URL地址。
-		*/
-		__getset(0,__proto,'url',function(){
-			return this._url;
-			},function(value){
-			this._url=value;
 		});
 
 		/**
@@ -34089,14 +36580,17 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*占用内存尺寸。
+		*色湖之资源的URL地址。
+		*@param value URL地址。
 		*/
-		__getset(0,__proto,'memorySize',function(){
-			return this._memorySize;
+		/**
+		*获取资源的URL地址。
+		*@return URL地址。
+		*/
+		__getset(0,__proto,'url',function(){
+			return this._url;
 			},function(value){
-			var offsetValue=value-this._memorySize;
-			this._memorySize=value;
-			this.resourceManager && this.resourceManager.addSize(offsetValue);
+			this._url=value;
 		});
 
 		/**
@@ -34207,26 +36701,28 @@ var Laya=window.Laya=(function(window,document){
 
 		/**@private 激活资源。*/
 		__proto.active=function(){
-			this.bitmap.activeResource();
+			if(this.bitmap)this.bitmap.activeResource();
 		}
 
 		/**
-		*销毁纹理（分直接销毁，跟计数销毁两种）
-		*@param forceDispose true为强制销毁主纹理，false是通过计数销毁纹理
+		*销毁纹理（分直接销毁，跟计数销毁两种）。
+		*@param forceDispose (default=false)true为强制销毁主纹理，false是通过计数销毁纹理。
 		*/
 		__proto.destroy=function(forceDispose){
 			(forceDispose===void 0)&& (forceDispose=false);
 			if (this.bitmap && (this.bitmap).useNum > 0){
+				var temp=this.bitmap;
 				if (forceDispose){
-					this.bitmap.dispose();
-					(this.bitmap).useNum=0;
+					this.bitmap=null;
+					temp.dispose();
+					(temp).useNum=0;
 					}else {
-					(this.bitmap).useNum--;
-					if ((this.bitmap).useNum==0){
-						this.bitmap.dispose();
+					(temp).useNum--;
+					if ((temp).useNum==0){
+						this.bitmap=null;
+						temp.dispose();
 					}
 				}
-				this.bitmap=null;
 				if (this.url && this===Laya.loader.getRes(this.url))Laya.loader.clearRes(this.url,forceDispose);
 				this._loaded=false;
 			}
@@ -34239,7 +36735,8 @@ var Laya=window.Laya=(function(window,document){
 		__proto.load=function(url){
 			var _$this=this;
 			this._loaded=false;
-			var fileBitmap=(this.bitmap || (this.bitmap=HTMLImage.create(URL.formatURL(url))));
+			url=URL.customFormat(url);
+			var fileBitmap=(this.bitmap || (this.bitmap=HTMLImage.create(url)));
 			if (fileBitmap)fileBitmap.useNum++;
 			var _this=this;
 			fileBitmap.onload=function (){
@@ -34285,6 +36782,7 @@ var Laya=window.Laya=(function(window,document){
 
 		/**激活并获取资源。*/
 		__getset(0,__proto,'source',function(){
+			if (!this.bitmap)return null;
 			this.bitmap.activeResource();
 			return this.bitmap.source;
 		});
@@ -34300,6 +36798,7 @@ var Laya=window.Laya=(function(window,document){
 		*表示资源是否已释放。
 		*/
 		__getset(0,__proto,'released',function(){
+			if (!this.bitmap)return true;
 			return this.bitmap.released;
 		});
 
@@ -34344,10 +36843,10 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*设置线性采样的状态（目前只能第一次绘制前设置false生效,来关闭线性采样）
+		*设置线性采样的状态（目前只能第一次绘制前设置false生效,来关闭线性采样）。
 		*/
 		/**
-		*获取当前纹理是否启用了线性采样
+		*获取当前纹理是否启用了线性采样。
 		*/
 		__getset(0,__proto,'isLinearSampling',function(){
 			return Render.isWebGL ? (this.bitmap.minFifter !=0x2600):true;
@@ -34474,7 +36973,7 @@ var Laya=window.Laya=(function(window,document){
 
 		/**@private */
 		__proto._create=function(target,props,duration,ease,offset,isTo){
-			var tTweenData=new tweenData();
+			var tTweenData=Pool.getItemByClass("tweenData",tweenData);
 			tTweenData.isTo=isTo;
 			tTweenData.type=0;
 			tTweenData.target=target;
@@ -34496,7 +36995,7 @@ var Laya=window.Laya=(function(window,document){
 		*@param offset 标签相对于上个动画的偏移时间(单位：毫秒)。
 		*/
 		__proto.addLabel=function(label,offset){
-			var tTweenData=new tweenData();
+			var tTweenData=Pool.getItemByClass("tweenData",tweenData);
 			tTweenData.type=1;
 			tTweenData.data=label;
 			tTweenData.endTime=tTweenData.startTime=this._startTime+offset;
@@ -34574,8 +37073,8 @@ var Laya=window.Laya=(function(window,document){
 					if (time >=tTweenData.endTime){
 						this._index=Math.max(this._index,i+1);
 						var props=tTweenData.data;
-						for (var tP in props){
-							if (tTweenData.isTo){
+						if (tTweenData.isTo){
+							for (var tP in props){
 								tTweenData.target[tP]=props[tP];
 							}
 						}
@@ -34633,6 +37132,7 @@ var Laya=window.Laya=(function(window,document){
 		__proto.play=function(timeOrLabel,loop){
 			(timeOrLabel===void 0)&& (timeOrLabel=0);
 			(loop===void 0)&& (loop=false);
+			if (!this._tweenDataList)return;
 			if (this._startTimeSort){
 				this._startTimeSort=false;
 				function Compare (paraA,paraB){
@@ -34683,6 +37183,7 @@ var Laya=window.Laya=(function(window,document){
 			if (this._currTime >=this._startTime){
 				if (this._loopKey){
 					this._complete();
+					if (!this._tweenDataList)return;
 					this.gotoTime(0);
 					}else {
 					for (var p in this._tweenDic){
@@ -34698,6 +37199,10 @@ var Laya=window.Laya=(function(window,document){
 			var tFrameTime=tNow-this._lastTime;
 			var tCurrTime=this._currTime+=tFrameTime *this.scale;
 			this._lastTime=tNow;
+			for (p in this._tweenDic){
+				tTween=this._tweenDic[p];
+				tTween._updateEase(tCurrTime);
+			};
 			var tTween;
 			if (this._tweenDataList.length !=0 && this._index < this._tweenDataList.length){
 				var tTweenData=this._tweenDataList[this._index];
@@ -34706,18 +37211,15 @@ var Laya=window.Laya=(function(window,document){
 					if (tTweenData.type==0){
 						this._gidIndex++;
 						tTween=Pool.getItemByClass("tween",Tween);
-						tTween._create(tTweenData.target,tTweenData.data,tTweenData.duration,tTweenData.ease,new Handler(this,this._animComplete,[this._gidIndex]),0,false,tTweenData.isTo,true,false);
+						tTween._create(tTweenData.target,tTweenData.data,tTweenData.duration,tTweenData.ease,Handler.create(this,this._animComplete,[this._gidIndex]),0,false,tTweenData.isTo,true,false);
 						tTween.setStartTime(tCurrTime);
 						tTween.gid=this._gidIndex;
 						this._tweenDic[this._gidIndex]=tTween;
+						tTween._updateEase(tCurrTime);
 						}else {
 						this.event("label",tTweenData.data);
 					}
 				}
-			}
-			for (p in this._tweenDic){
-				tTween=this._tweenDic[p];
-				tTween._updateEase(tCurrTime);
 			}
 		}
 
@@ -34755,6 +37257,14 @@ var Laya=window.Laya=(function(window,document){
 				delete this._firstTweenDic[p];
 			}
 			this._endTweenDataList=null;
+			if (this._tweenDataList && this._tweenDataList.length){
+				var i=0,len=0;
+				len=this._tweenDataList.length;
+				for (i=0;i < len;i++){
+					if(this._tweenDataList[i])
+						this._tweenDataList[i].destroy();
+				}
+			}
 			this._tweenDataList.length=0;
 			this._currTime=0;
 			this._lastTime=0;
@@ -34792,7 +37302,7 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*得到总帧数据
+		*得到总帧数。
 		*/
 		__getset(0,__proto,'total',function(){
 			this._total=Math.floor(this._startTime / 1000 *this._frameRate);
@@ -34823,6 +37333,15 @@ var Laya=window.Laya=(function(window,document){
 					this.data=null;
 				}
 				__class(tweenData,'');
+				var __proto=tweenData.prototype;
+				__proto.destroy=function(){
+					this.target=null;
+					this.ease=null;
+					this.data=null;
+					this.isTo=true;
+					this.type=0;
+					Pool.recover("tweenData",this);
+				}
 				return tweenData;
 			})()
 		}
@@ -34895,8 +37414,15 @@ var Laya=window.Laya=(function(window,document){
 				var bottom=sizeGrid[2];
 				var left=sizeGrid[3];
 				var repeat=sizeGrid[4];
+				var needClip=false;
 				if (left+right > width){
-					right=0;
+					var clipWidth=width;
+					needClip=true;
+					width=left+right;
+				}
+				if (needClip){
+					this.save();
+					this.clipRect(0,0,clipWidth,height);
 				}
 				left && top && this.drawTexture(AutoBitmap.getTexture(source,0,0,left,top),0,0,left,top);
 				right && top && this.drawTexture(AutoBitmap.getTexture(source,sw-right,0,right,top),width-right,0,right,top);
@@ -34907,6 +37433,7 @@ var Laya=window.Laya=(function(window,document){
 				left && this.drawBitmap(repeat,AutoBitmap.getTexture(source,0,top,left,sh-top-bottom),0,top,left,height-top-bottom);
 				right && this.drawBitmap(repeat,AutoBitmap.getTexture(source,sw-right,top,right,sh-top-bottom),width-right,top,right,height-top-bottom);
 				this.drawBitmap(repeat,AutoBitmap.getTexture(source,left,top,sw-left-right,sh-top-bottom),left,top,width-left-right,height-top-bottom);
+				if (needClip)this.restore();
 				if (this.autoCacheCmd && !Render.isConchApp)AutoBitmap.cmdCaches[key]=this.cmds;
 			}
 			this._repaint();
@@ -34918,6 +37445,11 @@ var Laya=window.Laya=(function(window,document){
 			if (width < 0.1 || height < 0.1)return;
 			if (repeat && (tex.width!=width || tex.height !=height))this.fillTexture(tex,x,y,width,height);
 			else this.drawTexture(tex,x,y,width,height);
+		}
+
+		__proto.clear=function(recoverCmds){
+			(recoverCmds===void 0)&& (recoverCmds=true);
+			_super.prototype.clear.call(this,false);
 		}
 
 		/**
@@ -35439,9 +37971,10 @@ var Laya=window.Laya=(function(window,document){
 		__class(ParticleScene,'laya.ide.viewer.ParticleScene',_super);
 		var __proto=ParticleScene.prototype;
 		__proto.setUp=function(parent){
-			this.addRenderFrame();
+			Laya.timer.frameOnce(2,this,this.addRenderFrame);
 		}
 
+		// addRenderFrame();
 		__proto.open=function(){
 			_super.prototype.open.call(this);
 			DialogTools.showOpenFile(Sys.lang("打开粒子文件"),Utils.bind(this.openFile,this),DialogTools.getOpenParticleO());
@@ -35459,6 +37992,17 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		// trace("configJson:",ObjectTools.getJsonString(data));
+		__proto.getDesignData=function(){
+			return ViewRenderManager.render.getRenderData();
+		}
+
+		__proto.changeDataO=function(dataO){
+			var particleData;
+			particleData=ObjectTools.flatObj(this.data);
+			Notice$1.notify("PropPanel_setByObj",[particleData,this.mType]);
+			this.setRenderData(this.data);
+		}
+
 		__proto.save=function(){
 			_super.prototype.save.call(this);
 			if (this.pagePath){
@@ -35494,7 +38038,7 @@ var Laya=window.Laya=(function(window,document){
 
 		__proto.saveFile=function(file){
 			if(file){
-				var data=ViewRenderManager.render.getRenderData();
+				var data=StateManager.getState(this.pagePath).now();
 				var fileStr;
 				fileStr=ObjectTools.getJsonString(data);
 				try{
@@ -35562,7 +38106,7 @@ var Laya=window.Laya=(function(window,document){
 			particleData=ObjectTools.flatObj(data);
 			Notice$1.notify("PropPanel_setByObj",[particleData,this.mType]);
 			try{
-				this.renderByData(data);
+				Laya.timer.frameOnce(1,this,this.renderByData,[data]);
 			}
 			catch(e){}
 		}
@@ -35574,8 +38118,11 @@ var Laya=window.Laya=(function(window,document){
 			updateData.url=FileTools.getAbsPath(this.pagePath);
 			updateData.base=FileTools.getAbsPath(SystemSetting.assetsPath+FileTools.getSep());
 			updateData.data=data;
-			ViewRenderManager.render.getStage()["bgColor"]=data.backColor;
-			ViewRenderManager.render.updateData(updateData);
+			try{
+				ViewRenderManager.render.getStage()["bgColor"]=data.backColor;
+				ViewRenderManager.render.updateData(updateData);
+				}catch(e){
+			}
 		}
 
 		// Notice.notify(IDEEvent.SHOW_DISPLAY_TREE,[ViewRenderManager.render.getStage()]);
@@ -35870,13 +38417,12 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*<p> <code>Sprite</code> 类是基本显示对象节点，通过graphics可以绘制图片或者矢量图，支持旋转，缩放，位移等操作。Sprite同时也是容器类，用来添加多个子节点。</p>
-	*LayaAir引擎API设计精简巧妙。核心显示类只有一个Sprite。Sprite针对不同的情况做了渲染优化，所以保证一个类实现丰富功能的同时，又达到高性能。
-	*Sprite默认没有宽高，可以手动设置宽高，或者通过getbounds函数获取，还可以设置autoSize=true，然后再获取宽高。Sprite的宽高只是用来做碰撞使用，并不影响显示大小，如果更改显示大小，需要使用scaleX，scaleY。
-	*Sprite默认不接受鼠标事件，即mouseEnabled=false，但是只要对其监听任意鼠标事件，会自动打开自己以及所有父对象的mouseEnabled=true。所以一般也无需手动设置mouseEnabled。
+	*<p> <code>Sprite</code> 是基本的显示图形的显示列表节点。 <code>Sprite</code> 默认没有宽高，默认不接受鼠标事件。通过 <code>graphics</code> 可以绘制图片或者矢量图，支持旋转，缩放，位移等操作。<code>Sprite</code>同时也是容器类，可用来添加多个子节点。</p>
+	*<p>注意： <code>Sprite</code> 默认没有宽高，可以通过<code>getBounds</code>函数获取；也可手动设置宽高；还可以设置<code>autoSize=true</code>，然后再获取宽高。<code>Sprite</code>的宽高一般用于进行碰撞检测和排版，并不影响显示图像大小，如果需要更改显示图像大小，请使用 <code>scaleX</code> ， <code>scaleY</code> ， <code>scale</code>。</p>
+	*<p> <code>Sprite</code> 默认不接受鼠标事件，即<code>mouseEnabled=false</code>，但是只要对其监听任意鼠标事件，会自动打开自己以及所有父对象的<code>mouseEnabled=true</code>。所以一般也无需手动设置<code>mouseEnabled</code>。</p>
+	*<p>LayaAir引擎API设计精简巧妙。核心显示类只有一个<code>Sprite</code>。<code>Sprite</code>针对不同的情况做了渲染优化，所以保证一个类实现丰富功能的同时，又达到高性能。</p>
 	*
-	*@example 以下示例代码，创建了一个 <code>Sprite</code> 实例。
-	*<listing version="3.0">
+	*@example <caption>创建了一个 <code>Sprite</code> 实例。</caption>
 	*package
 	*{
 		*import laya.display.Sprite;
@@ -35925,8 +38471,8 @@ var Laya=window.Laya=(function(window,document){
 				*}
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*
+	*@example
 	*var sprite;
 	*var shape;
 	*Sprite_Example();
@@ -35967,8 +38513,8 @@ var Laya=window.Laya=(function(window,document){
 		*console.log("点击 shape 对象。");
 		*shape.rotation+=5;//旋转 shape 对象。
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*
+	*@example
 	*import Sprite=laya.display.Sprite;
 	*class Sprite_Example {
 		*private sprite:Sprite;
@@ -36007,7 +38553,6 @@ var Laya=window.Laya=(function(window,document){
 			*this.shape.rotation+=5;//旋转 shape 对象。
 			*}
 		*}
-	*</listing>
 	*/
 	//class laya.display.Sprite extends laya.display.Node
 	var Sprite=(function(_super){
@@ -36025,6 +38570,7 @@ var Laya=window.Laya=(function(window,document){
 			this._renderType=0;
 			this._optimizeScrollRect=false;
 			this._texture=null;
+			this._childRenderMax=false;
 			this.mouseThrough=false;
 			this.autoSize=false;
 			this.hitTestPrior=false;
@@ -36063,7 +38609,8 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*设置bounds大小，如果有设置，则不再通过getBounds计算，合理使用能提高性能。
+		*<p>设置对象在自身坐标系下的边界范围。与 <code>getSelfBounds</code> 对应。当 autoSize==true 时，会影响对象宽高。设置后，当需要获取自身边界范围时，就不再需要计算，合理使用能提高性能。比如 <code>getBounds</code> 会优先使用 <code>setBounds</code> 指定的值，如果没有指定则进行计算，此计算会对性能消耗比较大。</p>
+		*<p><b>注意：</b> <code>setBounds</code> 与 <code>getBounds</code> 并非对应相等关系， <code>getBounds</code> 获取的是本对象在父容器坐标系下的边界范围，通过设置 <code>setBounds</code> 会影响 <code>getBounds</code> 的结果。</p>
 		*@param bound bounds矩形区域
 		*/
 		__proto.setBounds=function(bound){
@@ -36071,8 +38618,8 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*获取本对象在父容器坐标系的矩形显示区域。
-		*<p><b>注意：</b>计算量较大，尽量少用。</p>
+		*<p>获取本对象在父容器坐标系的矩形显示区域。</p>
+		*<p><b>注意：</b> 1.计算量较大，尽量少用，如果需要频繁使用，可以通过手动设置 <code>setBounds</code> 来缓存自身边界信息，从而避免比较消耗性能的计算。2. <code>setBounds</code> 与 <code>getBounds</code> 并非对应相等关系， <code>getBounds</code> 获取的是本对象在父容器坐标系下的边界范围，通过设置 <code>setBounds</code> 会影响 <code>getBounds</code> 的结果。</p>
 		*@return 矩形区域。
 		*/
 		__proto.getBounds=function(){
@@ -36081,11 +38628,12 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*获取本对象在自己坐标系的矩形显示区域。
-		*<p><b>注意：</b>计算量较大，尽量少用。</p>
+		*获取对象在自身坐标系的边界范围。与 <code>setBounds</code> 对应。
+		*<p><b>注意：</b>计算量较大，尽量少用，如果需要频繁使用，可以提前手动设置 <code>setBounds</code> 来缓存自身边界信息，从而避免比较消耗性能的计算。</p>
 		*@return 矩形区域。
 		*/
 		__proto.getSelfBounds=function(){
+			if (this._$P.uBounds)return this._$P.uBounds;
 			if (!this._$P.mBounds)this._set$P("mBounds",new Rectangle());
 			return Rectangle._getWrapRec(this._getBoundPointsM(false),this._$P.mBounds);
 		}
@@ -36094,7 +38642,7 @@ var Laya=window.Laya=(function(window,document){
 		*@private
 		*获取本对象在父容器坐标系的显示区域多边形顶点列表。
 		*当显示对象链中有旋转时，返回多边形顶点列表，无旋转时返回矩形的四个顶点。
-		*@param ifRotate 之前的对象链中是否有旋转。
+		*@param ifRotate （可选）之前的对象链中是否有旋转。
 		*@return 顶点列表。结构：[x1,y1,x2,y2,x3,y3,...]。
 		*/
 		__proto._boundPointsToParent=function(ifRotate){
@@ -36115,7 +38663,7 @@ var Laya=window.Laya=(function(window,document){
 				pList=ifRotate ? GrahamScan.scanPList(pList):Rectangle._getWrapRec(pList,Rectangle.TEMP)._getBoundPoints();
 			}
 			if (!this.transform){
-				Utils.transPointList(pList,this.x-pX,this.y-pY);
+				Utils.transPointList(pList,this._x-pX,this._y-pY);
 				return pList;
 			};
 			var tPoint=Point.TEMP;
@@ -36132,17 +38680,20 @@ var Laya=window.Laya=(function(window,document){
 
 		/**
 		*返回此实例中的绘图对象（ <code>Graphics</code> ）的显示区域，不包括子对象。
+		*@param realSize （可选）使用图片的真实大小，默认为false
 		*@return 一个 Rectangle 对象，表示获取到的显示区域。
 		*/
-		__proto.getGraphicBounds=function(){
+		__proto.getGraphicBounds=function(realSize){
+			(realSize===void 0)&& (realSize=false);
 			if (!this._graphics)return Rectangle.TEMP.setTo(0,0,0,0);
-			return this._graphics.getBounds();
+			return this._graphics.getBounds(realSize);
 		}
 
 		/**
+		*
 		*@private
 		*获取自己坐标系的显示区域多边形顶点列表
-		*@param ifRotate 当前的显示对象链是否由旋转
+		*@param ifRotate （可选）当前的显示对象链是否由旋转
 		*@return 顶点列表。结构：[x1,y1,x2,y2,x3,y3,...]。
 		*/
 		__proto._getBoundPointsM=function(ifRotate){
@@ -36178,7 +38729,7 @@ var Laya=window.Laya=(function(window,document){
 		*@return 样式 Style 。
 		*/
 		__proto.getStyle=function(){
-			this._style===Style.EMPTY && (this._style=new Style());
+			this._style===Style.EMPTY && (this._style=new Style(),this._childRenderMax=true);
 			return this._style;
 		}
 
@@ -36223,10 +38774,11 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*设置坐标位置。相当于分别设置x和y属性。
-		*@param x X 轴坐标。
-		*@param y Y 轴坐标。
-		*@param speedMode 是否极速模式，正常是调用this.x=value进行赋值，极速模式直接调用内部函数处理，如果未重写x,y属性，建议设置为急速模式性能更高。
+		*<p>设置坐标位置。相当于分别设置x和y属性。</p>
+		*<p>因为返回值为Sprite对象本身，所以可以使用如下语法：spr.pos(...).scale(...);</p>
+		*@param x X轴坐标。
+		*@param y Y轴坐标。
+		*@param speedMode （可选）是否极速模式，正常是调用this.x=value进行赋值，极速模式直接调用内部函数处理，如果未重写x,y属性，建议设置为急速模式性能更高。
 		*@return 返回对象本身。
 		*/
 		__proto.pos=function(x,y,speedMode){
@@ -36238,8 +38790,14 @@ var Laya=window.Laya=(function(window,document){
 					this._y=y;
 					this.conchModel && this.conchModel.pos(this._x,this._y);
 					var p=this._parent;
-					p && p._repaint===0 && (p._repaint=1,p.parentRepaint());
-					this._$P.maskParent && this._$P.maskParent._repaint===0 && (this._$P.maskParent._repaint=1,this._$P.maskParent.parentRepaint());
+					if (p && p._repaint===0){
+						p._repaint=1;
+						p.parentRepaint();
+					}
+					if (this._$P.maskParent && this._$P.maskParent._repaint===0){
+						this._$P.maskParent._repaint=1;
+						this._$P.maskParent.parentRepaint();
+					}
 					}else {
 					this.x=x;
 					this.y=y;
@@ -36249,7 +38807,8 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*设置轴心点。相当于分别设置pivotX和pivotY属性。
+		*<p>设置轴心点。相当于分别设置pivotX和pivotY属性。</p>
+		*<p>因为返回值为Sprite对象本身，所以可以使用如下语法：spr.pivot(...).pos(...);</p>
 		*@param x X轴心点。
 		*@param y Y轴心点。
 		*@return 返回对象本身。
@@ -36261,7 +38820,8 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*设置宽高。相当于分别设置width和height属性。
+		*<p>设置宽高。相当于分别设置width和height属性。</p>
+		*<p>因为返回值为Sprite对象本身，所以可以使用如下语法：spr.size(...).pos(...);</p>
 		*@param width 宽度值。
 		*@param hegiht 高度值。
 		*@return 返回对象本身。
@@ -36273,10 +38833,11 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*设置缩放。相当于分别设置scaleX和scaleY属性。
+		*<p>设置缩放。相当于分别设置scaleX和scaleY属性。</p>
+		*<p>因为返回值为Sprite对象本身，所以可以使用如下语法：spr.scale(...).pos(...);</p>
 		*@param scaleX X轴缩放比例。
 		*@param scaleY Y轴缩放比例。
-		*@param speedMode 是否极速模式，正常是调用this.scaleX=value进行赋值，极速模式直接调用内部函数处理，如果未重写scaleX,scaleY属性，建议设置为急速模式性能更高。
+		*@param speedMode （可选）是否极速模式，正常是调用this.scaleX=value进行赋值，极速模式直接调用内部函数处理，如果未重写scaleX,scaleY属性，建议设置为急速模式性能更高。
 		*@return 返回对象本身。
 		*/
 		__proto.scale=function(scaleX,scaleY,speedMode){
@@ -36291,7 +38852,10 @@ var Laya=window.Laya=(function(window,document){
 					this.conchModel && this.conchModel.scale(scaleX,scaleY);
 					this._renderType |=0x04;
 					var p=this._parent;
-					p && p._repaint===0 && (p._repaint=1,p.parentRepaint());
+					if (p && p._repaint===0){
+						p._repaint=1;
+						p.parentRepaint();
+					}
 					}else {
 					this.scaleX=scaleX;
 					this.scaleY=scaleY;
@@ -36301,7 +38865,8 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*设置倾斜角度。相当于分别设置skewX和skewY属性。
+		*<p>设置倾斜角度。相当于分别设置skewX和skewY属性。</p>
+		*<p>因为返回值为Sprite对象本身，所以可以使用如下语法：spr.skew(...).pos(...);</p>
 		*@param skewX 水平倾斜角度。
 		*@param skewY 垂直倾斜角度。
 		*@return 返回对象本身
@@ -36325,8 +38890,21 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*绘制 当前<code>Sprite</code> 到 <code>Canvas</code> 上，并返回一个HtmlCanvas
-		*注意：HtmlCanvas不是浏览器原生的canvas对象，可以通过canvas.source来获取原生的canvas对象。
+		*<p>绘制 当前<code>Sprite</code> 到 <code>Canvas</code> 上，并返回一个HtmlCanvas。</p>
+		*<p>绘制的结果可以当作图片源，再次绘制到其他Sprite里面，示例：</p>
+		*
+		*var htmlCanvas:HTMLCanvas=sprite.drawToCanvas(100,100,0,0);//把精灵绘制到canvas上面
+		*var texture:Texture=new Texture(htmlCanvas);//使用htmlCanvas创建Texture
+		*var sp:Sprite=new Sprite().pos(0,200);//创建精灵并把它放倒200位置
+		*sp.graphics.drawTexture(texture);//把截图绘制到精灵上
+		*Laya.stage.addChild(sp);//把精灵显示到舞台
+		*
+		*<p>也可以获取原始图片数据，分享到网上，从而实现截图效果，示例：</p>
+		*
+		*var htmlCanvas:HTMLCanvas=sprite.drawToCanvas(100,100,0,0);//把精灵绘制到canvas上面
+		*var canvas:*=htmlCanvas.getCanvas();//获取原生的canvas对象
+		*trace(canvas.toDataURL("image/png"));//打印图片base64信息，可以发给服务器或者保存为图片
+		*
 		*@param canvasWidth 画布宽度。
 		*@param canvasHeight 画布高度。
 		*@param x 绘制的 X 轴偏移量。
@@ -36334,11 +38912,19 @@ var Laya=window.Laya=(function(window,document){
 		*@return HTMLCanvas 对象。
 		*/
 		__proto.drawToCanvas=function(canvasWidth,canvasHeight,offsetX,offsetY){
-			return RunDriver.drawToCanvas(this,this._renderType,canvasWidth,canvasHeight,offsetX,offsetY);
+			if (Render.isConchNode){
+				var canvas=HTMLCanvas.create("2D");
+				var context=new RenderContext(canvasWidth,canvasHeight,canvas);
+				context.ctx.setCanvasType(1);
+				this.conchModel.drawToCanvas(canvas.source,offsetX,offsetY);
+				return canvas;
+				}else {
+				return RunDriver.drawToCanvas(this,this._renderType,canvasWidth,canvasHeight,offsetX,offsetY);
+			}
 		}
 
 		/**
-		*自定义更新、呈现显示对象。一般用来扩展渲染模式，请合理使用，可能会导致在加速器上无法渲染。
+		*<p>自定义更新、呈现显示对象。一般用来扩展渲染模式，请合理使用，可能会导致在加速器上无法渲染。</p>
 		*<p><b>注意</b>不要在此函数内增加或删除树节点，否则会对树节点遍历造成影响。</p>
 		*@param context 渲染的上下文引用。
 		*@param x X轴坐标。
@@ -36387,7 +38973,7 @@ var Laya=window.Laya=(function(window,document){
 		/**
 		*把本地坐标转换为相对stage的全局坐标。
 		*@param point 本地坐标点。
-		*@param createNewPoint 是否创建一个新的Point对象作为返回值，默认为false，使用输入的point对象返回，减少对象创建开销。
+		*@param createNewPoint （可选）是否创建一个新的Point对象作为返回值，默认为false，使用输入的point对象返回，减少对象创建开销。
 		*@return 转换后的坐标的点。
 		*/
 		__proto.localToGlobal=function(point,createNewPoint){
@@ -36407,7 +38993,7 @@ var Laya=window.Laya=(function(window,document){
 		/**
 		*把stage的全局坐标转换为本地坐标。
 		*@param point 全局坐标点。
-		*@param createNewPoint 是否创建一个新的Point对象作为返回值，默认为false，使用输入的point对象返回，减少对象创建开销。
+		*@param createNewPoint （可选）是否创建一个新的Point对象作为返回值，默认为false，使用输入的point对象返回，减少对象创建开销。
 		*@return 转换后的坐标的点。
 		*/
 		__proto.globalToLocal=function(point,createNewPoint){
@@ -36476,41 +39062,43 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*增加事件侦听器，以使侦听器能够接收事件通知。
-		*如果侦听鼠标事件，则会自动设置自己和父亲节点的属性 mouseEnabled 的值为 true(如果父节点mouseEnabled=false，则停止设置父节点mouseEnabled属性)。
+		*<p>增加事件侦听器，以使侦听器能够接收事件通知。</p>
+		*<p>如果侦听鼠标事件，则会自动设置自己和父亲节点的属性 mouseEnabled 的值为 true(如果父节点mouseEnabled=false，则停止设置父节点mouseEnabled属性)。</p>
 		*@param type 事件的类型。
 		*@param caller 事件侦听函数的执行域。
 		*@param listener 事件侦听函数。
-		*@param args 事件侦听函数的回调参数。
+		*@param args （可选）事件侦听函数的回调参数。
 		*@return 此 EventDispatcher 对象。
 		*/
 		__proto.on=function(type,caller,listener,args){
 			if (this._mouseEnableState!==1 && this.isMouseEvent(type)){
 				this.mouseEnabled=true;
 				this._setBit(0x2,true);
-				if (this.parent){
+				if (this._parent){
 					this._$2__onDisplay();
 				}
+				return this._createListener(type,caller,listener,args,false);
 			}
 			return _super.prototype.on.call(this,type,caller,listener,args);
 		}
 
 		/**
-		*增加事件侦听器，以使侦听器能够接收事件通知，此侦听事件响应一次后则自动移除侦听。
-		*如果侦听鼠标事件，则会自动设置自己和父亲节点的属性 mouseEnabled 的值为 true(如果父节点mouseEnabled=false，则停止设置父节点mouseEnabled属性)。
+		*<p>增加事件侦听器，以使侦听器能够接收事件通知，此侦听事件响应一次后则自动移除侦听。</p>
+		*<p>如果侦听鼠标事件，则会自动设置自己和父亲节点的属性 mouseEnabled 的值为 true(如果父节点mouseEnabled=false，则停止设置父节点mouseEnabled属性)。</p>
 		*@param type 事件的类型。
 		*@param caller 事件侦听函数的执行域。
 		*@param listener 事件侦听函数。
-		*@param args 事件侦听函数的回调参数。
+		*@param args （可选）事件侦听函数的回调参数。
 		*@return 此 EventDispatcher 对象。
 		*/
 		__proto.once=function(type,caller,listener,args){
 			if (this._mouseEnableState!==1 && this.isMouseEvent(type)){
 				this.mouseEnabled=true;
 				this._setBit(0x2,true);
-				if (this.parent){
+				if (this._parent){
 					this._$2__onDisplay();
 				}
+				return this._createListener(type,caller,listener,args,true);
 			}
 			return _super.prototype.once.call(this,type,caller,listener,args);
 		}
@@ -36530,15 +39118,15 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*加载并显示一个图片。功能等同于graphics.loadImage方法。支持异步加载。
-		*注意：多次调用loadImage绘制不同的图片，会同时显示。
+		*<p>加载并显示一个图片。功能等同于graphics.loadImage方法。支持异步加载。</p>
+		*<p>注意：多次调用loadImage绘制不同的图片，会同时显示。</p>
 		*@param url 图片地址。
-		*@param x 显示图片的x位置
-		*@param y 显示图片的y位置
-		*@param width 显示图片的宽度，设置为0表示使用图片默认宽度
-		*@param height 显示图片的高度，设置为0表示使用图片默认高度
-		*@param complete 加载完成回调
-		*@return 返回精灵对象本身
+		*@param x （可选）显示图片的x位置。
+		*@param y （可选）显示图片的y位置。
+		*@param width （可选）显示图片的宽度，设置为0表示使用图片默认宽度。
+		*@param height （可选）显示图片的高度，设置为0表示使用图片默认高度。
+		*@param complete （可选）加载完成回调。
+		*@return 返回精灵对象本身。
 		*/
 		__proto.loadImage=function(url,x,y,width,height,complete){
 			var _$this=this;
@@ -36560,7 +39148,10 @@ var Laya=window.Laya=(function(window,document){
 		/**cacheAs后，设置自己和父对象缓存失效。*/
 		__proto.repaint=function(){
 			this.conchModel && this.conchModel.repaint && this.conchModel.repaint();
-			(this._repaint===0)&& (this._repaint=1,this.parentRepaint());
+			if (this._repaint===0){
+				this._repaint=1;
+				this.parentRepaint();
+			}
 			if (this._$P && this._$P.maskParent){
 				this._$P.maskParent.repaint();
 			}
@@ -36586,18 +39177,21 @@ var Laya=window.Laya=(function(window,document){
 		/**cacheAs时，设置所有父对象缓存失效。 */
 		__proto.parentRepaint=function(){
 			var p=this._parent;
-			p && p._repaint===0 && (p._repaint=1,p.parentRepaint());
+			if (p && p._repaint===0){
+				p._repaint=1;
+				p.parentRepaint();
+			}
 		}
 
 		/**
 		*开始拖动此对象。
-		*@param area 拖动区域，此区域为当前对象注册点活动区域（不包括对象宽高），可选。
-		*@param hasInertia 鼠标松开后，是否还惯性滑动，默认为false，可选。
-		*@param elasticDistance 橡皮筋效果的距离值，0为无橡皮筋效果，默认为0，可选。
-		*@param elasticBackTime 橡皮筋回弹时间，单位为毫秒，默认为300毫秒，可选。
-		*@param data 拖动事件携带的数据，可选。
-		*@param disableMouseEvent 禁用其他对象的鼠标检测，默认为false，设置为true能提高性能。
-		*@param ratio 惯性阻尼系数，影响惯性力度和时长。
+		*@param area （可选）拖动区域，此区域为当前对象注册点活动区域（不包括对象宽高），可选。
+		*@param hasInertia （可选）鼠标松开后，是否还惯性滑动，默认为false，可选。
+		*@param elasticDistance （可选）橡皮筋效果的距离值，0为无橡皮筋效果，默认为0，可选。
+		*@param elasticBackTime （可选）橡皮筋回弹时间，单位为毫秒，默认为300毫秒，可选。
+		*@param data （可选）拖动事件携带的数据，可选。
+		*@param disableMouseEvent （可选）禁用其他对象的鼠标检测，默认为false，设置为true能提高性能。
+		*@param ratio （可选）惯性阻尼系数，影响惯性力度和时长。
 		*/
 		__proto.startDrag=function(area,hasInertia,elasticDistance,elasticBackTime,data,disableMouseEvent,ratio){
 			(hasInertia===void 0)&& (hasInertia=false);
@@ -36642,7 +39236,7 @@ var Laya=window.Laya=(function(window,document){
 		*/
 		__proto.hitTestPoint=function(x,y){
 			var point=this.globalToLocal(Point.TEMP.setTo(x,y));
-			var rect=this._$P.hitArea ? this._$P.hitArea :Rectangle.TEMP.setTo(0,0,this._width,this._height);
+			var rect=this._$P.hitArea ? this._$P.hitArea :(this._width > 0 && this._height > 0)? Rectangle.TEMP.setTo(0,0,this._width,this._height):this.getSelfBounds();
 			return rect.contains(point.x,point.y);
 		}
 
@@ -36750,7 +39344,7 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*指定显示对象是否缓存为静态图像。功能同cacheAs的normal模式。
+		*指定显示对象是否缓存为静态图像。功能同cacheAs的normal模式。建议优先使用cacheAs代替。
 		*/
 		__getset(0,__proto,'cacheAsBitmap',function(){
 			return this.cacheAs!=="none";
@@ -36760,12 +39354,12 @@ var Laya=window.Laya=(function(window,document){
 
 		/**
 		*<p>指定显示对象是否缓存为静态图像，cacheAs时，子对象发生变化，会自动重新缓存，同时也可以手动调用reCache方法更新缓存。</p>
-		*建议把不经常变化的“复杂内容”缓存为静态图像，能极大提高渲染性能。cacheAs有"none"，"normal"和"bitmap"三个值可选。
+		*<p>建议把不经常变化的“复杂内容”缓存为静态图像，能极大提高渲染性能。cacheAs有"none"，"normal"和"bitmap"三个值可选。
 		*<li>默认为"none"，不做任何缓存。</li>
 		*<li>当值为"normal"时，canvas模式下进行画布缓存，webgl模式下进行命令缓存。</li>
-		*<li>当值为"bitmap"时，canvas模式下进行依然是画布缓存，webgl模式下使用renderTarget缓存。</li>
-		*webgl下renderTarget缓存模式有最大2048大小限制，会额外增加内存开销，不断重绘时开销比较大，但是会减少drawcall，渲染性能最高。
-		*webgl下命令缓存模式只会减少节点遍历及命令组织，不会减少drawcall，性能中等。
+		*<li>当值为"bitmap"时，canvas模式下进行依然是画布缓存，webgl模式下使用renderTarget缓存。</li></p>
+		*<p>webgl下renderTarget缓存模式缺点：会额外创建renderTarget对象，增加内存开销，缓存面积有最大2048限制，不断重绘时会增加CPU开销。优点：大幅减少drawcall，渲染性能最高。
+		*webgl下命令缓存模式缺点：只会减少节点遍历及命令组织，不会减少drawcall数，性能中等。优点：没有额外内存开销，无需renderTarget支持。</p>
 		*/
 		__getset(0,__proto,'cacheAs',function(){
 			return this._$P.cacheCanvas==null ? "none" :this._$P.cacheCanvas.type;
@@ -36773,7 +39367,7 @@ var Laya=window.Laya=(function(window,document){
 			var cacheCanvas=this._$P.cacheCanvas;
 			if (value===(cacheCanvas ? cacheCanvas.type :"none"))return;
 			if (value!=="none"){
-				if(!this._getBit(0x1))this._setUpNoticeType(0x1);
+				if (!this._getBit(0x1))this._setUpNoticeType(0x1);
 				cacheCanvas || (cacheCanvas=this._set$P("cacheCanvas",Pool.getItemByClass("cacheCanvas",Object)));
 				cacheCanvas.type=value;
 				cacheCanvas.reCache=true;
@@ -36784,7 +39378,15 @@ var Laya=window.Laya=(function(window,document){
 				if (this._$P["hasFilter"]){
 					this._set$P("cacheForFilters",true);
 					}else {
-					if (cacheCanvas)Pool.recover("cacheCanvas",cacheCanvas);
+					if (cacheCanvas){
+						var cc=cacheCanvas;
+						if (cc && cc.ctx){
+							Pool.recover("RenderContext",cc.ctx);
+							cc.ctx.canvas.size(0,0);
+							cc.ctx=null;
+						}
+						Pool.recover("cacheCanvas",cacheCanvas);
+					}
 					this._$P.cacheCanvas=null;
 					this._renderType &=~0x10;
 					this.conchModel && this.conchModel.cacheAs(0);
@@ -36818,19 +39420,27 @@ var Laya=window.Laya=(function(window,document){
 				this.conchModel && this.conchModel.rotate(value);
 				this._renderType |=0x04;
 				var p=this._parent;
-				p && p._repaint===0 && (p._repaint=1,p.parentRepaint());
+				if (p && p._repaint===0){
+					p._repaint=1;
+					p.parentRepaint();
+				}
 			}
 		});
 
 		/**
-		*表示显示对象的宽度，以像素为单位。
-		*宽度默认为0，可以手动设置，或者通过getbounds获取实际宽度。设置此宽度只用来做鼠标碰撞使用，改变后并不影响显示对象大小。
+		*<p>显示对象的宽度，单位为像素，默认为0。</p>
+		*<p>此宽度用于鼠标碰撞检测，并不影响显示对象图像大小。需要对显示对象的图像进行缩放，请使用scale、scaleX、scaleY。</p>
+		*<p>可以通过getbounds获取显示对象图像的实际宽度。</p>
 		*/
 		__getset(0,__proto,'width',function(){
 			if (!this.autoSize)return this._width;
 			return this.getSelfBounds().width;
 			},function(value){
-			this._width!==value && (this._width=value,this.conchModel && this.conchModel.size(value,this._height),this.repaint());
+			if (this._width!==value){
+				this._width=value;
+				this.conchModel && this.conchModel.size(value,this._height)
+				this.repaint();
+			}
 		});
 
 		/**表示显示对象相对于父容器的水平方向坐标值。*/
@@ -36842,8 +39452,14 @@ var Laya=window.Laya=(function(window,document){
 				this._x=value;
 				this.conchModel && this.conchModel.pos(value,this._y);
 				var p=this._parent;
-				p && p._repaint===0 && (p._repaint=1,p.parentRepaint());
-				this._$P.maskParent && this._$P.maskParent._repaint===0 && (this._$P.maskParent._repaint=1,this._$P.maskParent.parentRepaint());
+				if (p && p._repaint===0){
+					p._repaint=1;
+					p.parentRepaint();
+				}
+				if (this._$P.maskParent && this._$P.maskParent._repaint===0){
+					this._$P.maskParent._repaint=1;
+					this._$P.maskParent.parentRepaint();
+				}
 			}
 		});
 
@@ -36855,14 +39471,15 @@ var Laya=window.Laya=(function(window,document){
 			var ele=this;
 			while (ele){
 				if (ele===Laya.stage)break ;
-				scale *=ele.scaleX;
+				scale *=ele.scaleY;
 				ele=ele.parent;
 			}
 			return scale;
 		});
 
-		/**可以设置一个Rectangle区域作为点击区域，或者设置一个<code>HitArea</code>实例作为点击区域，HitArea内可以设置可点击和不可点击区域。
-		*如果不设置hitArea，则根据宽高形成的区域进行碰撞。
+		/**
+		*<p>可以设置一个Rectangle区域作为点击区域，或者设置一个<code>HitArea</code>实例作为点击区域，HitArea内可以设置可点击和不可点击区域。</p>
+		*<p>如果不设置hitArea，则根据宽高形成的区域进行碰撞。</p>
 		*/
 		__getset(0,__proto,'hitArea',function(){
 			return this._$P.hitArea;
@@ -36870,7 +39487,10 @@ var Laya=window.Laya=(function(window,document){
 			this._set$P("hitArea",value);
 		});
 
-		/**设置cacheAs为非空时此值才有效，staticCache=true时，子对象变化时不会自动更新缓存，只能通过调用reCache方法手动刷新。*/
+		/**
+		*是否静态缓存此对象的当前帧的最终属性。为 true 时，子对象变化时不会自动更新缓存，但是可以通过调用 reCache 方法手动刷新。
+		*<b>注意：</b> 1. 设置 cacheAs 为非空和非"none"时才有效。 2. 由于渲染的时机在脚本执行之后，也就是说当前帧渲染的是对象的最终属性，所以如果在当前帧渲染之前、设置静态缓存之后改变对象属性，则最终渲染结果表现的是对象的最终属性。
+		*/
 		__getset(0,__proto,'staticCache',function(){
 			return this._$P.staticCache;
 			},function(value){
@@ -36897,20 +39517,31 @@ var Laya=window.Laya=(function(window,document){
 				this._y=value;
 				this.conchModel && this.conchModel.pos(this._x,value);
 				var p=this._parent;
-				p && p._repaint===0 && (p._repaint=1,p.parentRepaint());
-				this._$P.maskParent && this._$P.maskParent._repaint===0 && (this._$P.maskParent._repaint=1,this._$P.maskParent.parentRepaint());
+				if (p && p._repaint===0){
+					p._repaint=1;
+					p.parentRepaint();
+				}
+				if (this._$P.maskParent && this._$P.maskParent._repaint===0){
+					this._$P.maskParent._repaint=1;
+					this._$P.maskParent.parentRepaint();
+				}
 			}
 		});
 
 		/**
-		*表示显示对象的高度，以像素为单位。
-		*高度默认为0，可以手动设置，或者通过getbounds获取实际宽度。设置此高度只用来做鼠标碰撞使用，改变后并不影响显示对象大小。
+		*<p>显示对象的高度，单位为像素，默认为0。</p>
+		*<p>此高度用于鼠标碰撞检测，并不影响显示对象图像大小。需要对显示对象的图像进行缩放，请使用scale、scaleX、scaleY。</p>
+		*<p>可以通过getbounds获取显示对象图像的实际高度。</p>
 		*/
 		__getset(0,__proto,'height',function(){
 			if (!this.autoSize)return this._height;
 			return this.getSelfBounds().height;
 			},function(value){
-			this._height!==value && (this._height=value,this.conchModel && this.conchModel.size(this._width,value),this.repaint());
+			if (this._height!==value){
+				this._height=value;
+				this.conchModel && this.conchModel.size(this._width,value);
+				this.repaint();
+			}
 		});
 
 		/**指定要使用的混合模式。目前只支持"lighter"。*/
@@ -36973,17 +39604,22 @@ var Laya=window.Laya=(function(window,document){
 			if (style._tf.skewX!==value){
 				style.setSkewX(value);
 				this._tfChanged=true;
+				this.conchModel && this.conchModel.skew(value,style._tf.skewY);
 				this._renderType |=0x04;
 				var p=this._parent;
-				p && p._repaint===0 && (p._repaint=1,p.parentRepaint());
+				if (p && p._repaint===0){
+					p._repaint=1;
+					p.parentRepaint();
+				}
 			}
 		});
 
-		/**显示对象的滚动矩形范围，具有裁剪效果(如果只想限制子对象渲染区域，请使用viewport)，设置optimizeScrollRect=true，可以优化裁剪区域外的内容不进行渲染。
-		*srollRect和viewport的区别：
-		*1.srollRect自带裁剪效果，viewport只影响子对象渲染是否渲染，不具有裁剪效果（性能更高）。
-		*2.设置rect的x,y属性均能实现区域滚动效果，但scrollRect会保持0,0点位置不变。
-		**/
+		/**
+		*<p>显示对象的滚动矩形范围，具有裁剪效果(如果只想限制子对象渲染区域，请使用viewport)，设置optimizeScrollRect=true，可以优化裁剪区域外的内容不进行渲染。</p>
+		*<p> srollRect和viewport的区别：<br/>
+		*1.srollRect自带裁剪效果，viewport只影响子对象渲染是否渲染，不具有裁剪效果（性能更高）。<br/>
+		*2.设置rect的x,y属性均能实现区域滚动效果，但scrollRect会保持0,0点位置不变。</p>
+		*/
 		__getset(0,__proto,'scrollRect',function(){
 			return this._style.scrollRect;
 			},function(value){
@@ -37014,13 +39650,16 @@ var Laya=window.Laya=(function(window,document){
 				this.conchModel && this.conchModel.skew(style._tf.skewX,value);
 				this._renderType |=0x04;
 				var p=this._parent;
-				p && p._repaint===0 && (p._repaint=1,p.parentRepaint());
+				if (p && p._repaint===0){
+					p._repaint=1;
+					p.parentRepaint();
+				}
 			}
 		});
 
 		/**
-		*对象的矩阵信息。通过设置矩阵可以实现节点旋转，缩放，位移效果。
-		*矩阵更多信息请参考 <code>Matrix</code>
+		*<p>对象的矩阵信息。通过设置矩阵可以实现节点旋转，缩放，位移效果。</p>
+		*<p>矩阵更多信息请参考 <code>Matrix</code></p>
 		*/
 		__getset(0,__proto,'transform',function(){
 			return this._tfChanged ? this._adjustTransform():this._transform;
@@ -37134,7 +39773,7 @@ var Laya=window.Laya=(function(window,document){
 				}
 			}
 			if (value && value.length > 0){
-				if(!this._getBit(0x1))this._setUpNoticeType(0x1);
+				if (!this._getBit(0x1))this._setUpNoticeType(0x1);
 				if (!(Render.isWebGL && value.length==1 && (((value[0])instanceof laya.filters.ColorFilter )))){
 					if (this.cacheAs !="bitmap"){
 						if (!Render.isConchNode)this.cacheAs="bitmap";
@@ -37158,8 +39797,10 @@ var Laya=window.Laya=(function(window,document){
 			}
 		});
 
-		/**遮罩，可以设置一个对象(支持位图和矢量图)，根据对象形状进行遮罩显示。
-		*【注意】遮罩对象坐标系是相对遮罩对象本身的，和Flash机制不同*/
+		/**
+		*<p>遮罩，可以设置一个对象(支持位图和矢量图)，根据对象形状进行遮罩显示。</p>
+		*<p>【注意】遮罩对象坐标系是相对遮罩对象本身的，和Flash机制不同</p>
+		*/
 		__getset(0,__proto,'mask',function(){
 			return this._$P._mask;
 			},function(value){
@@ -37278,6 +39919,7 @@ var Laya=window.Laya=(function(window,document){
 		*播放
 		*/
 		__proto.play=function(){
+			this.isStopped=false;
 			try {
 				this._audio.playbackRate=SoundManager.playbackRate;
 				this._audio.currentTime=this.startTime;
@@ -37285,6 +39927,7 @@ var Laya=window.Laya=(function(window,document){
 				this._audio.addEventListener("canplay",this._resumePlay);
 				return;
 			}
+			SoundManager.addChannel(this);
 			Browser.container.appendChild(this._audio);
 			if("play" in this._audio)
 				this._audio.play();
@@ -37300,13 +39943,36 @@ var Laya=window.Laya=(function(window,document){
 			this.completeHandler=null;
 			if (!this._audio)
 				return;
-			if("pause" in this._audio)
-				this._audio.pause();
+			if ("pause" in this._audio)
+				if (Render.isConchApp){
+				this._audio.stop();
+			}
+			this._audio.pause();
 			this._audio.removeEventListener("ended",this._onEnd);
 			this._audio.removeEventListener("canplay",this._resumePlay);
-			Pool.recover("audio:"+this.url,this._audio);
+			if (!Browser.onIE){
+				if (this._audio!=AudioSound._musicAudio){
+					Pool.recover("audio:"+this.url,this._audio);
+				}
+			}
 			Browser.removeElement(this._audio);
 			this._audio=null;
+		}
+
+		__proto.pause=function(){
+			this.isStopped=true;
+			SoundManager.removeChannel(this);
+			if("pause" in this._audio)
+				this._audio.pause();
+		}
+
+		__proto.resume=function(){
+			if (!this._audio)
+				return;
+			this.isStopped=false;
+			SoundManager.addChannel(this);
+			if("play" in this._audio)
+				this._audio.play();
 		}
 
 		/**
@@ -37364,6 +40030,7 @@ var Laya=window.Laya=(function(window,document){
 			this._currentTime=0;
 			this._volume=1;
 			this._startTime=0;
+			this._pauseTime=0;
 			this._onPlayEnd=null;
 			this.context=WebAudioSound.ctx;
 			WebAudioSoundChannel.__super.call(this);
@@ -37381,6 +40048,8 @@ var Laya=window.Laya=(function(window,document){
 		*播放声音
 		*/
 		__proto.play=function(){
+			SoundManager.addChannel(this);
+			this.isStopped=false;
 			this._clearBufferSource();
 			if (!this.audioBuffer)return;
 			var context=this.context;
@@ -37393,6 +40062,7 @@ var Laya=window.Laya=(function(window,document){
 				gain.disconnect();
 			gain.connect(context.destination);
 			bufferSource.onended=this._onPlayEnd;
+			if (this.startTime >=this.duration)this.startTime=0;
 			this._startTime=Browser.now();
 			this.gain.gain.value=this._volume;
 			if (this.loops==0){
@@ -37435,6 +40105,10 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__proto._tryClearBuffer=function(sourceNode){
+			if (!Browser.onIOS){
+				WebAudioSoundChannel._tryCleanFailed=true;
+				return;
+			}
 			try {sourceNode.buffer=WebAudioSound._miniBuffer;}catch (e){WebAudioSoundChannel._tryCleanFailed=true;}
 		}
 
@@ -37449,6 +40123,26 @@ var Laya=window.Laya=(function(window,document){
 			this.isStopped=true;
 			SoundManager.removeChannel(this);
 			this.completeHandler=null;
+			if(SoundManager.autoReleaseSound)
+				Laya.timer.once(5000,null,SoundManager.disposeSoundIfNotUsed,[this.url],false);
+		}
+
+		__proto.pause=function(){
+			if (!this.isStopped){
+				this._pauseTime=this.position;
+			}
+			this._clearBufferSource();
+			if (this.gain)
+				this.gain.disconnect();
+			this.isStopped=true;
+			SoundManager.removeChannel(this);
+			if(SoundManager.autoReleaseSound)
+				Laya.timer.once(5000,null,SoundManager.disposeSoundIfNotUsed,[this.url],false);
+		}
+
+		__proto.resume=function(){
+			this.startTime=this._pauseTime;
+			this.play();
 		}
 
 		/**
@@ -37511,6 +40205,7 @@ var Laya=window.Laya=(function(window,document){
 		*彻底清理资源。
 		*/
 		__proto.dispose=function(){
+			if (this.disposed)return;
 			this._resourceManager.removeResource(this);
 			_super.prototype.dispose.call(this);
 		}
@@ -37648,7 +40343,8 @@ var Laya=window.Laya=(function(window,document){
 				else Loader.parserMap[type].call(null,this);
 				return;
 			}
-			url=url+"?v="+Math.random();
+			if(url.indexOf("data:image/png")<0)
+				url=url+"?v="+Math.random();
 			if (type==="image" || type==="htmlimage" || type==="nativeimage")return this._loadImage(url);
 			if (type==="sound")return this._loadSound(url);
 			if (!this._http){
@@ -37828,7 +40524,8 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*动画播放基类
+	*<p>动画播放基类，提供了基础的动画播放控制方法和帧标签事件相关功能。</p>
+	*<p>可以继承此类，但不要直接实例化此类，因为有些方法需要由子类实现。</p>
 	*/
 	//class laya.display.AnimationPlayerBase extends laya.display.Sprite
 	var AnimationPlayerBase=(function(_super){
@@ -37851,10 +40548,11 @@ var Laya=window.Laya=(function(window,document){
 		__class(AnimationPlayerBase,'laya.display.AnimationPlayerBase',_super);
 		var __proto=AnimationPlayerBase.prototype;
 		/**
-		*播放动画。
-		*@param start 开始播放的动画索引或label。
-		*@param loop 是否循环。
-		*@param name 如果name为空(可选)，则播放当前动画，如果不为空，则播放全局缓存动画（如果有）
+		*<p>开始播放动画。play(...)方法被设计为在创建实例后的任何时候都可以被调用，当相应的资源加载完毕、调用动画帧填充方法(set frames)或者将实例显示在舞台上时，会判断是否正在播放中，如果是，则进行播放。</p>
+		*<p>配合wrapMode属性，可设置动画播放顺序类型。</p>
+		*@param start （可选）指定动画播放开始的索引(int)或帧标签(String)。帧标签可以通过addLabel(...)和removeLabel(...)进行添加和删除。
+		*@param loop （可选）是否循环播放。
+		*@param name （可选）动画名称。
 		*/
 		__proto.play=function(start,loop,name){
 			(start===void 0)&& (start=0);
@@ -37866,7 +40564,7 @@ var Laya=window.Laya=(function(window,document){
 			this._actionName=name;
 			this._isReverse=this.wrapMode==1;
 			if (this.interval > 0){
-				this.timerLoop(this.interval,this,this._frameLoop,null,true);
+				this.timerLoop(this.interval,this,this._frameLoop,null,true,true);
 			}
 		}
 
@@ -37874,7 +40572,7 @@ var Laya=window.Laya=(function(window,document){
 		__proto._getFrameByLabel=function(label){
 			var i=0;
 			for (i=0;i < this._count;i++){
-				if (this._labels[i]==label)return i;
+				if (this._labels[i] && (this._labels [i]).indexOf(label)>=0)return i;
 			}
 			return 0;
 		}
@@ -37924,24 +40622,24 @@ var Laya=window.Laya=(function(window,document){
 		/**@private */
 		__proto._setControlNode=function(node){
 			if (this._controlNode){
-				this._controlNode.off("display",this,this._$3__onDisplay);
-				this._controlNode.off("undisplay",this,this._$3__onDisplay);
+				this._controlNode.off("display",this,this._checkResumePlaying);
+				this._controlNode.off("undisplay",this,this._checkResumePlaying);
 			}
 			this._controlNode=node;
 			if (node && node !=this){
-				node.on("display",this,this._$3__onDisplay);
-				node.on("undisplay",this,this._$3__onDisplay);
+				node.on("display",this,this._checkResumePlaying);
+				node.on("undisplay",this,this._checkResumePlaying);
 			}
 		}
 
 		/**@private */
 		__proto._setDisplay=function(value){
 			_super.prototype._setDisplay.call(this,value);
-			this._$3__onDisplay();
+			this._checkResumePlaying();
 		}
 
 		/**@private */
-		__proto._$3__onDisplay=function(){
+		__proto._checkResumePlaying=function(){
 			if (this._isPlaying){
 				if (this._controlNode.displayedInStage)this.play(this._index,this.loop,this._actionName);
 				else this.clearTimer(this,this._frameLoop);
@@ -37949,7 +40647,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*停止播放。
+		*停止动画播放。
 		*/
 		__proto.stop=function(){
 			this._isPlaying=false;
@@ -37957,34 +40655,42 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*增加一个标签到index帧上，播放到此index后会派发label事件
-		*@param label 标签名称
-		*@param index 索引位置
+		*增加一个帧标签到指定索引的帧上。当动画播放到此索引的帧时会派发Event.LABEL事件，派发事件是在完成当前帧画面更新之后。
+		*@param label 帧标签名称
+		*@param index 帧索引
 		*/
 		__proto.addLabel=function(label,index){
 			if (!this._labels)this._labels={};
-			this._labels[index]=label;
+			if (!this._labels[index])this._labels[index]=[];
+			this._labels[index].push(label);
 		}
 
 		/**
-		*删除某个标签
-		*@param label 标签名字，如果label为空，则删除所有Label
+		*删除指定的帧标签。
+		*@param label 帧标签名称。注意：如果为空，则删除所有帧标签！
 		*/
 		__proto.removeLabel=function(label){
 			if (!label)this._labels=null;
 			else if (this._labels){
 				for (var name in this._labels){
-					if (this._labels[name]===label){
-						delete this._labels[name];
-						break ;
-					}
+					this._removeLabelFromLabelList(this._labels[name],label);
+				}
+			}
+		}
+
+		/**@private */
+		__proto._removeLabelFromLabelList=function(list,label){
+			if (!list)return;
+			for (var i=list.length-1;i >=0;i--){
+				if (list[i]==label){
+					list.splice(i,1);
 				}
 			}
 		}
 
 		/**
-		*切换到某帧并停止
-		*@param position 帧索引或label
+		*将动画切换到指定帧并停在那里。
+		*@param position 帧索引或帧标签
 		*/
 		__proto.gotoAndStop=function(position){
 			this.index=((typeof position=='string'))? this._getFrameByLabel(position):position;
@@ -37997,13 +40703,18 @@ var Laya=window.Laya=(function(window,document){
 		*@param value 帧索引
 		*/
 		__proto._displayToIndex=function(value){}
-		/**清理。方便对象复用。*/
+		/**
+		*停止动画播放，并清理对象属性。之后可存入对象池，方便对象复用。
+		*/
 		__proto.clear=function(){
 			this.stop();
 			this._labels=null;
 		}
 
-		/**播放间隔(单位：毫秒)，默认为50毫秒，可以通过Config.animationInterval修改默认时间间隔。*/
+		/**
+		*<p>动画播放的帧间隔时间(单位：毫秒)。默认值依赖于Config.animationInterval=50，通过Config.animationInterval可以修改默认帧间隔时间。</p>
+		*<p>要想为某动画设置独立的帧间隔时间，可以使用set interval，注意：如果动画正在播放，设置后会重置帧循环定时器的起始时间为当前时间，也就是说，如果频繁设置interval，会导致动画帧更新的时间间隔会比预想的要慢，甚至不更新。</p>
+		*/
 		__getset(0,__proto,'interval',function(){
 			return this._interval;
 			},function(value){
@@ -38011,40 +40722,54 @@ var Laya=window.Laya=(function(window,document){
 				this._frameRateChanged=true;
 				this._interval=value;
 				if (this._isPlaying && value > 0){
-					this.timerLoop(value,this,this._frameLoop,null,true);
+					this.timerLoop(value,this,this._frameLoop,null,true,true);
 				}
 			}
 		});
 
 		/**
-		*是否在播放中
+		*是否正在播放中。
 		*/
 		__getset(0,__proto,'isPlaying',function(){
 			return this._isPlaying;
 		});
 
-		/**当前播放索引。*/
+		/**
+		*动画当前帧的索引。
+		*/
 		__getset(0,__proto,'index',function(){
 			return this._index;
 			},function(value){
 			this._index=value;
 			this._displayToIndex(value);
-			if (this._labels && this._labels[value])this.event("label",this._labels[value]);
+			if (this._labels && this._labels[value]){
+				var tArr=this._labels[value];
+				for (var i=0,len=tArr.length;i < len;i++){
+					this.event("label",tArr[i]);
+				}
+			}
 		});
 
-		/**动画长度。*/
+		/**
+		*当前动画中帧的总数。
+		*/
 		__getset(0,__proto,'count',function(){
 			return this._count;
 		});
 
+		AnimationPlayerBase.WRAP_POSITIVE=0;
+		AnimationPlayerBase.WRAP_REVERSE=1;
+		AnimationPlayerBase.WRAP_PINGPONG=2;
 		return AnimationPlayerBase;
 	})(Sprite)
 
 
 	/**
 	*<p> <code>Text</code> 类用于创建显示对象以显示文本。</p>
-	*@example 以下示例代码，创建了一个 <code>Text</code> 实例。
-	*<listing version="3.0">
+	*<p>
+	*注意：如果运行时系统找不到设定的字体，则用系统默认的字体渲染文字，从而导致显示异常。(通常电脑上显示正常，在一些移动端因缺少设置的字体而显示异常)。
+	*</p>
+	*@example
 	*package
 	*{
 		*import laya.display.Text;
@@ -38075,8 +40800,7 @@ var Laya=window.Laya=(function(window,document){
 				*}
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*Text_Example();
 	*function Text_Example()
 	*{
@@ -38101,8 +40825,7 @@ var Laya=window.Laya=(function(window,document){
 		*text.borderColor="#fff000";//设置 text 的文本边框颜色。
 		*Laya.stage.addChild(text);//将 text 添加到显示列表。
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*class Text_Example {
 		*constructor(){
 			*Laya.init(640,800);//设置游戏画布宽高、渲染模式。
@@ -38126,7 +40849,6 @@ var Laya=window.Laya=(function(window,document){
 			*Laya.stage.addChild(text);//将 text 添加到显示列表。
 			*}
 		*}
-	*</listing>
 	*/
 	//class laya.display.Text extends laya.display.Sprite
 	var Text=(function(_super){
@@ -38179,7 +40901,8 @@ var Laya=window.Laya=(function(window,document){
 		/**
 		*@inheritDoc
 		*/
-		__proto.getGraphicBounds=function(){
+		__proto.getGraphicBounds=function(realSize){
+			(realSize===void 0)&& (realSize=false);
 			var rec=Rectangle.TEMP;
 			rec.setTo(0,0,this.width,this.height);
 			return rec;
@@ -38225,8 +40948,8 @@ var Laya=window.Laya=(function(window,document){
 		*/
 		__proto.renderText=function(begin,visibleLineCount){
 			var graphics=this.graphics;
-			graphics.clear();
-			var ctxFont=(this.italic ? "italic " :"")+(this.bold ? "bold " :"")+this.fontSize+"px "+this.font;
+			graphics.clear(true);
+			var ctxFont=(this.italic ? "italic " :"")+(this.bold ? "bold " :"")+this.fontSize+"px "+(Browser.onIPhone ? (laya.display.Text._fontFamilyMap[this.font] || this.font):this.font);
 			Browser.context.font=ctxFont;
 			var padding=this.padding;
 			var startX=padding[3];
@@ -38349,7 +41072,7 @@ var Laya=window.Laya=(function(window,document){
 			if (!this._text){
 				this._clipPoint=null;
 				this._textWidth=this._textHeight=0;
-				this.graphics.clear();
+				this.graphics.clear(true);
 				return;
 			}
 			Browser.context.font=this._getCSSStyle().font;
@@ -38391,7 +41114,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*快速更改显示文本。不进行排版计算，效率较高。
+		*<p>快速更改显示文本。不进行排版计算，效率较高。</p>
 		*<p>如果只更改文字内容，不更改文字样式，建议使用此接口，能提高效率。</p>
 		*@param text 文本内容。
 		*/
@@ -38466,7 +41189,7 @@ var Laya=window.Laya=(function(window,document){
 					if (this.wordWrap){
 						var newLine=line.substring(startIndex,j);
 						if (newLine.charCodeAt(newLine.length-1)< 255){
-							execResult=/[^\x20-]+$/.exec(newLine);
+							execResult=/(?:\w|-)+$/.exec(newLine);
 							if (execResult){
 								j=execResult.index+startIndex;
 								if (execResult.index==0)
@@ -38527,10 +41250,10 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*返回字符的位置信息。
+		*返回字符在本类实例的父坐标系下的坐标。
 		*@param charIndex 索引位置。
-		*@param out 输出的Point引用。
-		*@return 返回Point位置信息。
+		*@param out （可选）输出的Point引用。
+		*@return Point 字符在本类实例的父坐标系下的坐标。如果out参数不为空，则将结果赋值给指定的Point对象，否则创建一个新的Point对象返回。建议使用Point.TEMP作为out参数，可以省去Point对象创建和垃圾回收的开销，尤其是在需要频繁执行的逻辑中，比如帧循环和MOUSE_MOVE事件回调函数里面。
 		*/
 		__proto.getCharPoint=function(charIndex,out){
 			this._isChanged && Laya.timer.runCallLater(this,this.typeset);
@@ -38594,7 +41317,7 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*边距信息。
+		*<p>边距信息。</p>
 		*<p>数据格式：[上边距，右边距，下边距，左边距]（边距以像素为单位）。</p>
 		*/
 		__getset(0,__proto,'padding',function(){
@@ -38605,7 +41328,7 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*指定文本是否为粗体字。
+		*<p>指定文本是否为粗体字。</p>
 		*<p>默认值为 false，这意味着不使用粗体字。如果值为 true，则文本为粗体字。</p>
 		*/
 		__getset(0,__proto,'bold',function(){
@@ -38627,7 +41350,7 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*表示文本的颜色值。可以通过 <code>Text.defaultColor</code> 设置默认颜色。
+		*<p>表示文本的颜色值。可以通过 <code>Text.defaultColor</code> 设置默认颜色。</p>
 		*<p>默认值为黑色。</p>
 		*/
 		__getset(0,__proto,'color',function(){
@@ -38644,8 +41367,9 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*文本的字体名称，以字符串形式表示。
+		*<p>文本的字体名称，以字符串形式表示。</p>
 		*<p>默认值为："Arial"，可以通过Font.defaultFont设置默认字体。</p>
+		*<p>如果运行时系统找不到设定的字体，则用系统默认的字体渲染文字，从而导致显示异常。(通常电脑上显示正常，在一些移动端因缺少设置的字体而显示异常)。</p>
 		*@see laya.display.css.Font#defaultFamily
 		*/
 		__getset(0,__proto,'font',function(){
@@ -38663,7 +41387,7 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*指定文本的字体大小（以像素为单位）。
+		*<p>指定文本的字体大小（以像素为单位）。</p>
 		*<p>默认为20像素，可以通过 <code>Text.defaultSize</code> 设置默认大小。</p>
 		*/
 		__getset(0,__proto,'fontSize',function(){
@@ -38674,7 +41398,7 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*表示使用此文本格式的文本是否为斜体。
+		*<p>表示使用此文本格式的文本是否为斜体。</p>
 		*<p>默认值为 false，这意味着不使用斜体。如果值为 true，则文本为斜体。</p>
 		*/
 		__getset(0,__proto,'italic',function(){
@@ -38685,7 +41409,7 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*表示文本的水平显示方式。
+		*<p>表示文本的水平显示方式。</p>
 		*<p><b>取值：</b>
 		*<li>"left"： 居左对齐显示。</li>
 		*<li>"center"： 居中对齐显示。</li>
@@ -38700,7 +41424,7 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*表示文本的垂直显示方式。
+		*<p>表示文本的垂直显示方式。</p>
 		*<p><b>取值：</b>
 		*<li>"top"： 居顶部对齐显示。</li>
 		*<li>"middle"： 居中对齐显示。</li>
@@ -38715,7 +41439,7 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*表示文本是否自动换行，默认为false。
+		*<p>表示文本是否自动换行，默认为false。</p>
 		*<p>若值为true，则自动换行；否则不自动换行。</p>
 		*/
 		__getset(0,__proto,'wordWrap',function(){
@@ -38757,7 +41481,7 @@ var Laya=window.Laya=(function(window,document){
 
 		/**
 		*<p>描边宽度（以像素为单位）。</p>
-		*默认值0，表示不描边。
+		*<p>默认值0，表示不描边。</p>
 		*/
 		__getset(0,__proto,'stroke',function(){
 			return this._getCSSStyle().stroke;
@@ -38768,7 +41492,7 @@ var Laya=window.Laya=(function(window,document){
 
 		/**
 		*<p>描边颜色，以字符串表示。</p>
-		*默认值为 "#000000"（黑色）;
+		*<p>默认值为 "#000000"（黑色）;</p>
 		*/
 		__getset(0,__proto,'strokeColor',function(){
 			return this._getCSSStyle().strokeColor;
@@ -38788,7 +41512,7 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*设置横向滚动量。
+		*<p>设置横向滚动量。</p>
 		*<p>即使设置超出滚动范围的值，也会被自动限制在可能的最大值处。</p>
 		*/
 		/**
@@ -38847,6 +41571,8 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		__getset(0,__proto,'lines',function(){
+			if (this._isChanged)
+				this.typeset();
 			return this._lines;
 		});
 
@@ -38874,31 +41600,48 @@ var Laya=window.Laya=(function(window,document){
 			}
 		}
 
+		Text.supportFont=function(font){
+			Browser.context.font="10px sans-serif";
+			var defaultFontWidth=Browser.context.measureText("abcji").width;
+			Browser.context.font="10px "+font;
+			var customFontWidth=Browser.context.measureText("abcji").width;
+			console.log(defaultFontWidth,customFontWidth);
+			if (defaultFontWidth==customFontWidth)
+				return false;
+			else
+			return true;
+		}
+
 		Text._testWord="游";
 		Text.langPacks=null
 		Text.VISIBLE="visible";
 		Text.SCROLL="scroll";
 		Text.HIDDEN="hidden";
+		Text.CharacterCache=true;
 		Text._bitmapFonts=null
+		__static(Text,
+		['_fontFamilyMap',function(){return this._fontFamilyMap={"报隶" :"报隶-简","黑体" :"黑体-简","楷体" :"楷体-简","兰亭黑" :"兰亭黑-简","隶变" :"隶变-简","凌慧体" :"凌慧体-简","翩翩体" :"翩翩体-简","苹方" :"苹方-简","手札体" :"手札体-简","宋体" :"宋体-简","娃娃体" :"娃娃体-简","魏碑" :"魏碑-简","行楷" :"行楷-简","雅痞" :"雅痞-简","圆体" :"圆体-简"};}
+		]);
 		return Text;
 	})(Sprite)
 
 
 	/**
 	*<p> <code>Stage</code> 是舞台类，显示列表的根节点，所有显示对象都在舞台上显示。通过 Laya.stage 单例访问。</p>
-	*Stage提供几种适配模式，不同的适配模式会产生不同的画布大小，画布越大，渲染压力越大，所以要选择合适的适配方案。
-	*Stage提供不同的帧率模式，帧率越高，渲染压力越大，越费电，合理使用帧率甚至动态更改帧率有利于改进手机耗电。
+	*<p>Stage提供几种适配模式，不同的适配模式会产生不同的画布大小，画布越大，渲染压力越大，所以要选择合适的适配方案。</p>
+	*<p>Stage提供不同的帧率模式，帧率越高，渲染压力越大，越费电，合理使用帧率甚至动态更改帧率有利于改进手机耗电。</p>
 	*/
 	//class laya.display.Stage extends laya.display.Sprite
 	var Stage=(function(_super){
 		function Stage(){
 			this.focus=null;
 			this.frameRate="fast";
-			this.desginWidth=0;
-			this.desginHeight=0;
+			this.designWidth=0;
+			this.designHeight=0;
 			this.canvasRotation=false;
 			this.canvasDegree=0;
 			this.renderingEnabled=true;
+			this.screenAdaptationEnabled=true;
 			this._screenMode="none";
 			this._scaleMode="noscale";
 			this._alignV="top";
@@ -38908,7 +41651,6 @@ var Laya=window.Laya=(function(window,document){
 			this._renderCount=0;
 			this._safariOffsetY=0;
 			this._frameStartTime=NaN;
-			this._previousOrientation=0;
 			this._isFocused=false;
 			this._isVisibility=false;
 			this._scenes=null;
@@ -38916,6 +41658,7 @@ var Laya=window.Laya=(function(window,document){
 			Stage.__super.call(this);
 			this.offset=new Point();
 			this._canvasTransform=new Matrix();
+			this._previousOrientation=Browser.window.orientation;
 			var _$this=this;
 			this.transform=Matrix.create();
 			this._scenes=[];
@@ -38969,8 +41712,6 @@ var Laya=window.Laya=(function(window,document){
 					Input["inputElement"].target.focus=false;
 				}
 				_$this._previousOrientation=orientation;
-				Laya.timer.once(500,this,_$this._getOffsetLater);
-				DebugTxt.dTrace("resize");
 				if (_this._isInputting())return;
 				if (Browser.onSafari)
 					_this._safariOffsetY=(Browser.window.__innerHeight || Browser.document.body.clientHeight || Browser.document.documentElement.clientHeight)-Browser.window.innerHeight;
@@ -38985,14 +41726,6 @@ var Laya=window.Laya=(function(window,document){
 
 		__class(Stage,'laya.display.Stage',_super);
 		var __proto=Stage.prototype;
-		/**@private */
-		__proto._getOffsetLater=function(){
-			var bodyRec=Browser.document.body.getBoundingClientRect();
-			MouseManager.instance.bodyLeft=bodyRec.left;
-			MouseManager.instance.bodyTop=bodyRec.top;
-			DebugTxt.dTrace("bodyRec.top",bodyRec.top);
-		}
-
 		/**
 		*@private
 		*在移动端输入时，输入法弹出期间不进行画布尺寸重置。
@@ -39008,16 +41741,14 @@ var Laya=window.Laya=(function(window,document){
 
 		/**@private */
 		__proto._resetCanvas=function(){
+			if (!this.screenAdaptationEnabled)return;
 			var canvas=Render._mainCanvas;
 			var canvasStyle=canvas.source.style;
-			canvas.size(1,1);
-			canvasStyle.transform=canvasStyle.webkitTransform=canvasStyle.msTransform=canvasStyle.mozTransform=canvasStyle.oTransform="";
-			this.visible=false;
 			Laya.timer.once(100,this,this._changeCanvasSize);
 		}
 
 		/**
-		*设置屏幕大小，场景会根据屏幕大小进行适配。
+		*设置屏幕大小，场景会根据屏幕大小进行适配。可以动态调用此方法，来更改游戏显示的大小。
 		*@param screenWidth 屏幕宽度。
 		*@param screenHeight 屏幕高度。
 		*/
@@ -39037,30 +41768,30 @@ var Laya=window.Laya=(function(window,document){
 			var canvasStyle=canvas.source.style;
 			var mat=this._canvasTransform.identity();
 			var scaleMode=this._scaleMode;
-			var scaleX=screenWidth / this.desginWidth;
-			var scaleY=screenHeight / this.desginHeight;
-			var canvasWidth=this.desginWidth;
-			var canvasHeight=this.desginHeight;
+			var scaleX=screenWidth / this.designWidth;
+			var scaleY=screenHeight / this.designHeight;
+			var canvasWidth=this.designWidth;
+			var canvasHeight=this.designHeight;
 			var realWidth=screenWidth;
 			var realHeight=screenHeight;
 			var pixelRatio=Browser.pixelRatio;
-			this._width=this.desginWidth;
-			this._height=this.desginHeight;
+			this._width=this.designWidth;
+			this._height=this.designHeight;
 			switch (scaleMode){
 				case "noscale":
 					scaleX=scaleY=1;
-					realWidth=this.desginWidth;
-					realHeight=this.desginHeight;
+					realWidth=this.designWidth;
+					realHeight=this.designHeight;
 					break ;
 				case "showall":
 					scaleX=scaleY=Math.min(scaleX,scaleY);
-					canvasWidth=realWidth=Math.round(this.desginWidth *scaleX);
-					canvasHeight=realHeight=Math.round(this.desginHeight *scaleY);
+					canvasWidth=realWidth=Math.round(this.designWidth *scaleX);
+					canvasHeight=realHeight=Math.round(this.designHeight *scaleY);
 					break ;
 				case "noborder":
 					scaleX=scaleY=Math.max(scaleX,scaleY);
-					realWidth=Math.round(this.desginWidth *scaleX);
-					realHeight=Math.round(this.desginHeight *scaleY);
+					realWidth=Math.round(this.designWidth *scaleX);
+					realHeight=Math.round(this.designHeight *scaleY);
 					break ;
 				case "full":
 					scaleX=scaleY=1;
@@ -39069,13 +41800,20 @@ var Laya=window.Laya=(function(window,document){
 					break ;
 				case "fixedwidth":
 					scaleY=scaleX;
-					this._height=screenHeight / scaleX;
-					canvasHeight=Math.round(screenHeight / scaleX);
+					this._height=canvasHeight=Math.round(screenHeight / scaleX);
 					break ;
 				case "fixedheight":
 					scaleX=scaleY;
-					this._width=screenWidth / scaleY;
-					canvasWidth=Math.round(screenWidth / scaleY);
+					this._width=canvasWidth=Math.round(screenWidth / scaleY);
+					break ;
+				case "fixedauto":
+					if ((screenWidth / screenHeight)< (this.designWidth / this.designHeight)){
+						scaleY=scaleX;
+						this._height=canvasHeight=Math.round(screenHeight / scaleX);
+						}else {
+						scaleX=scaleY;
+						this._width=canvasWidth=Math.round(screenWidth / scaleY);
+					}
 					break ;
 				}
 			scaleX *=this.scaleX;
@@ -39155,8 +41893,10 @@ var Laya=window.Laya=(function(window,document){
 			this._mouseMoveTime=Browser.now();
 		}
 
-		/**获得距当前帧开始后，过了多少时间，单位为毫秒
-		*可以用来判断函数内时间消耗，通过合理控制每帧函数处理消耗时长，避免一帧做事情太多，对复杂计算分帧处理，能有效降低帧率波动。*/
+		/**
+		*<p>获得距当前帧开始后，过了多少时间，单位为毫秒。</p>
+		*<p>可以用来判断函数内时间消耗，通过合理控制每帧函数处理消耗时长，避免一帧做事情太多，对复杂计算分帧处理，能有效降低帧率波动。</p>
+		*/
 		__proto.getTimeFromFrameStart=function(){
 			return Browser.now()-this._frameStartTime;
 		}
@@ -39170,7 +41910,7 @@ var Laya=window.Laya=(function(window,document){
 			}
 			this._renderCount++;
 			Render.isFlash && this.repaint();
-			if (!this.visible){
+			if (!this._style.visible){
 				if (this._renderCount % 5===0){
 					Stat.loopCount++;
 					MouseManager.instance.runEvent();
@@ -39247,7 +41987,7 @@ var Laya=window.Laya=(function(window,document){
 			Laya.stage.event("fullscreenchange");
 		}
 
-		/**退出全屏*/
+		/**退出全屏模式*/
 		__proto.exitFullscreen=function(){
 			var document=Browser.document;
 			if (document.exitFullscreen){
@@ -39265,7 +42005,7 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		__getset(0,__proto,'width',_super.prototype._$get_width,function(value){
-			this.desginWidth=value;
+			this.designWidth=value;
 			_super.prototype._$set_width.call(this,value);
 			Laya.timer.callLater(this,this._changeCanvasSize);
 		});
@@ -39278,13 +42018,12 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*水平对齐方式。
+		*<p>水平对齐方式。默认值为"left"。</p>
 		*<p><ul>取值范围：
 		*<li>"left" ：居左对齐；</li>
 		*<li>"center" ：居中对齐；</li>
 		*<li>"right" ：居右对齐；</li>
 		*</ul></p>
-		*默认值为"left"。
 		*/
 		__getset(0,__proto,'alignH',function(){
 			return this._alignH;
@@ -39294,20 +42033,42 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		__getset(0,__proto,'height',_super.prototype._$get_height,function(value){
-			this.desginHeight=value;
+			this.designHeight=value;
 			_super.prototype._$set_height.call(this,value);
 			Laya.timer.callLater(this,this._changeCanvasSize);
 		});
 
+		__getset(0,__proto,'transform',function(){
+			if (this._tfChanged)this._adjustTransform();
+			return this._transform=this._transform|| Matrix.create();
+		},_super.prototype._$set_transform);
+
 		/**
-		*舞台是否处于可见状态。
+		*舞台是否处于可见状态(是否进入后台)。
 		*/
 		__getset(0,__proto,'isVisibility',function(){
 			return this._isVisibility;
 		});
 
+		//[Deprecated]
+		__getset(0,__proto,'desginWidth',function(){
+			console.debug("desginWidth已经弃用，请使用designWidth代替");
+			return this.designWidth;
+		});
+
+		/**当前视窗由缩放模式导致的 X 轴缩放系数。*/
+		__getset(0,__proto,'clientScaleX',function(){
+			return this._transform ? this._transform.getScaleX():1;
+		});
+
+		//[Deprecated]
+		__getset(0,__proto,'desginHeight',function(){
+			console.debug("desginHeight已经弃用，请使用designHeight代替");
+			return this.designHeight;
+		});
+
 		/**
-		*<p>缩放模式。</p>
+		*<p>缩放模式。默认值为 "noscale"。</p>
 		*<p><ul>取值范围：
 		*<li>"noscale" ：不缩放；</li>
 		*<li>"exactfit" ：全屏不等比缩放；</li>
@@ -39316,8 +42077,8 @@ var Laya=window.Laya=(function(window,document){
 		*<li>"full" ：不缩放，stage的宽高等于屏幕宽高；</li>
 		*<li>"fixedwidth" ：宽度不变，高度根据屏幕比缩放；</li>
 		*<li>"fixedheight" ：高度不变，宽度根据屏幕比缩放；</li>
+		*<li>"fixedauto" ：根据宽高比，自动选择使用fixedwidth或fixedheight；</li>
 		*</ul></p>
-		*默认值为 "noscale"。
 		*/
 		__getset(0,__proto,'scaleMode',function(){
 			return this._scaleMode;
@@ -39327,13 +42088,12 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*垂直对齐方式。
+		*<p>垂直对齐方式。默认值为"top"。</p>
 		*<p><ul>取值范围：
 		*<li>"top" ：居顶部对齐；</li>
 		*<li>"middle" ：居中对齐；</li>
 		*<li>"bottom" ：居底部对齐；</li>
 		*</ul></p>
-		*默认值为"top"。
 		*/
 		__getset(0,__proto,'alignV',function(){
 			return this._alignV;
@@ -39372,13 +42132,8 @@ var Laya=window.Laya=(function(window,document){
 			return Math.round(MouseManager.instance.mouseY / this.clientScaleY);
 		});
 
-		/**当前视窗由缩放模式导致的 X 轴缩放系数。*/
-		__getset(0,__proto,'clientScaleX',function(){
-			return this._transform ? this._transform.getScaleX():1;
-		});
-
 		/**
-		*场景布局类型。
+		*<p>场景布局类型。</p>
 		*<p><ul>取值范围：
 		*<li>"none" ：不更改屏幕</li>
 		*<li>"horizontal" ：自动横屏</li>
@@ -39399,7 +42154,10 @@ var Laya=window.Laya=(function(window,document){
 			}
 		});
 
-		/**是否开启全屏，用户点击后进入全屏*/
+		/**
+		*<p>是否开启全屏，用户点击后进入全屏。</p>
+		*<p>兼容性提示：部分浏览器不允许点击进入全屏，比如Iphone等。</p>
+		*/
 		__getset(0,__proto,'fullScreenEnabled',null,function(value){
 			var document=Browser.document;
 			var canvas=Render.canvas;
@@ -39427,6 +42185,7 @@ var Laya=window.Laya=(function(window,document){
 		Stage.SCALE_FULL="full";
 		Stage.SCALE_FIXED_WIDTH="fixedwidth";
 		Stage.SCALE_FIXED_HEIGHT="fixedheight";
+		Stage.SCALE_FIXED_AUTO="fixedauto";
 		Stage.ALIGN_LEFT="left";
 		Stage.ALIGN_RIGHT="right";
 		Stage.ALIGN_CENTER="center";
@@ -39444,6 +42203,9 @@ var Laya=window.Laya=(function(window,document){
 	})(Sprite)
 
 
+	/**
+	*@private
+	*/
 	//class laya.media.SoundNode extends laya.display.Sprite
 	var SoundNode=(function(_super){
 		function SoundNode(){
@@ -39577,6 +42339,7 @@ var Laya=window.Laya=(function(window,document){
 			this._tag=null;
 			this._disabled=false;
 			this._gray=false;
+			this.layoutEnabled=true;
 			Component.__super.call(this);
 			this._layout=LayoutStyle.EMPTY;
 			this.preinitialize();
@@ -39656,6 +42419,23 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
+		*@private
+		*<p>指定对象是否可使用布局。</p>
+		*<p>如果值为true,则此对象可以使用布局样式，否则不使用布局样式。</p>
+		*@param value 一个 Boolean 值，指定对象是否可使用布局。
+		*/
+		__proto._setLayoutEnabled=function(value){
+			if (this._layout && this._layout.enable !=value){
+				this._layout.enable=value;
+				this.on("added",this,this.onAdded);
+				this.on("removed",this,this.onRemoved);
+				if (this.parent){
+					this.onAdded();
+				}
+			}
+		}
+
+		/**
 		*对象从显示列表移除的事件侦听处理函数。
 		*/
 		__proto.onRemoved=function(){
@@ -39687,6 +42467,7 @@ var Laya=window.Laya=(function(window,document){
 		__proto.resetLayoutX=function(){
 			var layout=this._layout;
 			if (!isNaN(layout.anchorX))this.pivotX=layout.anchorX *this.width;
+			if (!this.layoutEnabled)return;
 			var parent=this.parent;
 			if (parent){
 				if (!isNaN(layout.centerX)){
@@ -39694,7 +42475,7 @@ var Laya=window.Laya=(function(window,document){
 					}else if (!isNaN(layout.left)){
 					this.x=Math.round(layout.left+this.pivotX *this.scaleX);
 					if (!isNaN(layout.right)){
-						this.width=(parent._width-layout.left-layout.right)/ this.scaleX;
+						this.width=(parent._width-layout.left-layout.right)/ (this.scaleX || 0.01);
 					}
 					}else if (!isNaN(layout.right)){
 					this.x=Math.round(parent.width-this.displayWidth-layout.right+this.pivotX *this.scaleX);
@@ -39708,6 +42489,7 @@ var Laya=window.Laya=(function(window,document){
 		__proto.resetLayoutY=function(){
 			var layout=this._layout;
 			if (!isNaN(layout.anchorY))this.pivotY=layout.anchorY *this.height;
+			if (!this.layoutEnabled)return;
 			var parent=this.parent;
 			if (parent){
 				if (!isNaN(layout.centerY)){
@@ -39715,7 +42497,7 @@ var Laya=window.Laya=(function(window,document){
 					}else if (!isNaN(layout.top)){
 					this.y=Math.round(layout.top+this.pivotY *this.scaleY);
 					if (!isNaN(layout.bottom)){
-						this.height=(parent._height-layout.top-layout.bottom)/ this.scaleY;
+						this.height=(parent._height-layout.top-layout.bottom)/ (this.scaleY || 0.01);
 					}
 					}else if (!isNaN(layout.bottom)){
 					this.y=Math.round(parent.height-this.displayHeight-layout.bottom+this.pivotY *this.scaleY);
@@ -39776,24 +42558,6 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*@private
-		*<p>指定对象是否可使用布局。</p>
-		*<p>如果值为true,则此对象可以使用布局样式，否则不使用布局样式。</p>
-		*@param value 一个 Boolean 值，指定对象是否可使用布局。
-		*/
-		__getset(0,__proto,'layOutEabled',null,function(value){
-			if (this._layout && this._layout.enable !=value){
-				this._layout.enable=value;
-				if (this.parent){
-					this.onAdded();
-					}else {
-					this.on("added",this,this.onAdded);
-					this.on("removed",this,this.onRemoved);
-				}
-			}
-		});
-
-		/**
 		*<p>对象的显示高度（以像素为单位）。</p>
 		*/
 		__getset(0,__proto,'displayHeight',function(){
@@ -39803,7 +42567,6 @@ var Laya=window.Laya=(function(window,document){
 		/**
 		*<p>表示显示对象的高度，以像素为单位。</p>
 		*<p><b>注：</b>当值为0时，高度为自适应大小。</p>
-		*@return
 		*/
 		__getset(0,__proto,'height',function(){
 			if (this._height)return this._height;
@@ -39820,21 +42583,18 @@ var Laya=window.Laya=(function(window,document){
 		/**
 		*<p>数据赋值，通过对UI赋值来控制UI显示逻辑。</p>
 		*<p>简单赋值会更改组件的默认属性，使用大括号可以指定组件的任意属性进行赋值。</p>
-		*@example 以下示例中， <code>label1、checkbox1</code> 分别为示例的name属性值。
-		<listing version="3.0">
+		*@example
 		//默认属性赋值
 		dataSource={label1:"改变了label",checkbox1:true};//(更改了label1的text属性值，更改checkbox1的selected属性)。
 		//任意属性赋值
 		dataSource={label2:{text:"改变了label",size:14},checkbox2:{selected:true,x:10}};
-		</listing>
-		*@return
 		*/
 		__getset(0,__proto,'dataSource',function(){
 			return this._dataSource;
 			},function(value){
 			this._dataSource=value;
 			for (var prop in this._dataSource){
-				if (this.hasOwnProperty(prop)){
+				if (this.hasOwnProperty(prop)&& !((typeof (this[prop])=='function'))){
 					this[prop]=this._dataSource[prop];
 				}
 			}
@@ -39879,8 +42639,10 @@ var Laya=window.Laya=(function(window,document){
 		__getset(0,__proto,'top',function(){
 			return this._layout.top;
 			},function(value){
-			this.getLayout().top=value;
-			this.layOutEabled=true;
+			if (value !=this._layout.top){
+				this.getLayout().top=value;
+				this._setLayoutEnabled(true);
+			}
 			this.resetLayoutY();
 		});
 
@@ -39890,8 +42652,10 @@ var Laya=window.Laya=(function(window,document){
 		__getset(0,__proto,'bottom',function(){
 			return this._layout.bottom;
 			},function(value){
-			this.getLayout().bottom=value;
-			this.layOutEabled=true;
+			if (value !=this._layout.bottom){
+				this.getLayout().bottom=value;
+				this._setLayoutEnabled(true);
+			}
 			this.resetLayoutY();
 		});
 
@@ -39901,8 +42665,10 @@ var Laya=window.Laya=(function(window,document){
 		__getset(0,__proto,'left',function(){
 			return this._layout.left;
 			},function(value){
-			this.getLayout().left=value;
-			this.layOutEabled=true;
+			if (value !=this._layout.left){
+				this.getLayout().left=value;
+				this._setLayoutEnabled(true);
+			}
 			this.resetLayoutX();
 		});
 
@@ -39912,8 +42678,10 @@ var Laya=window.Laya=(function(window,document){
 		__getset(0,__proto,'right',function(){
 			return this._layout.right;
 			},function(value){
-			this.getLayout().right=value;
-			this.layOutEabled=true;
+			if (value !=this._layout.right){
+				this.getLayout().right=value;
+				this._setLayoutEnabled(true);
+			}
 			this.resetLayoutX();
 		});
 
@@ -39923,8 +42691,10 @@ var Laya=window.Laya=(function(window,document){
 		__getset(0,__proto,'centerX',function(){
 			return this._layout.centerX;
 			},function(value){
-			this.getLayout().centerX=value;
-			this.layOutEabled=true;
+			if (value !=this._layout.centerX){
+				this.getLayout().centerX=value;
+				this._setLayoutEnabled(true);
+			}
 			this.resetLayoutX();
 		});
 
@@ -39934,8 +42704,10 @@ var Laya=window.Laya=(function(window,document){
 		__getset(0,__proto,'centerY',function(){
 			return this._layout.centerY;
 			},function(value){
-			this.getLayout().centerY=value;
-			this.layOutEabled=true;
+			if (value !=this._layout.centerY){
+				this.getLayout().centerY=value;
+				this._setLayoutEnabled(true);
+			}
 			this.resetLayoutY();
 		});
 
@@ -39943,8 +42715,10 @@ var Laya=window.Laya=(function(window,document){
 		__getset(0,__proto,'anchorX',function(){
 			return this._layout.anchorX;
 			},function(value){
-			this.getLayout().anchorX=value;
-			this.layOutEabled=true;
+			if (value !=this._layout.anchorX){
+				this.getLayout().anchorX=value;
+				this._setLayoutEnabled(true);
+			}
 			this.resetLayoutX();
 		});
 
@@ -39952,8 +42726,10 @@ var Laya=window.Laya=(function(window,document){
 		__getset(0,__proto,'anchorY',function(){
 			return this._layout.anchorY;
 			},function(value){
-			this.getLayout().anchorY=value;
-			this.layOutEabled=true;
+			if (value !=this._layout.anchorY){
+				this.getLayout().anchorY=value;
+				this._setLayoutEnabled(true);
+			}
 			this.resetLayoutY();
 		});
 
@@ -39970,29 +42746,24 @@ var Laya=window.Laya=(function(window,document){
 		/**
 		*<p>鼠标悬停提示。</p>
 		*<p>可以赋值为文本 <code>String</code> 或函数 <code>Handler</code> ，用来实现自定义样式的鼠标提示和参数携带等。</p>
-		*@example 以下例子展示了三种鼠标提示：
-		<listing version="3.0">
-		private var _testTips:TestTipsUI=new TestTipsUI();
-		private function testTips():void {
+		*@example
+		*private var _testTips:TestTipsUI=new TestTipsUI();
+		*private function testTips():void {
 			//简单鼠标提示
-			btn2.toolTip="这里是鼠标提示&lt;b&gt;粗体&lt;/b&gt;&lt;br&gt;换行";
+			*btn2.toolTip="这里是鼠标提示&lt;b&gt;粗体&lt;/b&gt;&lt;br&gt;换行";
 			//自定义的鼠标提示
-			btn1.toolTip=showTips1;
+			*btn1.toolTip=showTips1;
 			//带参数的自定义鼠标提示
-			clip.toolTip=new Handler(this,showTips2,["clip"]);
-		}
-
-		private function showTips1():void {
-			_testTips.label.text="这里是按钮["+btn1.label+"]";
-			tip.addChild(_testTips);
-		}
-
-		private function showTips2(name:String):void {
-			_testTips.label.text="这里是"+name;
-			tip.addChild(_testTips);
-		}
-
-		</listing>
+			*clip.toolTip=new Handler(this,showTips2,["clip"]);
+			*}
+		*private function showTips1():void {
+			*_testTips.label.text="这里是按钮["+btn1.label+"]";
+			*tip.addChild(_testTips);
+			*}
+		*private function showTips2(name:String):void {
+			*_testTips.label.text="这里是"+name;
+			*tip.addChild(_testTips);
+			*}
 		*/
 		__getset(0,__proto,'toolTip',function(){
 			return this._toolTip;
@@ -40054,14 +42825,15 @@ var Laya=window.Laya=(function(window,document){
 			this.lockLayer=null;
 			this.popupEffect=function(dialog){
 				dialog.scale(1,1);
-				Tween.from(dialog,{x:Laya.stage.width / 2,y:Laya.stage.height / 2,scaleX:0,scaleY:0},300,Ease.backOut);
+				Tween.from(dialog,{x:Laya.stage.width / 2,y:Laya.stage.height / 2,scaleX:0,scaleY:0},300,Ease.backOut,Handler.create(this,this.doOpen,[dialog]));
 			}
-			this.closeEffect=function(dialog){
-				var _this=this;
-				Tween.to(dialog,{x:Laya.stage.width / 2,y:Laya.stage.height / 2,scaleX:0,scaleY:0},300,Ease.strongOut,Handler.create(_this,_this._doClose,[dialog]));
+			this.closeEffect=function(dialog,type){
+				Tween.to(dialog,{x:Laya.stage.width / 2,y:Laya.stage.height / 2,scaleX:0,scaleY:0},300,Ease.strongOut,Handler.create(this,this.doClose,[dialog,type]));
 			}
 			DialogManager.__super.call(this);
 			this.maskLayer=new Sprite();
+			this.popupEffectHandler=new Handler(this,this.popupEffect);
+			this.closeEffectHandler=new Handler(this,this.closeEffect);
 			this.mouseEnabled=this.maskLayer.mouseEnabled=true;
 			this.zOrder=1000;
 			Laya.stage.addChild(this);
@@ -40121,8 +42893,18 @@ var Laya=window.Laya=(function(window,document){
 			if (dialog.popupCenter)this._centerDialog(dialog);
 			this.addChild(dialog);
 			if (dialog.isModal || this._$P["hasZorder"])this.timer.callLater(this,this._checkMask);
-			this.popupEffect && this.popupEffect(dialog);
+			if (dialog.popupEffect !=null)dialog.popupEffect.runWith(dialog);
+			else this.doOpen(dialog);
 			this.event("open");
+		}
+
+		/**
+		*执行打开对话框。
+		*@param dialog 需要关闭的对象框 <code>Dialog</code> 实例。
+		*@param type 关闭的类型，默认为空
+		*/
+		__proto.doOpen=function(dialog){
+			dialog.onOpened();
 		}
 
 		/**
@@ -40138,17 +42920,24 @@ var Laya=window.Laya=(function(window,document){
 		/**
 		*关闭对话框。
 		*@param dialog 需要关闭的对象框 <code>Dialog</code> 实例。
+		*@param type 关闭的类型，默认为空
 		*/
-		__proto.close=function(dialog){
-			if (this.closeEffect !=null)this.closeEffect(dialog);
-			else this._doClose(dialog);
+		__proto.close=function(dialog,type){
+			if (dialog.closeEffect !=null)dialog.closeEffect.runWith([dialog,type]);
+			else this.doClose(dialog,type);
+			this.event("close");
 		}
 
-		__proto._doClose=function(dialog){
+		/**
+		*执行关闭对话框。
+		*@param dialog 需要关闭的对象框 <code>Dialog</code> 实例。
+		*@param type 关闭的类型，默认为空
+		*/
+		__proto.doClose=function(dialog,type){
 			dialog.removeSelf();
 			dialog.isModal && this._checkMask();
-			dialog.closeHandler && dialog.closeHandler.run();
-			this.event("close");
+			dialog.closeHandler && dialog.closeHandler.runWith(type);
+			dialog.onClosed(type);
 		}
 
 		/**
@@ -40178,13 +42967,15 @@ var Laya=window.Laya=(function(window,document){
 		/**
 		*根据组关闭所有弹出框
 		*@param group 需要关闭的组名称
+		*@return 需要关闭的对话框数组
 		*/
-		__proto.closeByGround=function(group){
+		__proto.closeByGroup=function(group){
 			var arr=[];
 			for (var i=this.numChildren-1;i >-1;i--){
 				var item=this.getChildAt(i);
 				if (item.group===group){
 					item.close();
+					arr.push(item);
 				}
 			}
 			return arr;
@@ -40615,6 +43406,40 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
+	*
+	*@author ww
+	*@version 1.0
+	*
+	*@created 2015-12-30 下午3:23:06
+	*/
+	//class laya.debug.tools.comps.Rect extends laya.display.Sprite
+	var Rect=(function(_super){
+		function Rect(){
+			this.recWidth=10;
+			Rect.__super.call(this);
+			this.drawMe();
+		}
+
+		__class(Rect,'laya.debug.tools.comps.Rect',_super);
+		var __proto=Rect.prototype;
+		__proto.drawMe=function(){
+			var g;
+			g=this.graphics;
+			g.clear();
+			g.drawRect(0,0,this.recWidth,this.recWidth,"#22ff22");
+			this.size(this.recWidth,this.recWidth);
+		}
+
+		__proto.posTo=function(x,y){
+			this.x=x-this.recWidth*0.5;
+			this.y=y-this.recWidth*0.5;
+		}
+
+		return Rect;
+	})(Sprite)
+
+
+	/**
 	*@private
 	*<code>FileBitmap</code> 是图片文件资源类。
 	*/
@@ -40655,45 +43480,11 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*
-	*@author ww
-	*@version 1.0
-	*
-	*@created 2015-12-30 下午3:23:06
-	*/
-	//class laya.debug.tools.comps.Rect extends laya.display.Sprite
-	var Rect=(function(_super){
-		function Rect(){
-			this.recWidth=10;
-			Rect.__super.call(this);
-			this.drawMe();
-		}
-
-		__class(Rect,'laya.debug.tools.comps.Rect',_super);
-		var __proto=Rect.prototype;
-		__proto.drawMe=function(){
-			var g;
-			g=this.graphics;
-			g.clear();
-			g.drawRect(0,0,this.recWidth,this.recWidth,"#22ff22");
-			this.size(this.recWidth,this.recWidth);
-		}
-
-		__proto.posTo=function(x,y){
-			this.x=x-this.recWidth*0.5;
-			this.y=y-this.recWidth*0.5;
-		}
-
-		return Rect;
-	})(Sprite)
-
-
-	/**
 	*<code>HTMLCanvas</code> 是 Html Canvas 的代理类，封装了 Canvas 的属性和方法。。请不要直接使用 new HTMLCanvas！
 	*/
 	//class laya.resource.HTMLCanvas extends laya.resource.Bitmap
 	var HTMLCanvas=(function(_super){
-		function HTMLCanvas(type,canvas){
+		function HTMLCanvas(type){
 			//this._ctx=null;
 			this._is2D=false;
 			HTMLCanvas.__super.call(this);
@@ -40701,7 +43492,7 @@ var Laya=window.Laya=(function(window,document){
 			this._source=this;
 			if (type==="2D" || (type==="AUTO" && !Render.isWebGL)){
 				this._is2D=true;
-				this._source=canvas || Browser.createElement("canvas");
+				this._source=Browser.createElement("canvas");
 				var o=this;
 				o.getContext=function (contextID,other){
 					if (_$this._ctx)return _$this._ctx;
@@ -40714,7 +43505,6 @@ var Laya=window.Laya=(function(window,document){
 					return ctx;
 				}
 			}
-			else this._source={};
 		}
 
 		__class(HTMLCanvas,'laya.resource.HTMLCanvas',_super);
@@ -40732,6 +43522,7 @@ var Laya=window.Laya=(function(window,document){
 		__proto.destroy=function(){
 			this._ctx && this._ctx.destroy();
 			this._ctx=null;
+			this.dispose();
 		}
 
 		/**
@@ -40780,6 +43571,10 @@ var Laya=window.Laya=(function(window,document){
 			}
 		}
 
+		__proto.getCanvas=function(){
+			return this._source;
+		}
+
 		/**
 		*Canvas 渲染上下文。
 		*/
@@ -40793,8 +43588,8 @@ var Laya=window.Laya=(function(window,document){
 		__getset(0,__proto,'asBitmap',null,function(value){
 		});
 
-		HTMLCanvas.create=function(type,canvas){
-			return new HTMLCanvas(type,canvas);
+		HTMLCanvas.create=function(type){
+			return new HTMLCanvas(type);
 		}
 
 		HTMLCanvas.TYPE2D="2D";
@@ -41447,7 +44242,6 @@ var Laya=window.Laya=(function(window,document){
 			this.moveOffPoint=new Point();
 			this._type=type;
 			this.addChild(this._box=this.drawBorder(0,0,0xff0000));
-			this._box.pos(-0.5,-0.5);
 			if (type==1 || type==3){
 				this.addChild(this._left);
 				this.addChild(this._right);
@@ -41557,6 +44351,10 @@ var Laya=window.Laya=(function(window,document){
 			Laya.stage.off("mouseup",this,this.onMouseUp);
 			if(this._currDir==this._pivotPoint){
 				this.onMouseMove(null);
+				this._target.pivotX=Math.round(this._target.pivotX);
+				this._target.pivotY=Math.round(this._target.pivotY);
+				this._target.x=Math.round(this._target.x);
+				this._target.y=Math.round(this._target.y);
 			};
 			var info=(this._target).comXml;
 			this.fixScale=-1;
@@ -41593,6 +44391,7 @@ var Laya=window.Laya=(function(window,document){
 				this._target["centerX"]=info.props.centerX;
 				delete info.props.x;
 			}
+			UIPanel.instance.currViewer.design.updateNodePosInfo(info.props,this._target);
 			UIPanel.instance.currViewer.design.nodeChanged(info,["x","y","width","height"]);
 			UIPanel.instance.currViewer.design.change(false);
 			UIPanel.instance.currViewer.design.changeSelectComp();
@@ -41786,7 +44585,7 @@ var Laya=window.Laya=(function(window,document){
 				}else{
 				this.scale(1,1);
 			}
-			this._pivotPoint.pos(this._target.pivotX*this._target.scaleX,this._target.pivotY*this._target.scaleY);
+			this.updatePivot();
 			this._pivotPoint.visible=!this._target["disablePivot"];
 			if (this._box.width !=width || this._box.height !=height||1){
 				this._box.graphics.clear();
@@ -41796,12 +44595,12 @@ var Laya=window.Laya=(function(window,document){
 				this._box.scaleX=Math.abs(this._box.scaleX)*(this._target.scaleX > 0 ? 1 :-1);
 				this._box.scaleY=Math.abs(this._box.scaleY)*(this._target.scaleY > 0 ? 1 :-1);
 				this._left.x=0;
-				this._left.y=height *0.5;
+				this._left.y=Math.round(height *0.5);
 				this._right.x=width;
-				this._right.y=height *0.5;
-				this._top.x=width *0.5;
+				this._right.y=Math.round(height *0.5);
+				this._top.x=Math.round(width *0.5);
 				this._top.y=0;
-				this._bottom.x=width *0.5;
+				this._bottom.x=Math.round(width *0.5);
 				this._bottom.y=height;
 				this._topLeft.x=this._topLeft.y=0;
 				this._topRight.x=width;
@@ -41815,7 +44614,13 @@ var Laya=window.Laya=(function(window,document){
 
 		__proto.updatePivot=function(){
 			if(!this._target)return;
-			this._pivotPoint.pos(this._target.pivotX*this._target.scaleX,this._target.pivotY*this._target.scaleY);
+			if(this._target.parent){
+				var tP;
+				tP=this._target.parent;
+				this._pivotPoint.pos(this._target.pivotX*this._target.scaleX*tP.scaleX,this._target.pivotY*this._target.scaleY*tP.scaleY);
+				}else{
+				this._pivotPoint.pos(this._target.pivotX*this._target.scaleX,this._target.pivotY*this._target.scaleY);
+			}
 		}
 
 		__getset(0,__proto,'type',function(){
@@ -41828,6 +44633,315 @@ var Laya=window.Laya=(function(window,document){
 		['_copyValues',function(){return this._copyValues=["x","y","pivotX","pivotY","rotation","skewX","skewY"];}
 		]);
 		return DragBox;
+	})(Sprite)
+
+
+	/**
+	*
+	*@author ww
+	*@version 1.0
+	*
+	*@created 2017-7-3 下午3:00:41
+	*/
+	//class laya.editor.core.reference.ReferenceLine extends laya.display.Sprite
+	var ReferenceLine=(function(_super){
+		function ReferenceLine(){
+			this.isDraging=false;
+			this.type=null;
+			this.data=null;
+			ReferenceLine.__super.call(this);
+			this.mouseEnabled=true;
+			this.hitTestPrior=false;
+			this.on("mouseout",this,this.onMouseOut);
+			this.on("mouseup",this,this.onMouseUp);
+			this.on("mouseover",this,this.onMouseOver);
+		}
+
+		__class(ReferenceLine,'laya.editor.core.reference.ReferenceLine',_super);
+		var __proto=ReferenceLine.prototype;
+		__proto.onMouseOver=function(){
+			var mType;
+			mType=this.type==0?"e-resize":"n-resize";
+			CursorManager.setType(mType);
+		}
+
+		__proto.onMouseUp=function(){
+			this.isDraging=false;
+		}
+
+		__proto.onMouseOut=function(){
+			if(!this.isDraging)
+				CursorManager.setType("default");
+		}
+
+		__proto.recover=function(){
+			this.removeSelf();
+			this.graphics.clear();
+			Pool.recover("ReferenceLine",this);
+		}
+
+		ReferenceLine.create=function(data){
+			var rst;
+			rst=Pool.getItemByClass("ReferenceLine",ReferenceLine);
+			rst.data=data;
+			rst.type=data.type;
+			return rst;
+		}
+
+		return ReferenceLine;
+	})(Sprite)
+
+
+	/**
+	*
+	*@author ww
+	*@version 1.0
+	*
+	*@created 2017-7-3 上午11:25:13
+	*/
+	//class laya.editor.core.reference.ReferenceLineLayer extends laya.display.Sprite
+	var ReferenceLineLayer=(function(_super){
+		function ReferenceLineLayer(){
+			this.lineList=[];
+			this.lineItems=[];
+			this._ruleH=null;
+			this._ruleV=null;
+			this.renderWidth=0;
+			this.renderHeight=0;
+			ReferenceLineLayer.__super.call(this);
+			this.lineColor=StyleConsts$1.AutoAlignLineColor;
+			this.size(1,1);
+			this.mouseEnabled=true;
+		}
+
+		__class(ReferenceLineLayer,'laya.editor.core.reference.ReferenceLineLayer',_super);
+		var __proto=ReferenceLineLayer.prototype;
+		__proto.getLocalReferencePoints=function(sprite,rst){
+			if(!rst)rst=[];
+			if(!this.lineList)return rst;
+			var i=0,len=0;
+			len=this.lineList.length;
+			var tLineO;
+			var tPoint;
+			for(i=0;i<len;i++){
+				tLineO=this.lineList[i];
+				if(tLineO.type==0){
+					if(!this._ruleH.isValueOK(tLineO.value)){
+						continue ;
+					}
+					tPoint=this._ruleH.getPosByV(tLineO.value);
+					tPoint=this._ruleH.localToGlobal(tPoint);
+					sprite.globalToLocal(tPoint);
+					rst.push(AlignTool.getAlignLine("x",tPoint.x));
+					}else{
+					if(!this._ruleV.isValueOK(tLineO.value)){
+						continue ;
+					}
+					tPoint=this._ruleV.getPosByV(tLineO.value);
+					tPoint=this._ruleV.localToGlobal(tPoint);
+					sprite.globalToLocal(tPoint);
+					rst.push(AlignTool.getAlignLine("y",tPoint.y));
+				}
+			}
+			return rst;
+		}
+
+		__proto.recoverLines=function(){
+			var i=0,len=0;
+			len=this.lineItems.length;
+			var tLine;
+			for(i=0;i<len;i++){
+				tLine=this.lineItems[i];
+				tLine.recover();
+			}
+			this.lineItems.length=0;
+		}
+
+		__proto.renderMe=function(width,height){
+			this.renderWidth=width;
+			this.renderHeight=height;
+			this.fresh();
+		}
+
+		__proto.clearMe=function(){
+			this.recoverLines();
+		}
+
+		__proto.fresh=function(){
+			this.recoverLines();
+			if(!this.lineList){
+				this.lineList=[];
+				return;
+			};
+			var i=0,len=0;
+			var tLineO;
+			len=this.lineList.length;
+			var tPoint;
+			var tSprite;
+			var tVisible=false;
+			for(i=0;i<len;i++){
+				tLineO=this.lineList[i];
+				tVisible=true;
+				if(tLineO.type==0){
+					if(!this._ruleH.isValueOK(tLineO.value)){
+						tVisible=false;
+					}
+					tSprite=this.getAReferenceLine(tLineO);
+					tPoint=this._ruleH.getPosByV(tLineO.value);
+					this._ruleH.toParentPoint(tPoint);
+					this.fromParentPoint(tPoint);
+					tSprite.graphics.drawLine(1,0,1,this.renderHeight,this.lineColor,1);
+					tSprite.size(3,this.renderHeight);
+					tSprite.pos(tPoint.x-1,tPoint.y);
+					tSprite.visible=tVisible;
+					this.addChild(tSprite);
+					}else{
+					if(!this._ruleV.isValueOK(tLineO.value)){
+						tVisible=false;
+					}
+					tSprite=this.getAReferenceLine(tLineO);
+					tPoint=this._ruleV.getPosByV(tLineO.value);
+					this._ruleV.toParentPoint(tPoint);
+					this.fromParentPoint(tPoint);
+					tSprite.graphics.drawLine(0,1,this.renderWidth,1,this.lineColor);
+					tSprite.size(this.renderWidth,3);
+					tSprite.pos(tPoint.x,tPoint.y-1);
+					tSprite.visible=tVisible;
+					this.addChild(tSprite);
+				}
+			}
+		}
+
+		__proto.getAReferenceLine=function(data){
+			var tSprite;
+			tSprite=ReferenceLine.create(data);
+			this.lineItems.push(tSprite);
+			tSprite.off("mousedown",this,this.onDragStart);
+			tSprite.on("mousedown",this,this.onDragStart,[tSprite]);
+			tSprite.off("keydown",this,this.onKeyDown);
+			tSprite.on("keydown",this,this.onKeyDown,[tSprite]);
+			return tSprite;
+		}
+
+		__proto.onKeyDown=function(referenceLine,e){
+			if(e.keyCode==46||e.keyCode==8){
+				this.removeLineByID(referenceLine.data.id);
+			}
+		}
+
+		__proto.onDragStart=function(referenceLine,e){
+			if(!ReferenceLineLayer._dragRec)ReferenceLineLayer._dragRec=new Rectangle();
+			Laya.stage.focus=referenceLine;
+			e&&e.stopPropagation();
+			if(referenceLine.type==0){
+				ReferenceLineLayer._dragRec.setTo(0,referenceLine.y,this.renderWidth,0);
+				}else{
+				ReferenceLineLayer._dragRec.setTo(referenceLine.x,0,0,this.renderHeight);
+			}
+			referenceLine.on("dragend",this,this.onDragEnd,[referenceLine]);
+			referenceLine.isDraging=true;
+			referenceLine.startDrag(ReferenceLineLayer._dragRec);
+		}
+
+		__proto.onDragEnd=function(referenceLine){
+			referenceLine.isDraging=false;
+			ReferenceLineLayer._tempPos.setTo(referenceLine.x,referenceLine.y);
+			var tRule;
+			if(referenceLine.type==0){
+				tRule=this._ruleH;
+				}else{
+				tRule=this._ruleV;
+			}
+			this.toParentPoint(ReferenceLineLayer._tempPos);
+			tRule.fromParentPoint(ReferenceLineLayer._tempPos);
+			referenceLine.data.value=tRule.getValueByPos(ReferenceLineLayer._tempPos);
+			var tId=0;
+			tId=referenceLine.data.id;
+			this.event("Lines_Changed");
+			this.fresh();
+			var tLine;
+			tLine=this.getLineByID(tId);
+			if(tLine){
+				Laya.stage.focus=tLine;
+			}
+		}
+
+		__proto.createTestData=function(){
+			this.lineList=[];
+			this.addLine(0,100);
+			this.addLine(1,200);
+		}
+
+		__proto.getMaxID=function(){
+			var tMax=0;
+			var i=0,len=0;
+			len=this.lineList.length;
+			var tLineO;
+			for(i=0;i<len;i++){
+				tLineO=this.lineList[i];
+				if(tLineO.id>tMax){
+					tMax=tLineO.id;
+				}
+			}
+			return tMax;
+		}
+
+		__proto.addLine=function(type,value){
+			var tLineO;
+			tLineO={};
+			tLineO.type=type;
+			tLineO.value=value;
+			tLineO.id=this.getMaxID()+1;
+			this.lineList.push(tLineO);
+			this.event("Lines_Changed");
+			return tLineO;
+		}
+
+		__proto.addLineAndStartDrag=function(type,value){
+			var lineO;
+			lineO=this.addLine(type,value);
+			this.fresh();
+			var tLine;
+			tLine=this.getLineByID(lineO.id);
+			if(tLine){
+				tLine.visible=true;
+				this.onDragStart(tLine,null);
+			}
+		}
+
+		__proto.getLineByID=function(id){
+			var i=0,len=0;
+			len=this.lineItems.length;
+			for(i=0;i<len;i++){
+				if(this.lineItems[i].data.id==id){
+					return this.lineItems[i];
+				}
+			}
+			return null;
+		}
+
+		__proto.removeLineByID=function(id){
+			var i=0,len=0;
+			len=this.lineList.length;
+			for(i=0;i<len;i++){
+				if(this.lineList[i].id==id){
+					this.lineList.splice(i,1);
+					this.event("Lines_Changed");
+					this.fresh();
+					return;
+				}
+			}
+		}
+
+		ReferenceLineLayer.Line_Width=1;
+		ReferenceLineLayer.Hit_Width=3;
+		ReferenceLineLayer.Off=1;
+		ReferenceLineLayer.Lines_Changed="Lines_Changed";
+		ReferenceLineLayer._dragRec=null
+		__static(ReferenceLineLayer,
+		['_tempTransPoint',function(){return this._tempTransPoint=new Point();},'_tempPos',function(){return this._tempPos=new Point();}
+		]);
+		return ReferenceLineLayer;
 	})(Sprite)
 
 
@@ -41899,6 +45013,7 @@ var Laya=window.Laya=(function(window,document){
 			this._isFocus=false;
 			this.data=null;
 			this._boderColor="#cc00cc";
+			this._label=null;
 			this._frame=new Sprite();
 			TimeFrame.__super.call(this);
 			this._frame.mouseEnabled=true;
@@ -41929,11 +45044,17 @@ var Laya=window.Laya=(function(window,document){
 			this._isFocus=true;
 			this.update();
 			DisControlTool.setTop(this);
+			if(this._label){
+				Laya.stage.event("showtip",this._label);
+			}
 		}
 
 		__proto.mouseOut=function(e){
 			this._isFocus=false;
 			this.update();
+			if(this._label){
+				Laya.stage.event("hidetip",this._label);
+			}
 		}
 
 		__proto.update=function(){
@@ -41960,7 +45081,10 @@ var Laya=window.Laya=(function(window,document){
 				}
 			g.drawRect(0,0,this._frame.width,this._frame.height,color,this._boderColor,1);
 			if(this.data.props&&this.data.props.label&&this.data.props.label!=""){
-				g.drawCircle(0.5*this._frame.width,5,3,"#ff0000");
+				this._label=this.data.props.label;
+				g.drawRect(0,(this._frame.height-5)*0.5,this._frame.width,5,"#f8b551");
+				}else{
+				this._label=null;
 			}
 		}
 
@@ -42078,7 +45202,10 @@ var Laya=window.Laya=(function(window,document){
 			CanvasSprite.setSpriteCanvasRender(node,this.canvasZIndex,true);
 		}
 
-		__proto.removeChildHandler=function(node){}
+		__proto.removeChildHandler=function(node){
+			CanvasSprite.removeSpriteCanvas(node);
+		}
+
 		return CanvasSpriteContainer;
 	})(Sprite)
 
@@ -42108,6 +45235,8 @@ var Laya=window.Laya=(function(window,document){
 			Dialog.manager["open"]=this.open;
 			Dialog.manager.closeEffect=null;
 			Dialog.manager.popupEffect=null;
+			Dialog.manager.closeEffectHandler=null;
+			Dialog.manager.popupEffectHandler=null;
 		}
 
 		/**
@@ -42188,9 +45317,12 @@ var Laya=window.Laya=(function(window,document){
 			this._projectPath=null;
 			this._isInitCompleted=false;
 			ViewHook;
+			KeyBoardHook.hook();
 			if (!Laya.stage)Laya.init(1000,800);
-			Browser.container.onselectstart=function (){return false;}
 			LayaBuilder.__super.call(this);
+			UIConfig.popupBgAlpha=0.1;
+			UIConfig.closeDialogOnSide=false;
+			DialogHook.I.hookDialog();
 			IDEVars.cacheBothTreeAndAnimation=true;
 			var enableNewAnimation=false;
 			enableNewAnimation=true;
@@ -42254,10 +45386,9 @@ var Laya=window.Laya=(function(window,document){
 			LoaderHook$1.init();
 			Notice$1.listen("IDE_QUIT",this,this.onNativeWindowClosing);
 			Browser.window.onbeforeunload=this.beforeClose;
-			Laya.stage.frameRate="fast";
+			Laya.stage.frameRate="slow";
 			Laya.stage.on("blur",this,this.onBlur);
 			Laya.stage.on("focus",this,this.onFocus);
-			UIConfig.popupBgAlpha=0.1;
 			CanvasViewsManager.I.init();
 			SysLog.logGlobalError=true;
 			this.hookTab();
@@ -42271,28 +45402,14 @@ var Laya=window.Laya=(function(window,document){
 					if (evt.preventDefault){evt.preventDefault();}
 						else {evt.returnValue=false;}
 				}
-				if(evt.keyCode==65&&evt.ctrlKey){
-					if (evt.preventDefault){evt.preventDefault();}
-						else {evt.returnValue=false;}
-				}
-			}
-		}
-
-		__proto.HandleTabKey=function(evt){
-			if (evt.keyCode==9){
-				if (evt.preventDefault){evt.preventDefault();}
-					else {evt.returnValue=false;}
-			}
-			if(evt.keyCode==65&&evt.ctrlKey){
-				if (evt.preventDefault){evt.preventDefault();}
-					else {evt.returnValue=false;}
 			}
 		}
 
 		__proto.onFocus=function(){
-			Laya.stage.frameRate="slow";
+			SetIDE.updateToSettings();
 		}
 
+		// Laya.stage.frameRate=Stage.FRAME_SLOW;
 		__proto.onBlur=function(){
 			Laya.stage.frameRate="sleep";
 		}
@@ -42394,6 +45511,9 @@ var Laya=window.Laya=(function(window,document){
 			this._builderConfig.lastProject=SystemSetting.projectPath;
 			this._builderConfig.ifShowRuleGrid=SystemSetting.ifShowRuleGrid;
 			this._builderConfig.toCodeModeWhenPublicEnd=SystemSetting.toCodeModeWhenPublicEnd;
+			this._builderConfig.autoFocsEditRect=SystemSetting.autoFocsEditRect;
+			this._builderConfig.IDEFrameType=SystemSetting.IDEFrameType;
+			IDESettingResTypeManager.saveConfig();
 			this._builderConfig["skinPath"]=IDESkinManager.tSkinPath;
 			this._builderConfig["langPath"]=IDELangManager.tLang;
 			if (!SystemSetting.projectPath){
@@ -42439,8 +45559,24 @@ var Laya=window.Laya=(function(window,document){
 			this._projectPath=this._builderConfig.lastProject;
 			SystemSetting.ifShowRuleGrid=this._builderConfig.ifShowRuleGrid;
 			SystemSetting.toCodeModeWhenPublicEnd=this._builderConfig.toCodeModeWhenPublicEnd?true:false;
+			SystemSetting.autoFocsEditRect=this._builderConfig.autoFocsEditRect?true:false;
+			SystemSetting.IDEFrameType=this._builderConfig.IDEFrameType?1:0;
+			HelpTipView.isFirst=!this._builderConfig.openedBefore;
+			this._builderConfig.openedBefore=true;
 			IDESkinManager.setSkinPath(this._builderConfig["skinPath"]);
-			IDELangManager.setLangPath(this._builderConfig["langPath"]);
+			if(Browser.window["laya_available_languages"]){
+				var tLangStr;
+				tLangStr=Browser.window["laya_available_languages"];
+				if(tLangStr=="en"){
+					IDELangManager.setLangPath("english.json");
+					}else{
+					IDELangManager.setLangPath(null);
+				}
+				}else{
+				IDELangManager.setLangPath(this._builderConfig["langPath"]);
+			}
+			SetIDE.updateToSettings();
+			IDESettingResTypeManager.loadConfig();
 		}
 
 		//getSysArg();
@@ -42484,6 +45620,7 @@ var Laya=window.Laya=(function(window,document){
 			ShortcutManager.addKey(86,true,true,UIPanel.instance.pasteComp,[true],Design,null,UIPanel.instance);
 			ShortcutManager.addKey(88,true,false,UIPanel.instance.cut,null,Design,null,UIPanel.instance);
 			ShortcutManager.addKey(66,true,false,BoxComp.instance.start,null,Design,"",BoxComp.instance);
+			ShortcutManager.addKey(84,true,false,ChangeCompType.instance.start,null,Design,"",ChangeCompType.instance);
 			ShortcutManager.addKey(85,true,false,UIPanel.instance.unBoxComp,null,Design,null,UIPanel.instance);
 			ShortcutManager.addKey(82,true,false,RepeatComp.instance.start,null,Design,"",RepeatComp.instance);
 			ShortcutManager.addKey(65,true,false,UIPanel.instance.selectAll,null,Design,null,UIPanel.instance);
@@ -42509,6 +45646,7 @@ var Laya=window.Laya=(function(window,document){
 			ShortcutManager.addKey(115,false,false,FindUnUsedRes.instance.start,null,null,"",FindUnUsedRes.instance);
 			ShortcutManager.addKey(123,false,false,ExportManager.export,null,null,"",ExportManager);
 			ShortcutManager.addKey(123,true,false,ExportManager.forceExport,null,null,"",ExportManager);
+			ShortcutManager.addKey(122,false,false,ExportManager.exportCodeOnly,null,null,"",ExportManager);
 		}
 
 		__proto.refreshResAndPage=function(){
@@ -42521,12 +45659,16 @@ var Laya=window.Laya=(function(window,document){
 			return LayaBuilder._preParseInt(v)|| 0;
 		}
 
+		LayaBuilder.mParserFloat=function(v){
+			return parseFloat(v)||0;
+		}
+
 		LayaBuilder.initConfig=function(){
 			UIConfig.touchScrollEnable=false;
 			UIConfig.showButtons=false;
 			Styles.labelColor="#c5c5c5";
 			Styles.buttonLabelColors=["#dddddd","#ffffff","#efefef"];
-			Styles.comboBoxItemColors=["#0c6fa6","#e0e7ef","#d2d2d2","#484647","#484647"];
+			Styles.comboBoxItemColors=["#0c6fa6","#e0e7ef","#d2d2d2","#484647","#2f2f2f"];
 		}
 
 		LayaBuilder.tryClose=function(){}
@@ -42551,10 +45693,11 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*<p> <code>Animation</code> 是Graphics动画类（不断切换Graphics来实现动画），实现了基于Graphics的动画创建，播放控制接口。</p>
-	*<p> <code>Animation</code> 可以加载一组图片集合或图集文件或IDE设计好的动画进行播放。</p>
-	*@example 以下示例代码，创建了一个 <code>Text</code> 实例。
-	*<listing version="3.0">
+	*<p> <code>Animation</code> 是Graphics动画类。实现了基于Graphics的动画创建、播放、控制接口。</p>
+	*<p>本类使用了动画模版缓存池，它以一定的内存开销来节省CPU开销，当相同的动画模版被多次使用时，相比于每次都创建新的动画模版，使用动画模版缓存池，只需创建一次，缓存之后多次复用，从而节省了动画模版创建的开销。</p>
+	*<p>动画模版缓存池，以key-value键值对存储，key可以自定义，也可以从指定的配置文件中读取，value为对应的动画模版，是一个Graphics对象数组，每个Graphics对象对应一个帧图像，动画的播放实质就是定时切换Graphics对象。</p>
+	*<p>使用set source、loadImages(...)、loadAtlas(...)、loadAnimation(...)方法可以创建动画模版。使用play(...)可以播放指定动画。</p>
+	*@example <caption>以下示例代码，创建了一个 <code>Text</code> 实例。</caption>
 	*package
 	*{
 		*import laya.display.Animation;
@@ -42580,8 +45723,8 @@ var Laya=window.Laya=(function(window,document){
 				*}
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*
+	*@example
 	*Animation_Example();
 	*function Animation_Example(){
 		*Laya.init(640,800);//设置游戏画布宽高、渲染模式。
@@ -42598,8 +45741,8 @@ var Laya=window.Laya=(function(window,document){
 		*animation.play();//播放动画。
 		*Laya.stage.addChild(animation);//将 animation 对象添加到显示列表。
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*
+	*@example
 	*import Animation=laya.display.Animation;
 	*class Animation_Example {
 		*constructor(){
@@ -42618,7 +45761,6 @@ var Laya=window.Laya=(function(window,document){
 			*}
 		*}
 	*new Animation_Example();
-	*</listing>
 	*/
 	//class laya.display.Animation extends laya.display.AnimationPlayerBase
 	var Animation=(function(_super){
@@ -42641,36 +45783,65 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*播放动画。可以指定name属性，播放缓存中某个动画。
-		*@param start 开始播放的动画索引或label。
-		*@param loop 是否循环播放。
-		*@param name 如果name为空(可选)，则播放当前动画，如果不为空，则播放全局缓存动画（如果有）
+		*<p>开始播放动画。会在动画模版缓存池中查找key值为name的动画模版，存在则用此动画模版初始化当前序列帧， 如果不存在，则使用当前序列帧。</p>
+		*<p>play(...)方法被设计为在创建实例后的任何时候都可以被调用，调用后就处于播放状态，当相应的资源加载完毕、调用动画帧填充方法(set frames)或者将实例显示在舞台上时，会判断是否处于播放状态，如果是，则开始播放。</p>
+		*<p>配合wrapMode属性，可设置动画播放顺序类型。</p>
+		*@param start （可选）指定动画播放开始的索引(int)或帧标签(String)。帧标签可以通过addLabel(...)和removeLabel(...)进行添加和删除。
+		*@param loop （可选）是否循环播放。
+		*@param name （可选）动画模板在动画模版缓存池中的key，也可认为是动画名称。如果name为空，则播放当前动画序列帧；如果不为空，则在动画模版缓存池中寻找key值为name的动画模版，如果存在则用此动画模版初始化当前序列帧并播放，如果不存在，则仍然播放当前动画序列帧；如果没有当前动画的帧数据，则不播放，但该实例仍然处于播放状态。
 		*/
 		__proto.play=function(start,loop,name){
 			(start===void 0)&& (start=0);
 			(loop===void 0)&& (loop=true);
 			(name===void 0)&& (name="");
-			if (name)this._setFramesFromCache(name);
+			if (name)this._setFramesFromCache(name,true);
 			this._isPlaying=true;
 			this.index=((typeof start=='string'))? this._getFrameByLabel(start):start;
 			this.loop=loop;
 			this._actionName=name;
 			this._isReverse=this.wrapMode==1;
 			if (this._frames && this.interval > 0){
-				this.timerLoop(this.interval,this,this._frameLoop,null,true);
+				this.timerLoop(this.interval,this,this._frameLoop,null,true,true);
 			}
 		}
 
 		/**@private */
-		__proto._setFramesFromCache=function(name){
+		__proto._setFramesFromCache=function(name,showWarn){
+			(showWarn===void 0)&& (showWarn=false);
 			if (this._url)name=this._url+"#"+name;
 			if (name && Animation.framesMap[name]){
-				this._frames=Animation.framesMap[name];
-				this._count=this._frames.length;
-				if (!this._frameRateChanged && Animation.framesMap[name+"$len"])this._interval=Animation.framesMap[name+"$len"];
+				var tAniO;
+				tAniO=Animation.framesMap[name];
+				if ((tAniO instanceof Array)){
+					this._frames=Animation.framesMap[name];
+					this._count=this._frames.length;
+					}else {
+					if (tAniO.nodeRoot){
+						Animation.framesMap[name]=this._parseGraphicAnimationByData(tAniO);
+						tAniO=Animation.framesMap[name];
+					}
+					this._frames=tAniO.frames;
+					this._count=this._frames.length;
+					if (!this._frameRateChanged)this._interval=tAniO.interval;
+					this._labels=this._copyLabels(tAniO.labels);
+				}
 				return true;
+				}else {
+				if (showWarn)console.log("ani not found:",name);
 			}
 			return false;
+		}
+
+		/**@private */
+		__proto._copyLabels=function(labels){
+			if (!labels)return null;
+			var rst;
+			rst={};
+			var key;
+			for (key in labels){
+				rst[key]=Utils.copyArray([],labels[key]);
+			}
+			return rst;
 		}
 
 		/**@private */
@@ -42685,7 +45856,9 @@ var Laya=window.Laya=(function(window,document){
 			if (this._frames)this.graphics=this._frames[value];
 		}
 
-		/**清理。方便对象复用。*/
+		/**
+		*停止动画播放，并清理对象属性。之后可存入对象池，方便对象复用。
+		*/
 		__proto.clear=function(){
 			this.stop();
 			this.graphics=null;
@@ -42694,10 +45867,12 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*加载图片集合作为动画。
-		*@param urls 图片地址集合。如：[url1,url2,url3,...]。
-		*@param cacheName 缓存的动画模板名称。此模板为全局模板，缓存后，可以使用play(start,loop,name)接口进行播放，无需重复创建动画模板（相同动画能节省创建动画模板开销），设置为空则不缓存。
-		*@return 返回动画本身。
+		*<p>根据指定的动画模版初始化当前动画序列帧。选择动画模版的过程如下：1. 动画模版缓存池中key为cacheName的动画模版；2. 如果不存在，则加载指定的图片集合并创建动画模版。注意：只有指定不为空的cacheName，才能将创建好的动画模版以此为key缓存到动画模版缓存池，否则不进行缓存。</p>
+		*<p>动画模版缓存池是以一定的内存开销来节省CPU开销，当相同的动画模版被多次使用时，相比于每次都创建新的动画模版，使用动画模版缓存池，只需创建一次，缓存之后多次复用，从而节省了动画模版创建的开销。</p>
+		*<p>因为返回值为Animation对象本身，所以可以使用如下语法：ani.loadImages(...).loadImages(...).play(...);。</p>
+		*@param urls 图片路径集合。需要创建动画模版时，会以此为数据源。参数形如：[url1,url2,url3,...]。
+		*@param cacheName （可选）动画模板在动画模版缓存池中的key。如果此参数不为空，表示使用动画模版缓存池。如果动画模版缓存池中存在key为cacheName的动画模版，则使用此模版。否则，创建新的动画模版，如果cacheName不为空，则以cacheName为key缓存到动画模版缓存池中，如果cacheName为空，不进行缓存。
+		*@return 返回Animation对象本身。
 		*/
 		__proto.loadImages=function(urls,cacheName){
 			(cacheName===void 0)&& (cacheName="");
@@ -42709,10 +45884,13 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*加载一个图集作为动画。
-		*@param url 图集地址。
-		*@param loaded 加载完毕回调。
-		*@param cacheName 缓存的动画模板名称。此模板为全局模板，缓存后，可以使用play(start,loop,name)接口进行播放，无需重复创建动画模板（相同动画能节省创建动画模板开销），设置为空则不缓存。
+		*<p>根据指定的动画模版初始化当前动画序列帧。选择动画模版的过程如下：1. 动画模版缓存池中key为cacheName的动画模版；2. 如果不存在，则加载指定的图集并创建动画模版。</p>
+		*<p>注意：只有指定不为空的cacheName，才能将创建好的动画模版以此为key缓存到动画模版缓存池，否则不进行缓存。</p>
+		*<p>动画模版缓存池是以一定的内存开销来节省CPU开销，当相同的动画模版被多次使用时，相比于每次都创建新的动画模版，使用动画模版缓存池，只需创建一次，缓存之后多次复用，从而节省了动画模版创建的开销。</p>
+		*<p>因为返回值为Animation对象本身，所以可以使用如下语法：ani.loadAtlas(...).loadAtlas(...).play(...);。</p>
+		*@param url 图集路径。需要创建动画模版时，会以此为数据源。
+		*@param loaded （可选）使用指定图集初始化动画完毕的回调。
+		*@param cacheName （可选）动画模板在动画模版缓存池中的key。如果此参数不为空，表示使用动画模版缓存池。如果动画模版缓存池中存在key为cacheName的动画模版，则使用此模版。否则，创建新的动画模版，如果cacheName不为空，则以cacheName为key缓存到动画模版缓存池中，如果cacheName为空，不进行缓存。
 		*@return 返回动画本身。
 		*/
 		__proto.loadAtlas=function(url,loaded,cacheName){
@@ -42733,60 +45911,87 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*加载由IDE制作的动画。播放的帧率则按照IDE设计的帧率。加载后，默认会根据 "url+动画名称" 缓存为动画模板。
-		*【注意】加载解析IDE动画之前，请确保动画使用的图片被预加载，否则会导致动画创建失败。
-		*@param url 动画地址。
-		*@param loaded 加载完毕回调。
+		*<p>加载并解析由LayaAir IDE制作的动画文件，此文件中可能包含多个动画。默认帧率为在IDE中设计的帧率，如果调用过set interval，则使用此帧间隔对应的帧率。加载后创建动画模版，并缓存到动画模版缓存池，key "url#动画名称" 对应相应动画名称的动画模板，key "url#" 对应动画模版集合的默认动画模版。</p>
+		*<p>注意：如果调用本方法前，还没有预加载动画使用的图集，请将atlas参数指定为对应的图集路径，否则会导致动画创建失败。</p>
+		*<p>动画模版缓存池是以一定的内存开销来节省CPU开销，当相同的动画模版被多次使用时，相比于每次都创建新的动画模版，使用动画模版缓存池，只需创建一次，缓存之后多次复用，从而节省了动画模版创建的开销。</p>
+		*<p>因为返回值为Animation对象本身，所以可以使用如下语法：ani.loadAnimation(...).loadAnimation(...).play(...);。</p>
+		*@param url 动画文件路径。可由LayaAir IDE创建并发布。
+		*@param loaded （可选）使用指定动画资源初始化动画完毕的回调。
+		*@param atlas （可选）动画用到的图集地址（可选）。
 		*@return 返回动画本身。
 		*/
-		__proto.loadAnimation=function(url,loaded){
+		__proto.loadAnimation=function(url,loaded,atlas){
 			this._url=url;
 			var _this=this;
+			if (!this._actionName)this._actionName="";
 			if (!_this._setFramesFromCache("")){
-				function onLoaded (loadUrl){
-					if (url===loadUrl){
-						if (!Animation.framesMap[url+"#"]){
-							var aniData=_this._parseGraphicAnimation(Loader.getRes(url));
-							if (!aniData)return;
-							var obj=aniData.animationDic;
-							var flag=true;
-							for (var name in obj){
-								var info=obj[name];
-								if (info.frames.length){
-									Animation.framesMap[url+"#"+name]=info.frames;
-									Animation.framesMap[url+"#"+name+"$len"]=info.interval;
-									}else {
-									flag=false;
-								}
-							}
-							if (!_this._frameRateChanged)_this._interval=aniData.animationList[0].interval;
-							_this.frames=aniData.animationList[0].frames;
-							if (flag){
-								Animation.framesMap[url+"#$len"]=aniData.animationList[0].interval;
-								Animation.framesMap[url+"#"]=_this.frames;
-							}
-							}else {
-							if (!_this._frameRateChanged)_this._interval=Animation.framesMap[url+"#$len"];
-							_this.frames=Animation.framesMap[url+"#"];
-						}
-						if (loaded)loaded.run();
-					}
+				if (!atlas || Loader.getAtlas(atlas)){
+					this._loadAnimationData(url,loaded,atlas);
+					}else {
+					Laya.loader.load(atlas,Handler.create(this,this._loadAnimationData,[url,loaded,atlas]),null,"atlas")
 				}
-				if (Loader.getRes(url))onLoaded(url);
-				else Laya.loader.load(url,Handler.create(null,onLoaded,[url]),null,"json");
-				Loader.clearRes(url);
 				}else {
+				_this._setFramesFromCache(this._actionName,true);
 				if (loaded)loaded.run();
 			}
 			return this;
 		}
 
 		/**@private */
-		__proto._parseGraphicAnimation=function(animationData){
-			return GraphicAnimation.parseAnimationData(animationData)
+		__proto._loadAnimationData=function(url,loaded,atlas){
+			var _$this=this;
+			if (atlas && !Loader.getAtlas(atlas)){
+				console.warn("atlas load fail:"+atlas);
+				return;
+			};
+			var _this=this;
+			function onLoaded (loadUrl){
+				if (!Loader.getRes(loadUrl))return;
+				if (url===loadUrl){
+					var tAniO;
+					if (!Animation.framesMap[url+"#"]){
+						var aniData=_this._parseGraphicAnimation(Loader.getRes(url));
+						if (!aniData)return;
+						var aniList=aniData.animationList;
+						var i=0,len=aniList.length;
+						var defaultO;
+						for (i=0;i < len;i++){
+							tAniO=aniList[i];
+							Animation.framesMap[url+"#"+tAniO.name]=tAniO;
+							if (!defaultO)defaultO=tAniO;
+						}
+						if (defaultO){
+							Animation.framesMap[url+"#"]=defaultO;
+							_this._setFramesFromCache(_$this._actionName,true);
+							_$this.index=0;
+						}
+						_$this._checkResumePlaying();
+						}else {
+						_this._setFramesFromCache(_$this._actionName,true);
+						_$this.index=0;
+						_$this._checkResumePlaying();
+					}
+					if (loaded)loaded.run();
+				}
+			}
+			if (Loader.getRes(url))onLoaded(url);
+			else Laya.loader.load(url,Handler.create(null,onLoaded,[url]),null,"json");
+			Loader.clearRes(url);
 		}
 
-		/**动画帧信息，里面存储的是Graphics数组，Animation本身就是不断切换Graphics来实现动画效果。*/
+		/**@private */
+		__proto._parseGraphicAnimation=function(animationData){
+			return GraphicAnimation.parseAnimationData(animationData);
+		}
+
+		/**@private */
+		__proto._parseGraphicAnimationByData=function(animationObject){
+			return GraphicAnimation.parseAnimationByData(animationObject);
+		}
+
+		/**
+		*当前动画的帧图像数组。本类中，每个帧图像是一个Graphics对象，而动画播放就是定时切换Graphics对象的过程。
+		*/
 		__getset(0,__proto,'frames',function(){
 			return this._frames;
 			},function(value){
@@ -42798,19 +46003,33 @@ var Laya=window.Laya=(function(window,document){
 			}
 		});
 
-		/**是否自动播放，默认为false，如果设置为true，则动画被添加到舞台后，就会自动播放*/
+		/**
+		*是否自动播放，默认为false。如果设置为true，则动画被创建并添加到舞台后自动播放。
+		*/
 		__getset(0,__proto,'autoPlay',null,function(value){
 			if (value)this.play();
 			else this.stop();
 		});
 
-		/**动画数据源，可以是图集，图片集合，IDE动画
-		*比如：图集："xx/a1.json" 图片集合："a1.png,a2.png,a3.png" IDE动画"xx/a1.ani"
+		/**
+		*<p>动画数据源。</p>
+		*<p>类型如下：<br/>
+		*1. LayaAir IDE动画文件路径：使用此类型需要预加载所需的图集资源，否则会创建失败，如果不想预加载或者需要创建完毕的回调，请使用loadAnimation(...)方法；<br/>
+		*2. 图集路径：使用此类型创建的动画模版不会被缓存到动画模版缓存池中，如果需要缓存或者创建完毕的回调，请使用loadAtlas(...)方法；<br/>
+		*3. 图片路径集合：使用此类型创建的动画模版不会被缓存到动画模版缓存池中，如果需要缓存，请使用loadImages(...)方法。</p>
+		*@param value 数据源。比如：图集："xx/a1.atlas"；图片集合："a1.png,a2.png,a3.png"；LayaAir IDE动画"xx/a1.ani"。
 		*/
 		__getset(0,__proto,'source',null,function(value){
 			if (value.indexOf(".ani")>-1)this.loadAnimation(value);
 			else if (value.indexOf(".json")>-1 || value.indexOf("als")>-1 || value.indexOf("atlas")>-1)this.loadAtlas(value);
 			else this.loadImages(value.split(","));
+		});
+
+		/**
+		*设置自动播放的动画名称，在LayaAir IDE中可以创建的多个动画组成的动画集合，选择其中一个动画名称进行播放。
+		*/
+		__getset(0,__proto,'autoAnimation',null,function(value){
+			this.play(0,true,value);
 		});
 
 		Animation.createFrames=function(url,name){
@@ -42854,16 +46073,16 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*关键帧动画播放类
-	*
+	*关键帧动画播放类。
 	*/
 	//class laya.display.FrameAnimation extends laya.display.AnimationPlayerBase
 	var FrameAnimation=(function(_super){
 		function FrameAnimation(){
 			this._targetDic=null;
 			this._animationData=null;
+			this._animationNewFrames=null;
 			FrameAnimation.__super.call(this);
-			if(FrameAnimation._sortIndexFun==null){
+			if (FrameAnimation._sortIndexFun==null){
 				FrameAnimation._sortIndexFun=MathUtil.sortByKey("index",false,true);
 			}
 		}
@@ -42879,16 +46098,22 @@ var Laya=window.Laya=(function(window,document){
 		*/
 		__proto._setUp=function(targetDic,animationData){
 			this._labels=null;
+			this._animationNewFrames=null;
 			this._targetDic=targetDic;
 			this._animationData=animationData;
 			this.interval=1000 / animationData.frameRate;
 			if (animationData.parsed){
 				this._count=animationData.count;
-				}else{
+				this._labels=animationData.labels;
+				this._animationNewFrames=animationData.animationNewFrames;
+				}else {
+				this._animationNewFrames=[];
 				this._calculateDatas();
 			}
 			animationData.parsed=true;
+			animationData.labels=this._labels;
 			animationData.count=this._count;
+			animationData.animationNewFrames=this._animationNewFrames;
 		}
 
 		/**@inheritDoc */
@@ -42900,11 +46125,11 @@ var Laya=window.Laya=(function(window,document){
 
 		/**@inheritDoc */
 		__proto._displayToIndex=function(value){
-			if(!this._animationData)return;
-			if(value<0)value=0;
-			if(value>this._count)value=this._count;
+			if (!this._animationData)return;
+			if (value < 0)value=0;
+			if (value > this._count)value=this._count;
 			var nodes=this._animationData.nodes,i=0,len=nodes.length;
-			for(i=0;i<len;i++){
+			for (i=0;i < len;i++){
 				this._displayNodeToFrame(nodes[i],value);
 			}
 		}
@@ -42918,19 +46143,19 @@ var Laya=window.Laya=(function(window,document){
 		*
 		*/
 		__proto._displayNodeToFrame=function(node,frame,targetDic){
-			if(!targetDic)targetDic=this._targetDic;
+			if (!targetDic)targetDic=this._targetDic;
 			var target=targetDic[node.target];
-			if(!target){
+			if (!target){
 				return;
 			};
 			var frames=node.frames,key,propFrames,value;
 			var keys=node.keys,i=0,len=keys.length;
-			for(i=0;i<len;i++){
+			for (i=0;i < len;i++){
 				key=keys[i];
 				propFrames=frames[key];
-				if(propFrames.length>frame){
+				if (propFrames.length > frame){
 					value=propFrames[frame];
-					}else{
+					}else {
 					value=propFrames[propFrames.length-1];
 				}
 				target[key]=value;
@@ -42943,10 +46168,10 @@ var Laya=window.Laya=(function(window,document){
 		*
 		*/
 		__proto._calculateDatas=function(){
-			if(!this._animationData)return;
+			if (!this._animationData)return;
 			var nodes=this._animationData.nodes,i=0,len=nodes.length,tNode;
 			this._count=0;
-			for(i=0;i<len;i++){
+			for (i=0;i < len;i++){
 				tNode=nodes[i];
 				this._calculateNodeKeyFrames(tNode);
 			}
@@ -42961,22 +46186,50 @@ var Laya=window.Laya=(function(window,document){
 		*/
 		__proto._calculateNodeKeyFrames=function(node){
 			var keyFrames=node.keyframes,key,tKeyFrames,target=node.target;
-			if(!node.frames){
+			if (!node.frames){
 				node.frames={};
 			}
-			if(!node.keys){
+			if (!node.keys){
 				node.keys=[];
-				}else{
+				}else {
 				node.keys.length=0;
 			}
-			for(key in keyFrames){
+			if (!node.initValues){
+				node.initValues={};
+			}
+			for (key in keyFrames){
 				tKeyFrames=keyFrames[key];
-				if(!node.frames[key]){
+				if (!node.frames[key]){
 					node.frames[key]=[];
+				}
+				if (this._targetDic && this._targetDic[target]){
+					node.initValues[key]=this._targetDic[target][key];
 				}
 				tKeyFrames.sort(FrameAnimation._sortIndexFun);
 				node.keys.push(key);
 				this._calculateNodePropFrames(tKeyFrames,node.frames[key],key,target);
+			}
+		}
+
+		/**
+		*将动画控制对象还原到动画控制之前的状态
+		*/
+		__proto.resetToInitState=function(){
+			if (!this._targetDic)return;
+			if (!this._animationData)return;
+			var nodes=this._animationData.nodes,i=0,len=nodes.length;
+			var tNode;
+			var initValues;
+			for (i=0;i < len;i++){
+				tNode=nodes[i];
+				initValues=tNode.initValues;
+				if (!initValues)continue ;
+				var target=this._targetDic[tNode.target];
+				if (!target)continue ;
+				var key;
+				for (key in initValues){
+					target[key]=initValues[key];
+				}
 			}
 		}
 
@@ -42992,12 +46245,14 @@ var Laya=window.Laya=(function(window,document){
 		__proto._calculateNodePropFrames=function(keyframes,frames,key,target){
 			var i=0,len=keyframes.length-1;
 			frames.length=keyframes[len].index+1;
-			for(i=0;i<len;i++){
+			for (i=0;i < len;i++){
 				this._dealKeyFrame(keyframes[i]);
 				this._calculateFrameValues(keyframes[i],keyframes[i+1],frames);
 			}
-			if(len==0){
+			if (len==0){
 				frames[0]=keyframes[0].value;
+				if (this._animationNewFrames)
+					this._animationNewFrames[keyframes[0].index]=true;
 			}
 			this._dealKeyFrame(keyframes[i]);
 		}
@@ -43007,7 +46262,7 @@ var Laya=window.Laya=(function(window,document){
 		*
 		*/
 		__proto._dealKeyFrame=function(keyFrame){
-			if (keyFrame.label&&keyFrame.label !="")this.addLabel(keyFrame.label,keyFrame.index);
+			if (keyFrame.label && keyFrame.label !="")this.addLabel(keyFrame.label,keyFrame.index);
 		}
 
 		/**
@@ -43024,19 +46279,26 @@ var Laya=window.Laya=(function(window,document){
 			var startValue=startFrame.value;
 			var dValue=endFrame.value-startFrame.value;
 			var dLen=end-start;
-			if(end>this._count)this._count=end;
-			if(startFrame.tween){
+			if (end > this._count)this._count=end;
+			if (startFrame.tween){
 				easeFun=Ease[startFrame.tweenMethod];
-				if(easeFun==null){
+				if (easeFun==null){
 					easeFun=Ease.linearNone;
 				}
-				for(i=start;i<end;i++){
+				for (i=start;i < end;i++){
 					result[i]=easeFun(i-start,startValue,dValue,dLen);
+					if (this._animationNewFrames){
+						this._animationNewFrames[i]=true;
+					}
 				}
-				}else{
-				for(i=start;i<end;i++){
+				}else {
+				for (i=start;i < end;i++){
 					result[i]=startValue;
 				}
+			}
+			if (this._animationNewFrames){
+				this._animationNewFrames[startFrame.index]=true;
+				this._animationNewFrames[endFrame.index]=true;
 			}
 			result[endFrame.index]=endFrame.value;
 		}
@@ -43048,6 +46310,7 @@ var Laya=window.Laya=(function(window,document){
 
 	/**
 	*<p><code>Input</code> 类用于创建显示对象以显示和输入文本。</p>
+	*<p>Input 类封装了原生的文本输入框，由于不同浏览器的差异，会导致此对象的默认文本的位置与用户点击输入时的文本的位置有少许的偏差。</p>
 	*/
 	//class laya.display.Input extends laya.display.Text
 	var Input=(function(_super){
@@ -43083,21 +46346,12 @@ var Laya=window.Laya=(function(window,document){
 			laya.display.Input.inputElement.selectionEnd=endIndex;
 		}
 
-		/**@private */
 		__proto._onUnDisplay=function(e){
 			this.focus=false;
 		}
 
-		/**@private */
 		__proto._onMouseDown=function(e){
 			this.focus=true;
-			Laya.stage.on("mousedown",this,this._checkBlur);
-		}
-
-		/**@private */
-		__proto._checkBlur=function(e){
-			if (e.nativeEvent.target !=laya.display.Input.input && e.nativeEvent.target !=laya.display.Input.area && e.target !=this)
-				this.focus=false;
 		}
 
 		/**@inheritDoc*/
@@ -43106,74 +46360,31 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*在输入期间，如果 Input 实例的位置改变，调用该方法同步输入框的位置。
+		*在输入期间，如果 Input 实例的位置改变，调用_syncInputTransform同步输入框的位置。
 		*/
 		__proto._syncInputTransform=function(){
-			var style=this.nativeInput.style;
-			var stage=Laya.stage;
-			var rec;
-			rec=Utils.getGlobalPosAndScale(this);
-			var m=stage._canvasTransform.clone();
-			var tm=m.clone();
-			tm.rotate(-Math.PI / 180 *Laya.stage.canvasDegree);
-			tm.scale(Laya.stage.clientScaleX,Laya.stage.clientScaleY);
-			var perpendicular=(Laya.stage.canvasDegree % 180 !=0);
-			var sx=perpendicular ? tm.d :tm.a;
-			var sy=perpendicular ? tm.a :tm.d;
-			tm.destroy();
-			var tx=this.padding[3];
-			var ty=this.padding[0];
-			if (Laya.stage.canvasDegree==0){
-				tx+=rec.x;
-				ty+=rec.y;
-				tx *=sx;
-				ty *=sy;
-				tx+=m.tx;
-				ty+=m.ty;
-				}else if (Laya.stage.canvasDegree==90){
-				tx+=rec.y;
-				ty+=rec.x;
-				tx *=sx;
-				ty *=sy;
-				tx=m.tx-tx;
-				ty+=m.ty;
-				}else{
-				tx+=rec.y;
-				ty+=rec.x;
-				tx *=sx;
-				ty *=sy;
-				tx+=m.tx;
-				ty=m.ty-ty;
-			};
-			var quarter=0.785;
-			var r=Math.atan2(rec.height,rec.width)-quarter;
-			var sin=Math.sin(r),cos=Math.cos(r);
-			var tsx=cos *rec.width+sin *rec.height;
-			var tsy=cos *rec.height-sin *rec.width;
-			sx *=(perpendicular ? tsy :tsx);
-			sy *=(perpendicular ? tsx :tsy);
-			m.tx=0;
-			m.ty=0;
-			r *=180 / 3.1415;
-			Input.inputContainer.style.transform="scale("+sx+","+sy+") rotate("+(Laya.stage.canvasDegree+r)+"deg)";
-			Input.inputContainer.style.webkitTransform="scale("+sx+","+sy+") rotate("+(Laya.stage.canvasDegree+r)+"deg)";
-			Input.inputContainer.setPos(tx,ty);
-			m.destroy();
+			var inputElement=this.nativeInput;
+			var transform=Utils.getTransformRelativeToWindow(this,this.padding[3],this.padding[0]);
 			var inputWid=this._width-this.padding[1]-this.padding[3];
 			var inputHei=this._height-this.padding[0]-this.padding[2];
-			this.nativeInput.setSize(inputWid,inputHei);
 			if (Render.isConchApp){
-				this.nativeInput.setPos(tx,ty);
-				this.nativeInput.setScale(sx,sy);
+				inputElement.setScale(transform.scaleX,transform.scaleY);
+				inputElement.setSize(inputWid,inputHei);
+				inputElement.setPos(transform.x,transform.y);
+				}else {
+				Input.inputContainer.style.transform=Input.inputContainer.style.webkitTransform="scale("+transform.scaleX+","+transform.scaleY+") rotate("+(Laya.stage.canvasDegree)+"deg)";
+				inputElement.style.width=inputWid+'px';
+				inputElement.style.height=inputHei+'px';
+				Input.inputContainer.style.left=transform.x+'px';
+				Input.inputContainer.style.top=transform.y+'px';
 			}
 		}
 
-		/**选中所有文本。*/
+		/**选中当前实例的所有文本。*/
 		__proto.select=function(){
 			this.nativeInput.select();
 		}
 
-		/**@private 设置输入法（textarea或input）*/
 		__proto._setInputMethod=function(){
 			Input.input.parentElement && (Input.inputContainer.removeChild(Input.input));
 			Input.area.parentElement && (Input.inputContainer.removeChild(Input.area));
@@ -43181,7 +46392,6 @@ var Laya=window.Laya=(function(window,document){
 			Input.inputContainer.appendChild(Input.inputElement);
 		}
 
-		/**@private */
 		__proto._focusIn=function(){
 			laya.display.Input.isInputting=true;
 			var input=this.nativeInput;
@@ -43190,6 +46400,9 @@ var Laya=window.Laya=(function(window,document){
 			cssStyle.whiteSpace=(this.wordWrap ? "pre-wrap" :"nowrap");
 			this._setPromptColor();
 			input.readOnly=!this._editable;
+			if (Render.isConchApp){
+				input.setForbidEdit(!this._editable);
+			}
 			input.maxLength=this._maxChars;
 			var padding=this.padding;
 			input.type=this._type;
@@ -43205,7 +46418,7 @@ var Laya=window.Laya=(function(window,document){
 			this.typeset();
 			input.setColor(this._originColor);
 			input.setFontSize(this.fontSize);
-			input.setFontFace(this.font);
+			input.setFontFace(Browser.onIPhone ? (Text._fontFamilyMap[this.font] || this.font):this.font);
 			if (Render.isConchApp){
 				input.setMultiAble && input.setMultiAble(this._multiline);
 			}
@@ -43224,6 +46437,7 @@ var Laya=window.Laya=(function(window,document){
 			Input.promptStyleDOM=Browser.getElementById("promptStyle");
 			if (!Input.promptStyleDOM){
 				Input.promptStyleDOM=Browser.createElement("style");
+				Input.promptStyleDOM.setAttribute("id","promptStyle");
 				Browser.document.head.appendChild(Input.promptStyleDOM);
 			}
 			Input.promptStyleDOM.innerText="input::-webkit-input-placeholder, textarea::-webkit-input-placeholder {"+"color:"+this._promptColor+"}"+"input:-moz-placeholder, textarea:-moz-placeholder {"+"color:"+this._promptColor+"}"+"input::-moz-placeholder, textarea::-moz-placeholder {"+"color:"+this._promptColor+"}"+"input:-ms-input-placeholder, textarea:-ms-input-placeholder {"+"color:"+this._promptColor+"}";
@@ -43247,7 +46461,6 @@ var Laya=window.Laya=(function(window,document){
 			this.event("blur");
 			if (Render.isConchApp)this.nativeInput.blur();
 			Browser.onPC && Laya.timer.clear(this,this._syncInputTransform);
-			Laya.stage.off("mousedown",this,this._checkBlur);
 		}
 
 		/**@private */
@@ -43293,8 +46506,8 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*字符数量限制，默认为10000。
-		*设置字符数量限制时，小于等于0的值将会限制字符数量为10000。
+		*<p>字符数量限制，默认为10000。</p>
+		*<p>设置字符数量限制时，小于等于0的值将会限制字符数量为10000。</p>
 		*/
 		__getset(0,__proto,'maxChars',function(){
 			return this._maxChars;
@@ -43349,12 +46562,12 @@ var Laya=window.Laya=(function(window,document){
 				_super.prototype._$set_text.call(this,(this._text==this._prompt)?value:this._text);
 			else
 			_super.prototype._$set_text.call(this,value);
-			this._prompt=value;
+			this._prompt=Text.langPacks && Text.langPacks[value] ? Text.langPacks[value] :value;
 		});
 
 		// 因此 调用focus接口是无法都在移动平台立刻弹出键盘的
 		/**
-		*表示焦点是否在显示对象上。
+		*表示焦点是否在此实例上。
 		*/
 		__getset(0,__proto,'focus',function(){
 			return this._focus;
@@ -43362,9 +46575,12 @@ var Laya=window.Laya=(function(window,document){
 			var input=this.nativeInput;
 			if (this._focus!==value){
 				if (value){
-					input.target && (input.target.focus=false);
+					if (input.target){
+						input.target._focusOut();
+						}else {
+						this._setInputMethod();
+					}
 					input.target=this;
-					this._setInputMethod();
 					this._focusIn();
 					}else {
 					input.target=null;
@@ -43401,6 +46617,9 @@ var Laya=window.Laya=(function(window,document){
 			return this._editable;
 			},function(value){
 			this._editable=value;
+			if (Render.isConchApp){
+				Input.input.setForbidEdit(!value);
+			}
 		});
 
 		/**
@@ -43414,8 +46633,22 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*输入框类型为Input静态常量之一。
-		*平台兼容性参见http://www.w3school.com.cn/html5/html_5_form_input_types.asp。
+		*<p>输入框类型为Input静态常量之一。</p>
+		*<ul>
+		*<li>TYPE_TEXT</li>
+		*<li>TYPE_PASSWORD</li>
+		*<li>TYPE_EMAIL</li>
+		*<li>TYPE_URL</li>
+		*<li>TYPE_NUMBER</li>
+		*<li>TYPE_RANGE</li>
+		*<li>TYPE_DATE</li>
+		*<li>TYPE_MONTH</li>
+		*<li>TYPE_WEEK</li>
+		*<li>TYPE_TIME</li>
+		*<li>TYPE_DATE_TIME</li>
+		*<li>TYPE_DATE_TIME_LOCAL</li>
+		*</ul>
+		*<p>平台兼容性参见http://www.w3school.com.cn/html5/html_5_form_input_types.asp。</p>
 		*/
 		__getset(0,__proto,'type',function(){
 			return this._type;
@@ -43427,7 +46660,11 @@ var Laya=window.Laya=(function(window,document){
 			this._type=value;
 		});
 
-		//[Deprecated]
+		/**
+		*<p>原生输入框 X 轴调整值，用来调整输入框坐标。</p>
+		*<p>由于即使设置了该值，在各平台和浏览器之间也不一定一致，inputElementXAdjuster已弃用。</p>
+		*@deprecated
+		*/
 		__getset(0,__proto,'inputElementXAdjuster',function(){
 			console.warn("deprecated: 由于即使设置了该值，在各平台和浏览器之间也不一定一致，inputElementXAdjuster已弃用。");
 			return 0;
@@ -43479,12 +46716,11 @@ var Laya=window.Laya=(function(window,document){
 			input.addEventListener('mousemove',Input._stopEvent);
 			input.addEventListener('mousedown',Input._stopEvent);
 			input.addEventListener('touchmove',Input._stopEvent);
+			input.setFontFace=function (fontFace){input.style.fontFamily=fontFace;};
 			if(!Render.isConchApp){
 				input.setColor=function (color){input.style.color=color;};
 				input.setFontSize=function (fontSize){input.style.fontSize=fontSize+'px';};
-				input.setSize=function (w,h){input.style.width=w+'px';input.style.height=h+'px';};
 			}
-			input.setFontFace=function (fontFace){input.style.fontFamily=fontFace;};
 		}
 
 		Input._processInputting=function(e){
@@ -43529,6 +46765,7 @@ var Laya=window.Laya=(function(window,document){
 		Input.promptStyleDOM=null
 		Input.inputHeight=45;
 		Input.isInputting=false;
+		Input.stageMatrix=null
 		__static(Input,
 		['IOS_IFRAME',function(){return this.IOS_IFRAME=(Browser.onIOS && Browser.window.top !=Browser.window.self);}
 		]);
@@ -43574,7 +46811,7 @@ var Laya=window.Laya=(function(window,document){
 			for (var name in value){
 				var comp=this.getChildByName(name);
 				if (comp)comp.dataSource=value[name];
-				else if (this.hasOwnProperty(name))this[name]=value[name];
+				else if (this.hasOwnProperty(name)&& !((typeof (this[name])=='function')))this[name]=value[name];
 			}
 		});
 
@@ -43586,8 +46823,7 @@ var Laya=window.Laya=(function(window,document){
 	*<code>Button</code> 组件用来表示常用的多态按钮。 <code>Button</code> 组件可显示文本标签、图标或同时显示两者。 *
 	*<p>可以是单态，两态和三态，默认三态(up,over,down)。</p>
 	*
-	*@example 以下示例代码，创建了一个 <code>Button</code> 实例。
-	*<listing version="3.0">
+	*@example <caption>以下示例代码，创建了一个 <code>Button</code> 实例。</caption>
 	*package
 	*{
 		*import laya.ui.Button;
@@ -43615,8 +46851,7 @@ var Laya=window.Laya=(function(window,document){
 				*}
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*Laya.init(640,800);//设置游戏画布宽高、渲染模式。
 	*Laya.stage.bgColor="#efefef";//设置画布的背景颜色。
 	*Laya.loader.load("resource/ui/button.png",laya.utils.Handler.create(this,loadComplete));//加载资源
@@ -43633,8 +46868,7 @@ var Laya=window.Laya=(function(window,document){
 	*{
 		*console.log("按钮被点击了。",button);
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*import Button=laya.ui.Button;
 	*import Handler=laya.utils.Handler;
 	*class Button_Example{
@@ -43657,7 +46891,6 @@ var Laya=window.Laya=(function(window,document){
 			*console.log("按钮button被点击了！")
 			*}
 		*}
-	*</listing>
 	*/
 	//class laya.ui.Button extends laya.ui.Component
 	var Button=(function(_super){
@@ -43708,16 +46941,22 @@ var Laya=window.Laya=(function(window,document){
 				this._text.overflow=Text.HIDDEN;
 				this._text.align="center";
 				this._text.valign="middle";
+				this._text.width=this._width;
+				this._text.height=this._height;
 			}
 		}
 
 		/**@inheritDoc */
 		__proto.initialize=function(){
-			this.on("mouseover",this,this.onMouse);
-			this.on("mouseout",this,this.onMouse);
-			this.on("mousedown",this,this.onMouse);
-			this.on("mouseup",this,this.onMouse);
-			this.on("click",this,this.onMouse);
+			if (this._mouseEnableState!==1){
+				this.mouseEnabled=true;
+				this._setBit(0x2,true);
+			}
+			this._createListener("mouseover",this,this.onMouse,null,false,false);
+			this._createListener("mouseout",this,this.onMouse,null,false,false);
+			this._createListener("mousedown",this,this.onMouse,null,false,false);
+			this._createListener("mouseup",this,this.onMouse,null,false,false);
+			this._createListener("click",this,this.onMouse,null,false,false);
 		}
 
 		/**
@@ -43862,7 +47101,7 @@ var Laya=window.Laya=(function(window,document){
 		*<li>2：两态。图片将以竖直方向被等比切割为2部分，从上向下，依次为
 		*弹起状态皮肤、
 		*按下和经过及选中状态皮肤。</li>
-		*<li>3：三态。图片将以竖直方向被等比切割为2部分，从上向下，依次为
+		*<li>3：三态。图片将以竖直方向被等比切割为3部分，从上向下，依次为
 		*弹起状态皮肤、
 		*经过状态皮肤、
 		*按下和选中状态皮肤</li>
@@ -43871,6 +47110,7 @@ var Laya=window.Laya=(function(window,document){
 		__getset(0,__proto,'stateNum',function(){
 			return this._stateNum;
 			},function(value){
+			value=parseInt(value);
 			if (this._stateNum !=value){
 				this._stateNum=value < 1 ? 1 :value > 3 ? 3 :value;
 				this.callLater(this.changeClips);
@@ -43918,7 +47158,7 @@ var Laya=window.Laya=(function(window,document){
 			if (!this._text && !value)return;
 			this.createText();
 			if (this._text.text !=value){
-				value && !this._text.displayedInStage && this.addChild(this._text);
+				value && !this._text.parent && this.addChild(this._text);
 				this._text.text=(value+"").replace(/\\n/g,"\n");
 				this._setStateChanged();
 			}
@@ -44077,8 +47317,7 @@ var Laya=window.Laya=(function(window,document){
 	*从左向右，从上到下，分割组合为一个切片动画。</p>
 	*Image和Clip组件是唯一支持异步加载的两个组件，比如clip.skin="abc/xxx.png"，其他UI组件均不支持异步加载。
 	*
-	*@example 以下示例代码，创建了一个 <code>Clip</code> 实例。
-	*<listing version="3.0">
+	*@example <caption>以下示例代码，创建了一个 <code>Clip</code> 实例。</caption>
 	*package
 	*{
 		*import laya.ui.Clip;
@@ -44113,8 +47352,7 @@ var Laya=window.Laya=(function(window,document){
 				*}
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*Laya.init(640,800);//设置游戏画布宽高
 	*Laya.stage.bgColor="#efefef";//设置画布的背景颜色
 	*var clip;
@@ -44139,8 +47377,7 @@ var Laya=window.Laya=(function(window,document){
 			*clip.play();
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*import Clip=laya.ui.Clip;
 	*import Handler=laya.utils.Handler;
 	*class Clip_Example {
@@ -44169,7 +47406,6 @@ var Laya=window.Laya=(function(window,document){
 			*}
 		*}
 	*
-	*</listing>
 	*/
 	//class laya.ui.Clip extends laya.ui.Component
 	var Clip=(function(_super){
@@ -44199,8 +47435,8 @@ var Laya=window.Laya=(function(window,document){
 		__class(Clip,'laya.ui.Clip',_super);
 		var __proto=Clip.prototype;
 		/**@inheritDoc */
-		__proto.destroy=function(clearFromCache){
-			(clearFromCache===void 0)&& (clearFromCache=false);
+		__proto.destroy=function(destroyChild){
+			(destroyChild===void 0)&& (destroyChild=true);
 			_super.prototype.destroy.call(this,true);
 			this._bitmap && this._bitmap.destroy();
 			this._bitmap=null;
@@ -44220,18 +47456,12 @@ var Laya=window.Laya=(function(window,document){
 			this.graphics=this._bitmap=new AutoBitmap();
 		}
 
-		/**@inheritDoc */
-		__proto.initialize=function(){
-			this.on("display",this,this._onDisplay);
-			this.on("undisplay",this,this._onDisplay);
-		}
-
 		/**@private */
 		__proto._onDisplay=function(e){
 			if (this._isPlaying){
 				if (this._displayedInStage)this.play();
 				else this.stop();
-				}else if (this._autoPlay && this._displayedInStage){
+				}else if (this._autoPlay){
 				this.play();
 			}
 		}
@@ -44287,6 +47517,8 @@ var Laya=window.Laya=(function(window,document){
 			this.index=0;
 			this._index++;
 			Laya.timer.loop(this.interval,this,this._loop);
+			this.on("display",this,this._onDisplay);
+			this.on("undisplay",this,this._onDisplay);
 		}
 
 		/**
@@ -44358,7 +47590,7 @@ var Laya=window.Laya=(function(window,document){
 		__getset(0,__proto,'clipX',function(){
 			return this._clipX;
 			},function(value){
-			this._clipX=value;
+			this._clipX=value || 1;
 			this._setClipChanged()
 		});
 
@@ -44366,7 +47598,7 @@ var Laya=window.Laya=(function(window,document){
 		__getset(0,__proto,'clipY',function(){
 			return this._clipY;
 			},function(value){
-			this._clipY=value;
+			this._clipY=value || 1;
 			this._setClipChanged()
 		});
 
@@ -44500,8 +47732,7 @@ var Laya=window.Laya=(function(window,document){
 	/**
 	*<code>ColorPicker</code> 组件将显示包含多个颜色样本的列表，用户可以从中选择颜色。
 	*
-	*@example 以下示例代码，创建了一个 <code>ColorPicker</code> 实例。
-	*<listing version="3.0">
+	*@example <caption>以下示例代码，创建了一个 <code>ColorPicker</code> 实例。</caption>
 	*package
 	*{
 		*import laya.ui.ColorPicker;
@@ -44530,8 +47761,7 @@ var Laya=window.Laya=(function(window,document){
 				*}
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*Laya.init(640,800);//设置游戏画布宽高
 	*Laya.stage.bgColor="#efefef";//设置画布的背景颜色
 	*Laya.loader.load("resource/ui/color.png",laya.utils.Handler.create(this,loadComplete));//加载资源
@@ -44549,8 +47779,7 @@ var Laya=window.Laya=(function(window,document){
 	*{
 		*console.log("当前选择的颜色： "+colorPicket.selectedColor);
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*import ColorPicker=laya.ui.ColorPicker;
 	*import Handler=laya.utils.Handler;
 	*class ColorPicker_Example {
@@ -44572,7 +47801,6 @@ var Laya=window.Laya=(function(window,document){
 			*console.log("当前选择的颜色： "+colorPicket.selectedColor);
 			*}
 		*}
-	*</listing>
 	*/
 	//class laya.ui.ColorPicker extends laya.ui.Component
 	var ColorPicker=(function(_super){
@@ -44688,6 +47916,7 @@ var Laya=window.Laya=(function(window,document){
 			var py=p.y+this._colorButton.height;
 			py=py+this._colorPanel.height <=Laya.stage.height ? py :p.y-this._colorPanel.height;
 			this._colorPanel.pos(px,py);
+			this._colorPanel.zOrder=1001;
 			Laya._currentStage.addChild(this._colorPanel);
 			Laya.stage.on("mousedown",this,this.removeColorBox);
 		}
@@ -44858,8 +48087,7 @@ var Laya=window.Laya=(function(window,document){
 	/**
 	*<code>ComboBox</code> 组件包含一个下拉列表，用户可以从该列表中选择单个值。
 	*
-	*@example 以下示例代码，创建了一个 <code>ComboBox</code> 实例。
-	*<listing version="3.0">
+	*@example <caption>以下示例代码，创建了一个 <code>ComboBox</code> 实例。</caption>
 	*package
 	*{
 		*import laya.ui.ComboBox;
@@ -44887,8 +48115,7 @@ var Laya=window.Laya=(function(window,document){
 				*}
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*Laya.init(640,800);//设置游戏画布宽高。
 	*Laya.stage.bgColor="#efefef";//设置画布的背景颜色。
 	*Laya.loader.load("resource/ui/button.png",laya.utils.Handler.create(this,loadComplete));//加载资源
@@ -44904,8 +48131,7 @@ var Laya=window.Laya=(function(window,document){
 	*{
 		*console.log("当前选中的项对象索引： ",index);
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*import ComboBox=laya.ui.ComboBox;
 	*import Handler=laya.utils.Handler;
 	*class ComboBox_Example {
@@ -44927,7 +48153,6 @@ var Laya=window.Laya=(function(window,document){
 			*}
 		*}
 	*
-	*</listing>
 	*/
 	//class laya.ui.ComboBox extends laya.ui.Component
 	var ComboBox=(function(_super){
@@ -44936,7 +48161,6 @@ var Laya=window.Laya=(function(window,document){
 			this._button=null;
 			this._list=null;
 			this._isOpen=false;
-			this._scrollBar=null;
 			this._itemSize=12;
 			this._labels=[];
 			this._selectedIndex=-1;
@@ -44946,6 +48170,7 @@ var Laya=window.Laya=(function(window,document){
 			this._listChanged=false;
 			this._itemChanged=false;
 			this._scrollBarSkin=null;
+			this._isCustomList=false;
 			this.itemRender=null;
 			ComboBox.__super.call(this);
 			this._itemColors=Styles.comboBoxItemColors;
@@ -44961,10 +48186,8 @@ var Laya=window.Laya=(function(window,document){
 			_super.prototype.destroy.call(this,destroyChild);
 			this._button && this._button.destroy(destroyChild);
 			this._list && this._list.destroy(destroyChild);
-			this._scrollBar && this._scrollBar.destroy(destroyChild);
 			this._button=null;
 			this._list=null;
-			this._scrollBar=null;
 			this._itemColors=null;
 			this._labels=null;
 			this._selectHandler=null;
@@ -44980,16 +48203,15 @@ var Laya=window.Laya=(function(window,document){
 
 		__proto._createList=function(){
 			this._list=new List();
+			if (this._scrollBarSkin)this._list.vScrollBarSkin=this._scrollBarSkin;
+			this._setListEvent(this._list);
+		}
+
+		__proto._setListEvent=function(list){
 			this._list.selectEnable=true;
 			this._list.on("mousedown",this,this.onListDown);
 			this._list.mouseHandler=Handler.create(this,this.onlistItemMouse,null,false);
-			if (this._scrollBarSkin){
-				this._list.addChild(this._scrollBar=new VScrollBar());
-				this._scrollBar.skin=this._scrollBarSkin;
-				this._scrollBar.name="scrollBar";
-				this._scrollBar.y=1;
-				this._scrollBar.on("mousedown",this,this.onScrollBarDown);
-			}
+			if (this._list.scrollBar)this._list.scrollBar.on("mousedown",this,this.onScrollBarDown);
 		}
 
 		/**
@@ -45017,7 +48239,6 @@ var Laya=window.Laya=(function(window,document){
 			this._itemHeight=this._itemSize+6;
 			this._list.itemRender=this.itemRender || {type:"Box",child:[{type:"Label",props:{name:"label",x:1,padding:"3,3,3,3",width:labelWidth,height:this._itemHeight,fontSize:this._itemSize,color:labelColor}}]};
 			this._list.repeatY=this._visibleNum;
-			if (this._scrollBar)this._scrollBar.x=this.width-this._scrollBar.width-1;
 			this._list.refresh();
 		}
 
@@ -45028,6 +48249,7 @@ var Laya=window.Laya=(function(window,document){
 		__proto.onlistItemMouse=function(e,index){
 			var type=e.type;
 			if (type==="mouseover" || type==="mouseout"){
+				if (this._isCustomList)return;
 				var box=this._list.getCell(index);
 				if (!box)return;
 				var label=box.getChildByName("label");
@@ -45065,23 +48287,19 @@ var Laya=window.Laya=(function(window,document){
 		*/
 		__proto.changeItem=function(){
 			this._itemChanged=false;
-			this.runCallLater(this.changeList);
 			this._listHeight=this._labels.length > 0 ? Math.min(this._visibleNum,this._labels.length)*this._itemHeight :this._itemHeight;
-			if (this._scrollBar)this._scrollBar.height=this._listHeight-2;
-			var g=this._list.graphics;
-			g.clear();
-			g.drawRect(0,0,this.width-1,this._listHeight,this._itemColors[4],this._itemColors[3]);
+			if (!this._isCustomList){
+				var g=this._list.graphics;
+				g.clear();
+				g.drawRect(0,0,this.width-1,this._listHeight,this._itemColors[4],this._itemColors[3]);
+			};
 			var a=this._list.array || [];
 			a.length=0;
 			for (var i=0,n=this._labels.length;i < n;i++){
 				a.push({label:this._labels[i]});
 			}
+			this._list.height=this._listHeight;
 			this._list.array=a;
-			if (this._visibleNum > a.length){
-				this._list.height=this._listHeight;
-				}else {
-				this._list.height=0;
-			}
 		}
 
 		__proto.changeSelected=function(){
@@ -45221,7 +48439,7 @@ var Laya=window.Laya=(function(window,document){
 		*获取对 <code>ComboBox</code> 组件所包含的 <code>VScrollBar</code> 滚动条组件的引用。
 		*/
 		__getset(0,__proto,'scrollBar',function(){
-			return this._scrollBar;
+			return this.list.scrollBar;
 		});
 
 		/**
@@ -45235,12 +48453,13 @@ var Laya=window.Laya=(function(window,document){
 				this._button.selected=this._isOpen;
 				if (this._isOpen){
 					this._list || this._createList();
-					this._listChanged && this.changeList();
+					this._listChanged && !this._isCustomList && this.changeList();
 					this._itemChanged && this.changeItem();
 					var p=this.localToGlobal(Point.TEMP.setTo(0,0));
 					var py=p.y+this._button.height;
 					py=py+this._listHeight <=Laya.stage.height ? py :p.y-this._listHeight;
 					this._list.pos(p.x,py);
+					this._list.zOrder=1001;
 					Laya._currentStage.addChild(this._list);
 					Laya.stage.once("mousedown",this,this.removeList);
 					this._list.selectedIndex=this._selectedIndex;
@@ -45284,6 +48503,14 @@ var Laya=window.Laya=(function(window,document){
 		__getset(0,__proto,'list',function(){
 			this._list || this._createList();
 			return this._list;
+			},function(value){
+			if (value){
+				value.removeSelf();
+				this._isCustomList=true;
+				this._list=value;
+				this._setListEvent(value);
+				this._itemHeight=value.getCell(0).height+value.spaceY;
+			}
 		});
 
 		/**@inheritDoc */
@@ -45395,6 +48622,7 @@ var Laya=window.Laya=(function(window,document){
 		__proto.destroy=function(destroyChild){
 			(destroyChild===void 0)&& (destroyChild=true);
 			this.stopScroll();
+			this.target=null;
 			_super.prototype.destroy.call(this,destroyChild);
 			this.upButton && this.upButton.destroy(destroyChild);
 			this.downButton && this.downButton.destroy(destroyChild);
@@ -45555,9 +48783,9 @@ var Laya=window.Laya=(function(window,document){
 			if (!this._checkElastic){
 				if (this.elasticDistance > 0){
 					if (!this._checkElastic && this._lastOffset !=0){
-						this._checkElastic=true;
 						if ((this._lastOffset > 0 && this._value <=this.min)|| (this._lastOffset < 0 && this._value >=this.max)){
 							this._isElastic=true;
+							this._checkElastic=true;
 							}else {
 							this._isElastic=false;
 						}
@@ -45566,16 +48794,14 @@ var Laya=window.Laya=(function(window,document){
 					this._checkElastic=true;
 				}
 			}
-			if (this._checkElastic){
-				if (this._isElastic){
-					if (this._value <=this.min){
-						this.value-=this._lastOffset *Math.max(0,(1-((this.min-this._value)/ this.elasticDistance)));
-						}else if (this._value >=this.max){
-						this.value-=this._lastOffset *Math.max(0,(1-((this._value-this.max)/ this.elasticDistance)));
-					}
-					}else {
-					this.value-=this._lastOffset;
+			if (this._isElastic){
+				if (this._value <=this.min){
+					this.value-=this._lastOffset *Math.max(0,(1-((this.min-this._value)/ this.elasticDistance)));
+					}else if (this._value >=this.max){
+					this.value-=this._lastOffset *Math.max(0,(1-((this._value-this.max)/ this.elasticDistance)));
 				}
+				}else {
+				this.value-=this._lastOffset;
 			}
 		}
 
@@ -45593,6 +48819,7 @@ var Laya=window.Laya=(function(window,document){
 					Tween.to(this,{value:this.max},this.elasticBackTime,Ease.sineOut,Handler.create(this,this.elasticOver));
 				}
 				}else {
+				if (!this._offsets)return;
 				if (this._offsets.length < 1){
 					this._offsets[0]=this.isVertical ? Laya.stage.mouseY-this._lastPoint.y :Laya.stage.mouseX-this._lastPoint.x;
 				};
@@ -45625,14 +48852,16 @@ var Laya=window.Laya=(function(window,document){
 		__proto.tweenMove=function(){
 			this._lastOffset *=this.rollRatio;
 			var tarSpeed=NaN;
-			if (this.elasticDistance > 0){
+			var maxDistance=NaN;
+			maxDistance=this.elasticDistance>0?25:0;
+			if (maxDistance > 0){
 				if (this._lastOffset > 0 && this.value <=this.min){
 					this._isElastic=true;
-					tarSpeed=-(this.min-this.elasticDistance-this.value)*0.5;
+					tarSpeed=-(this.min-maxDistance-this.value)*0.5;
 					if (this._lastOffset > tarSpeed)this._lastOffset=tarSpeed;
 					}else if (this._lastOffset<0&&this.value>=this.max){
 					this._isElastic=true;
-					tarSpeed=-(this.max+this.elasticDistance-this.value)*0.5;
+					tarSpeed=-(this.max+maxDistance-this.value)*0.5;
 					if (this._lastOffset < tarSpeed)this._lastOffset=tarSpeed;
 				}
 			}
@@ -45858,6 +49087,7 @@ var Laya=window.Laya=(function(window,document){
 			this._value=0;
 			this._skin=null;
 			this._bg=null;
+			this._progress=null;
 			this._bar=null;
 			this._tx=NaN;
 			this._ty=NaN;
@@ -45877,8 +49107,10 @@ var Laya=window.Laya=(function(window,document){
 			_super.prototype.destroy.call(this,destroyChild);
 			this._bg && this._bg.destroy(destroyChild);
 			this._bar && this._bar.destroy(destroyChild);
+			this._progress && this._progress.destroy(destroyChild);
 			this._bg=null;
 			this._bar=null;
+			this._progress=null;
 			this.changeHandler=null;
 		}
 
@@ -45892,22 +49124,23 @@ var Laya=window.Laya=(function(window,document){
 		__proto.initialize=function(){
 			this._bar.on("mousedown",this,this.onBarMouseDown);
 			this._bg.sizeGrid=this._bar.sizeGrid="4,4,4,4,0";
+			if (this._progress)this._progress.sizeGrid=this._bar.sizeGrid;
 			this.allowClickBack=true;
 		}
 
 		/**
 		*@private
 		*滑块的的 <code>Event.MOUSE_DOWN</code> 事件侦听处理函数。
-		*@param e
 		*/
 		__proto.onBarMouseDown=function(e){
 			this._globalSacle || (this._globalSacle=new Point());
-			this._globalSacle.setTo(this.globalScaleX,this.globalScaleY);
+			this._globalSacle.setTo(this.globalScaleX || 0.01,this.globalScaleY || 0.01);
 			this._maxMove=this.isVertical ? (this.height-this._bar.height):(this.width-this._bar.width);
 			this._tx=Laya.stage.mouseX;
 			this._ty=Laya.stage.mouseY;
 			Laya.stage.on("mousemove",this,this.mouseMove);
 			Laya.stage.once("mouseup",this,this.mouseUp);
+			Laya.stage.once("mouseout",this,this.mouseUp);
 			this.showValueText();
 		}
 
@@ -45940,17 +49173,17 @@ var Laya=window.Laya=(function(window,document){
 
 		/**
 		*@private
-		*@param e
 		*/
 		__proto.mouseUp=function(e){
 			Laya.stage.off("mousemove",this,this.mouseMove);
+			Laya.stage.off("mouseup",this,this.mouseUp);
+			Laya.stage.off("mouseout",this,this.mouseUp);
 			this.sendChangeEvent("changed");
 			this.hideValueText();
 		}
 
 		/**
 		*@private
-		*@param e
 		*/
 		__proto.mouseMove=function(e){
 			var oldValue=this._value;
@@ -45959,11 +49192,13 @@ var Laya=window.Laya=(function(window,document){
 				if (this._bar.y > this._maxMove)this._bar.y=this._maxMove;
 				else if (this._bar.y < 0)this._bar.y=0;
 				this._value=this._bar.y / this._maxMove *(this._max-this._min)+this._min;
+				if(this._progress)this._progress.height=this._bar.y+0.5*this._bar.height;
 				}else {
 				this._bar.x+=(Laya.stage.mouseX-this._tx)/ this._globalSacle.x;
 				if (this._bar.x > this._maxMove)this._bar.x=this._maxMove;
 				else if (this._bar.x < 0)this._bar.x=0;
 				this._value=this._bar.x / this._maxMove *(this._max-this._min)+this._min;
+				if(this._progress)this._progress.width=this._bar.x+0.5*this._bar.width;
 			}
 			this._tx=Laya.stage.mouseX;
 			this._ty=Laya.stage.mouseY;
@@ -45977,7 +49212,6 @@ var Laya=window.Laya=(function(window,document){
 
 		/**
 		*@private
-		*@param type
 		*/
 		__proto.sendChangeEvent=function(type){
 			(type===void 0)&& (type="change");
@@ -46026,8 +49260,14 @@ var Laya=window.Laya=(function(window,document){
 			this._value=this._value > this._max ? this._max :this._value < this._min ? this._min :this._value;
 			var num=this._max-this._min;
 			if (num===0)num=1;
-			if (this.isVertical)this._bar.y=(this._value-this._min)/ num *(this.height-this._bar.height);
-			else this._bar.x=(this._value-this._min)/ num *(this.width-this._bar.width);
+			if (this.isVertical){
+				this._bar.y=(this._value-this._min)/ num *(this.height-this._bar.height);
+				if(this._progress)this._progress.height=this._bar.y+0.5*this._bar.height;
+			}
+			else{
+				this._bar.x=(this._value-this._min)/ num *(this.width-this._bar.width);
+				if(this._progress)this._progress.width=this._bar.x+0.5*this._bar.width;
+			}
 		}
 
 		/**
@@ -46047,7 +49287,6 @@ var Laya=window.Laya=(function(window,document){
 
 		/**
 		*@copy laya.ui.Image#skin
-		*@return
 		*/
 		__getset(0,__proto,'skin',function(){
 			return this._skin;
@@ -46056,7 +49295,17 @@ var Laya=window.Laya=(function(window,document){
 				this._skin=value;
 				this._bg.skin=this._skin;
 				this._bar.skin=this._skin.replace(".png","$bar.png");
+				var progressSkin=this._skin.replace(".png","$progress.png");
+				if (Loader.getRes(progressSkin)){
+					if (!this._progress){
+						this.addChild(this._progress=new Image());
+						this._progress.sizeGrid=this._bar.sizeGrid;
+						this.setChildIndex(this._progress,1);
+					}
+					this._progress.skin=progressSkin;
+				}
 				this.setBarPoint();
+				this.callLater(this.changeValue);
 			}
 		});
 
@@ -46107,13 +49356,13 @@ var Laya=window.Laya=(function(window,document){
 		*<p>数据格式："上边距,右边距,下边距,左边距,是否重复填充(值为0：不重复填充，1：重复填充)"，以逗号分隔。
 		*<ul><li>例如："4,4,4,4,1"</li></ul></p>
 		*@see laya.ui.AutoBitmap.sizeGrid
-		*@return
 		*/
 		__getset(0,__proto,'sizeGrid',function(){
 			return this._bg.sizeGrid;
 			},function(value){
 			this._bg.sizeGrid=value;
 			this._bar.sizeGrid=value;
+			if (this._progress)this._progress.sizeGrid=this._bar.sizeGrid;
 		});
 
 		/**
@@ -46166,121 +49415,10 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*<code>HTMLImage</code> 用于创建 HTML Image 元素。
-	*@private
-	*/
-	//class laya.resource.HTMLImage extends laya.resource.FileBitmap
-	var HTMLImage=(function(_super){
-		function HTMLImage(src,def){
-			this._recreateLock=false;
-			this._needReleaseAgain=false;
-			HTMLImage.__super.call(this);
-			this._init_(src,def);
-		}
-
-		__class(HTMLImage,'laya.resource.HTMLImage',_super);
-		var __proto=HTMLImage.prototype;
-		__proto._init_=function(src,def){
-			this._src=src;
-			this._source=new Browser.window.Image();
-			if (def){
-				def.onload && (this.onload=def.onload);
-				def.onerror && (this.onerror=def.onerror);
-				def.onCreate && def.onCreate(this);
-			}
-			if (src.indexOf("data:image")!=0)this._source.crossOrigin="";
-			(src)&& (this._source.src=src);
-		}
-
-		/**
-		*@inheritDoc
-		*/
-		__proto.recreateResource=function(){
-			var _$this=this;
-			if (this._src==="")
-				throw new Error("src no null！");
-			this._needReleaseAgain=false;
-			if (!this._source){
-				this._recreateLock=true;
-				this.startCreate();
-				var _this=this;
-				this._source=new Browser.window.Image();
-				this._source.crossOrigin="";
-				this._source.onload=function (){
-					if (_this._needReleaseAgain){
-						_this._needReleaseAgain=false;
-						_this._source.onload=null;
-						_this._source=null;
-						return;
-					}
-					_this._source.onload=null;
-					_this.memorySize=_$this._w *_$this._h *4;
-					_this._recreateLock=false;
-					_this.completeCreate();
-				};
-				this._source.src=this._src;
-				}else {
-				if (this._recreateLock)
-					return;
-				this.startCreate();
-				this.memorySize=this._w *this._h *4;
-				this._recreateLock=false;
-				this.completeCreate();
-			}
-		}
-
-		/**
-		*@inheritDoc
-		*/
-		__proto.detoryResource=function(){
-			if (this._recreateLock)
-				this._needReleaseAgain=true;
-			(this._source)&& (this._source=null,this.memorySize=0);
-		}
-
-		/***调整尺寸。*/
-		__proto.onresize=function(){
-			this._w=this._source.width;
-			this._h=this._source.height;
-		}
-
-		/**
-		*@inheritDoc
-		*/
-		__getset(0,__proto,'onload',null,function(value){
-			var _$this=this;
-			this._onload=value;
-			this._source && (this._source.onload=this._onload !=null ? (function(){
-				_$this.onresize();
-				_$this._onload();
-			}):null);
-		});
-
-		/**
-		*@inheritDoc
-		*/
-		__getset(0,__proto,'onerror',null,function(value){
-			var _$this=this;
-			this._onerror=value;
-			this._source && (this._source.onerror=this._onerror !=null ? (function(){
-				_$this._onerror()
-			}):null);
-		});
-
-		HTMLImage.create=function(src,def){
-			return new HTMLImage(src,def);
-		}
-
-		return HTMLImage;
-	})(FileBitmap)
-
-
-	/**
 	*<code>Image</code> 类是用于表示位图图像或绘制图形的显示对象。
 	*Image和Clip组件是唯一支持异步加载的两个组件，比如img.skin="abc/xxx.png"，其他UI组件均不支持异步加载。
 	*
-	*@example 以下示例代码，创建了一个新的 <code>Image</code> 实例，设置了它的皮肤、位置信息，并添加到舞台上。
-	*<listing version="3.0">
+	*@example <caption>以下示例代码，创建了一个新的 <code>Image</code> 实例，设置了它的皮肤、位置信息，并添加到舞台上。</caption>
 	*package
 	*{
 		*import laya.ui.Image;
@@ -46308,8 +49446,7 @@ var Laya=window.Laya=(function(window,document){
 				*}
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*Laya.init(640,800);//设置游戏画布宽高
 	*Laya.stage.bgColor="#efefef";//设置画布的背景颜色
 	*onInit();
@@ -46326,8 +49463,7 @@ var Laya=window.Laya=(function(window,document){
 		*image.y=100;//设置 image 对象的属性 y 的值，用于控制 image 对象的显示位置。
 		*Laya.stage.addChild(image);//将此 image 对象添加到显示列表。
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*class Image_Example {
 		*constructor(){
 			*Laya.init(640,800);//设置游戏画布宽高。
@@ -46348,7 +49484,6 @@ var Laya=window.Laya=(function(window,document){
 			*Laya.stage.addChild(image);//将此 image 对象添加到显示列表。
 			*}
 		*}
-	*</listing>
 	*@see laya.ui.AutoBitmap
 	*/
 	//class laya.ui.Image extends laya.ui.Component
@@ -46487,10 +49622,120 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
+	*@private
+	*<p> <code>HTMLImage</code> 用于创建 HTML Image 元素。</p>
+	*<p>请使用 <code>HTMLImage.create()<code>获取新实例，不要直接使用 <code>new HTMLImage<code> 。</p>
+	*/
+	//class laya.resource.HTMLImage extends laya.resource.FileBitmap
+	var HTMLImage=(function(_super){
+		function HTMLImage(src,def){
+			this._recreateLock=false;
+			this._needReleaseAgain=false;
+			HTMLImage.__super.call(this);
+			this._init_(src,def);
+		}
+
+		__class(HTMLImage,'laya.resource.HTMLImage',_super);
+		var __proto=HTMLImage.prototype;
+		__proto._init_=function(src,def){
+			this._src=src;
+			this._source=new Browser.window.Image();
+			if (def){
+				def.onload && (this.onload=def.onload);
+				def.onerror && (this.onerror=def.onerror);
+				def.onCreate && def.onCreate(this);
+			}
+			if (src.indexOf("data:image")!=0)this._source.crossOrigin="";
+			(src)&& (this._source.src=src);
+		}
+
+		/**
+		*@inheritDoc
+		*/
+		__proto.recreateResource=function(){
+			var _$this=this;
+			if (this._src==="")
+				throw new Error("src no null！");
+			this._needReleaseAgain=false;
+			if (!this._source){
+				this._recreateLock=true;
+				this.startCreate();
+				var _this=this;
+				this._source=new Browser.window.Image();
+				this._source.crossOrigin="";
+				this._source.onload=function (){
+					if (_this._needReleaseAgain){
+						_this._needReleaseAgain=false;
+						_this._source.onload=null;
+						_this._source=null;
+						return;
+					}
+					_this._source.onload=null;
+					_this.memorySize=_$this._w *_$this._h *4;
+					_this._recreateLock=false;
+					_this.completeCreate();
+				};
+				this._source.src=this._src;
+				}else {
+				if (this._recreateLock)
+					return;
+				this.startCreate();
+				this.memorySize=this._w *this._h *4;
+				this._recreateLock=false;
+				this.completeCreate();
+			}
+		}
+
+		/**
+		*@inheritDoc
+		*/
+		__proto.detoryResource=function(){
+			if (this._recreateLock)
+				this._needReleaseAgain=true;
+			(this._source)&& (this._source=null,this.memorySize=0);
+		}
+
+		/***调整尺寸。*/
+		__proto.onresize=function(){
+			this._w=this._source.width;
+			this._h=this._source.height;
+		}
+
+		/**
+		*@inheritDoc
+		*/
+		__getset(0,__proto,'onload',null,function(value){
+			var _$this=this;
+			this._onload=value;
+			this._source && (this._source.onload=this._onload !=null ? (function(){
+				_$this.onresize();
+				_$this._onload();
+			}):null);
+		});
+
+		/**
+		*@inheritDoc
+		*/
+		__getset(0,__proto,'onerror',null,function(value){
+			var _$this=this;
+			this._onerror=value;
+			this._source && (this._source.onerror=this._onerror !=null ? (function(){
+				_$this._onerror()
+			}):null);
+		});
+
+		HTMLImage.create=function(src,def){
+			return new HTMLImage(src,def);
+		}
+
+		return HTMLImage;
+	})(FileBitmap)
+
+
+	/**
 	*<p> <code>Label</code> 类用于创建显示对象以显示文本。</p>
 	*
-	*@example 以下示例代码，创建了一个 <code>Label</code> 实例。
-	*<listing version="3.0">
+	*@example <caption>以下示例代码，创建了一个 <code>Label</code> 实例。</caption>
 	*package
 	*{
 		*import laya.ui.Label;
@@ -46529,8 +49774,7 @@ var Laya=window.Laya=(function(window,document){
 				*}
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*Laya.init(640,800);//设置游戏画布宽高
 	*Laya.stage.bgColor="#efefef";//设置画布的背景颜色
 	*onInit();
@@ -46558,8 +49802,7 @@ var Laya=window.Laya=(function(window,document){
 		*passwordLabel.fontSize=20;//设置 passwordLabel 的文本字体大小。
 		*Laya.stage.addChild(passwordLabel);//将 passwordLabel 添加到显示列表。
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*import Label=laya.ui.Label;
 	*class Label_Example {
 		*constructor(){
@@ -46592,7 +49835,6 @@ var Laya=window.Laya=(function(window,document){
 			*Laya.stage.addChild(passwordLabel);//将 passwordLabel 添加到显示列表。
 			*}
 		*}
-	*</listing>
 	*@see laya.display.Text
 	*/
 	//class laya.ui.Label extends laya.ui.Component
@@ -46663,9 +49905,10 @@ var Laya=window.Laya=(function(window,document){
 			},function(value){
 			if (this._tf.text !=value){
 				if(value)
-					value=(value+"").replace(Label._textReg,"\n");
+					value=UIUtils.adptString(value+"");
 				this._tf.text=value;
 				this.event("change");
+				if (!this._width || !this._height)this.onCompResize();
 			}
 		});
 
@@ -46863,17 +50106,13 @@ var Laya=window.Laya=(function(window,document){
 			this._tf.underlineColor=value;
 		});
 
-		__static(Label,
-		['_textReg',function(){return this._textReg=new RegExp("\\\\n","g");}
-		]);
 		return Label;
 	})(Component)
 
 
 	/**
 	*<code>ProgressBar</code> 组件显示内容的加载进度。
-	*@example 以下示例代码，创建了一个新的 <code>ProgressBar</code> 实例，设置了它的皮肤、位置、宽高、网格等信息，并添加到舞台上。
-	*<listing version="3.0">
+	*@example <caption>以下示例代码，创建了一个新的 <code>ProgressBar</code> 实例，设置了它的皮肤、位置、宽高、网格等信息，并添加到舞台上。</caption>
 	*package
 	*{
 		*import laya.ui.ProgressBar;
@@ -46911,8 +50150,7 @@ var Laya=window.Laya=(function(window,document){
 				*}
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*Laya.init(640,800);//设置游戏画布宽高
 	*Laya.stage.bgColor="#efefef";//设置画布的背景颜色
 	*var res=["resource/ui/progress.png","resource/ui/progress$bar.png"];
@@ -46939,8 +50177,7 @@ var Laya=window.Laya=(function(window,document){
 	*{
 		*console.log("进度发生改变： value=" ,value);
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*import ProgressBar=laya.ui.ProgressBar;
 	*import Handler=laya.utils.Handler;
 	*class ProgressBar_Example {
@@ -46970,7 +50207,6 @@ var Laya=window.Laya=(function(window,document){
 			*console.log("进度发生改变： value=",value);
 			*}
 		*}
-	*</listing>
 	*/
 	//class laya.ui.ProgressBar extends laya.ui.Component
 	var ProgressBar=(function(_super){
@@ -47280,8 +50516,8 @@ var Laya=window.Laya=(function(window,document){
 			var _$this=this;
 			(awakeInterval===void 0)&& (awakeInterval=33);
 			(sleepInterval===void 0)&& (sleepInterval=500);
-			this.desginWidth=this.width=width;
-			this.desginHeight=this.height=height;
+			this.designWidth=this.width=width;
+			this.designHeight=this.height=height;
 			this.awakeInterval=awakeInterval;
 			this.sleepInterval=sleepInterval;
 			this.canvas=HTMLCanvas.create('2D');
@@ -47682,6 +50918,7 @@ var Laya=window.Laya=(function(window,document){
 			this.downLine=null;
 			this.leftLine=null;
 			this.tSizeGridStr="0,0,0,0";
+			this.hasFill=false;
 			this.lineDragArea=new Rectangle();
 			this.tarRec=new Rectangle();
 			SizeGridPanel.__super.call(this);
@@ -47739,6 +50976,7 @@ var Laya=window.Laya=(function(window,document){
 			poss.push(Math.ceil(this.tarRec.right-this.rightLine.x));
 			poss.push(Math.ceil(this.tarRec.bottom-this.downLine.y));
 			poss.push(Math.ceil(this.leftLine.x-this.tarRec.x));
+			if(this.hasFill)poss.push(1);
 			this.tSizeGridStr=poss.join(",");
 			this.setSizeGridStr(this.tSizeGridStr);
 			this.event("change",this.tSizeGridStr);
@@ -47817,6 +51055,7 @@ var Laya=window.Laya=(function(window,document){
 			this.rightLine.x=this.tarRec.right-poss[1];
 			this.downLine.y=this.tarRec.bottom-poss[2];
 			this.leftLine.x=this.tarRec.x+poss[3];
+			this.hasFill=poss[4]?true:false;
 		}
 
 		__proto.adptStrToNum=function(arr){
@@ -47843,11 +51082,16 @@ var Laya=window.Laya=(function(window,document){
 			this._tipBox=null;
 			this._tipText=null;
 			this._defaultTipHandler=null;
+			this.lastTip=null;
+			this.hasTipToShow=false;
 			TipManager.__super.call(this);
 			this._tipBox=new Component();
 			this._tipBox.addChild(this._tipText=new TextField());
 			this._tipText.x=this._tipText.y=5;
 			this._tipText.color="#ffffff";
+			this._tipText.leading=3;
+			this._tipText.width=200;
+			this._tipText.wordWrap=true;
 			this._defaultTipHandler=this.showDefaultTip;
 			Laya.stage.on("showtip",this,this.onStageShowTip);
 			Laya.stage.on("hidetip",this,this.onStageHideTip);
@@ -47855,17 +51099,24 @@ var Laya=window.Laya=(function(window,document){
 
 		__class(TipManager,'laya.editor.core.managers.TipManager',_super,'TipManager$1');
 		var __proto=TipManager.prototype;
-		__proto.onStageHideTip=function(e){
-			Laya.timer.clear(this,this.showTip);
-			this.closeAll();
+		__proto.onStageHideTip=function(data){
+			if(data==this.lastTip){
+				this.hasTipToShow=false;
+				Laya.timer.clear(this,this.showTip);
+			}
+			if(this.hasTipToShow)return
+				this.closeAll();
 			this.removeSelf();
 		}
 
 		__proto.onStageShowTip=function(data){
+			this.lastTip=data;
+			this.hasTipToShow=true;
 			Laya.timer.once(LayaConfig.tipDelay,this,this.showTip,[data],true);
 		}
 
 		__proto.showTip=function(tip){
+			this.hasTipToShow=false;
 			if ((typeof tip=='string')){
 				var text=String(tip);
 				if (Boolean(text)){
@@ -47901,6 +51152,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__proto.showDisTip=function(tip){
+			this.setBounds(null);
 			this.addChild(tip);
 			DisControlTool.showToStage(this);
 			Laya._currentStage.addChild(this);
@@ -47913,6 +51165,7 @@ var Laya=window.Laya=(function(window,document){
 			g.clear();
 			g.drawRect(0,0,this._tipText.width+10,this._tipText.height+10,"#111111");
 			this.addChild(this._tipBox);
+			this.setBounds(TipManager._mRec.setTo(0,0,this._tipText.width+10,this._tipText.height+10));
 			DisTools.showToStage(this);
 			Laya._currentStage.addChild(this);
 			HtmlLayerManager.openTip();
@@ -47927,6 +51180,9 @@ var Laya=window.Laya=(function(window,document){
 
 		TipManager.offsetX=10;
 		TipManager.offsetY=15;
+		__static(TipManager,
+		['_mRec',function(){return this._mRec=new Rectangle();}
+		]);
 		return TipManager;
 	})(Component)
 
@@ -47942,8 +51198,13 @@ var Laya=window.Laya=(function(window,document){
 	var RuleGrid=(function(_super){
 		function RuleGrid(){
 			this.type=0;
+			this._rate=NaN;
+			this._startNum=NaN;
+			this._endNum=NaN;
 			RuleGrid.__super.call(this);
 			this.cacheAsBitmap=true;
+			this.mouseEnabled=true;
+			this.on("mousedown",this,this.onMouseDown);
 		}
 
 		__class(RuleGrid,'laya.editor.core.RuleGrid',_super);
@@ -47952,6 +51213,15 @@ var Laya=window.Laya=(function(window,document){
 			var g;
 			g=this.graphics;
 			g.clear();
+		}
+
+		__proto.onMouseDown=function(e){
+			e.stopPropagation();
+			this.event("Add_ReferenceLine");
+		}
+
+		__proto.getMouseValue=function(){
+			return this.getValueByPos(RuleGrid._tempPos.setTo(this.mouseX,this.mouseY));
 		}
 
 		__proto.renderMe=function(totalLen,startNum,endNum){
@@ -47971,8 +51241,11 @@ var Laya=window.Laya=(function(window,document){
 			var tValue=NaN;
 			var lineWidth=1;
 			var isFirst=true;
+			this._rate=rate;
+			this._startNum=startNum;
+			this._endNum=endNum;
 			if(this.type==0){
-				this.size(totalLen,50);
+				this.size(totalLen,25);
 				for(tNum=tNum;tNum<endNum;tNum+=dNum){
 					tValue=Math.ceil((tNum-startNum)*rate+0.5);
 					if(numI%10==0){
@@ -47991,11 +51264,11 @@ var Laya=window.Laya=(function(window,document){
 						}else{
 						lineWidth=1;
 					}
-					g.drawLine(tValue,0,tValue,lineWidth*4,StyleConsts$1.RuleGridLineColor,1);
+					g.drawLine(tValue,0-0.5,tValue,lineWidth*4+0.5,StyleConsts$1.RuleGridLineColor,1);
 					numI++;
 				}
 				}else{
-				this.size(50,totalLen);
+				this.size(30,totalLen);
 				for(tNum=tNum;tNum<endNum;tNum+=dNum){
 					tValue=Math.ceil((tNum-startNum)*rate+0.5);
 					if(numI%10==0){
@@ -48003,7 +51276,7 @@ var Laya=window.Laya=(function(window,document){
 						if(isFirst){
 							isFirst=false;
 							}else{
-							g.fillText(tNum+"",15,tValue-5,RuleGrid.defaultFont,StyleConsts$1.RuleGridTextColor,"left");
+							g.fillText(tNum+"",15+0.5,tValue-5,RuleGrid.defaultFont,StyleConsts$1.RuleGridTextColor,"left");
 						}
 					}else
 					if(numI%5==0){
@@ -48014,10 +51287,36 @@ var Laya=window.Laya=(function(window,document){
 						}else{
 						lineWidth=1;
 					}
-					g.drawLine(0,tValue,lineWidth*4,tValue,StyleConsts$1.RuleGridLineColor,1);
+					g.drawLine(0-0.5,tValue,lineWidth*4+0.5,tValue,StyleConsts$1.RuleGridLineColor,1);
 					numI++;
 				}
 			}
+		}
+
+		__proto.getPosByV=function(value){
+			if(!RuleGrid._tempPos)RuleGrid._tempPos=new Point();
+			var tValue=NaN;
+			tValue=Math.ceil((value-this._startNum)*this._rate+0.5);
+			if(this.type==0){
+				RuleGrid._tempPos.setTo(tValue,-0.5);
+				}else{
+				RuleGrid._tempPos.setTo(-0.5,tValue);
+			}
+			return RuleGrid._tempPos;
+		}
+
+		__proto.getValueByPos=function(pos){
+			var tPosV=NaN;
+			if(this.type==0){
+				tPosV=pos.x;
+				}else{
+				tPosV=pos.y;
+			}
+			return Math.round((tPosV)/this._rate+this._startNum);
+		}
+
+		__proto.isValueOK=function(value){
+			return value>=this._startNum&&value<=this._endNum;
 		}
 
 		__proto.fillTextH=function(g,tNum,tValue){
@@ -48047,10 +51346,14 @@ var Laya=window.Laya=(function(window,document){
 
 		RuleGrid.Vertic=1;
 		RuleGrid.Horizon=0;
+		RuleGrid.Add_ReferenceLine="Add_ReferenceLine";
 		RuleGrid.LineColor="#696969";
 		RuleGrid.TextColor="#696969";
 		RuleGrid.defaultFont="10px Arial";
 		RuleGrid.drawLineWidth=1;
+		__static(RuleGrid,
+		['_tempPos',function(){return this._tempPos=new Point();}
+		]);
 		return RuleGrid;
 	})(Component)
 
@@ -48155,9 +51458,214 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
+	*<p> 动效模板。用于为指定目标对象添加动画效果。每个动效有唯一的目标对象，而同一个对象可以添加多个动效。 当一个动效开始播放时，其他动效会自动停止播放。</p>
+	*<p> 可以通过LayaAir IDE创建。 </p>
+	*/
+	//class laya.display.EffectAnimation extends laya.display.FrameAnimation
+	var EffectAnimation=(function(_super){
+		function EffectAnimation(){
+			this._target=null;
+			this._playEvents=null;
+			this._initData={};
+			this._aniKeys=null;
+			this._effectClass=null;
+			EffectAnimation.__super.call(this);
+		}
+
+		__class(EffectAnimation,'laya.display.EffectAnimation',_super);
+		var __proto=EffectAnimation.prototype;
+		/**@private */
+		__proto._onOtherBegin=function(effect){
+			if (effect==this)
+				return;
+			this.stop();
+		}
+
+		/**@private */
+		__proto.addEvent=function(){
+			if (!this._target || !this._playEvents)
+				return;
+			this._setControlNode(this._target);
+			this._target.on(this._playEvents,this,this._onPlayAction);
+		}
+
+		/**@private */
+		__proto._onPlayAction=function(){
+			if (!this._target)
+				return;
+			this._target.event("effectanimationbegin",[this]);
+			this._recordInitData();
+			this.play(0,false);
+		}
+
+		/**@private */
+		__proto._recordInitData=function(){
+			if (!this._aniKeys)
+				return;
+			var i=0,len=0;
+			len=this._aniKeys.length;
+			var key;
+			for (i=0;i < len;i++){
+				key=this._aniKeys[i];
+				this._initData[key]=this._target[key];
+			}
+		}
+
+		/**@private */
+		__proto._displayToIndex=function(value){
+			if (!this._animationData)
+				return;
+			if (value < 0)
+				value=0;
+			if (value > this._count)
+				value=this._count;
+			var nodes=this._animationData.nodes,i=0,len=nodes.length;
+			len=len > 1 ? 1 :len;
+			for (i=0;i < len;i++){
+				this._displayNodeToFrame(nodes[i],value);
+			}
+		}
+
+		/**@private */
+		__proto._displayNodeToFrame=function(node,frame,targetDic){
+			if (!this._target)
+				return;
+			var target;
+			target=this._target;
+			var frames=node.frames,key,propFrames,value;
+			var keys=node.keys,i=0,len=keys.length;
+			var secondFrames;
+			secondFrames=node.secondFrames;
+			var tSecondFrame=0;
+			var easeFun;
+			var tKeyFrames;
+			var startFrame;
+			var endFrame;
+			for (i=0;i < len;i++){
+				key=keys[i];
+				propFrames=frames[key];
+				tSecondFrame=secondFrames[key];
+				if (tSecondFrame==-1){
+					value=this._initData[key];
+					}else {
+					if (frame < tSecondFrame){
+						tKeyFrames=node.keyframes[key];
+						startFrame=tKeyFrames[0];
+						if (startFrame.tween){
+							easeFun=Ease[startFrame.tweenMethod];
+							if (easeFun==null){
+								easeFun=Ease.linearNone;
+							}
+							endFrame=tKeyFrames[1];
+							value=easeFun(frame,this._initData[key],endFrame.value-this._initData[key],endFrame.index);
+							}else {
+							value=this._initData[key];
+						}
+						}else {
+						if (propFrames.length > frame){
+							value=propFrames[frame];
+							}else {
+							value=propFrames[propFrames.length-1];
+						}
+					}
+				}
+				target[key]=value;
+			}
+		}
+
+		/**@private */
+		__proto._calculateNodeKeyFrames=function(node){
+			_super.prototype._calculateNodeKeyFrames.call(this,node);
+			var keyFrames=node.keyframes,key,tKeyFrames,target=node.target;
+			var secondFrames;
+			secondFrames={};
+			node.secondFrames=secondFrames;
+			for (key in keyFrames){
+				tKeyFrames=keyFrames[key];
+				if (tKeyFrames.length <=1){
+					secondFrames[key]=-1;
+					}else {
+					secondFrames[key]=tKeyFrames[1].index;
+				}
+			}
+		}
+
+		/**
+		*本实例的目标对象。通过本实例控制目标对象的属性变化。
+		*@param v 指定的目标对象。
+		*/
+		__getset(0,__proto,'target',function(){
+			return this._target;
+			},function(v){
+			if (this._target){
+				this._target.off("effectanimationbegin",this,this._onOtherBegin);
+			}
+			this._target=v;
+			if (this._target){
+				this._target.on("effectanimationbegin",this,this._onOtherBegin);
+			}
+			this.addEvent();
+		});
+
+		/**
+		*设置开始播放的事件。本实例会侦听目标对象的指定事件，触发后播放相应动画效果。
+		*@param event
+		*/
+		__getset(0,__proto,'playEvent',null,function(event){
+			this._playEvents=event;
+			if (!event)
+				return;
+			this.addEvent();
+		});
+
+		/**
+		*设置动画数据。
+		*@param uiData
+		*/
+		__getset(0,__proto,'effectData',null,function(uiData){
+			if (uiData){
+				var aniData;
+				aniData=uiData["animations"];
+				if (aniData && aniData[0]){
+					this._setUp({},aniData[0]);
+					if (aniData[0].nodes && aniData[0].nodes[0]){
+						this._aniKeys=aniData[0].nodes[0].keys;
+					}
+				}
+			}
+		});
+
+		/**
+		*设置提供数据的类。
+		*@param classStr 类路径
+		*/
+		__getset(0,__proto,'effectClass',null,function(classStr){
+			this._effectClass=ClassUtils.getClass(classStr);
+			if (this._effectClass){
+				var uiData;
+				uiData=this._effectClass["uiView"];
+				if (uiData){
+					var aniData;
+					aniData=uiData["animations"];
+					if (aniData && aniData[0]){
+						this._setUp({},aniData[0]);
+						if (aniData[0].nodes && aniData[0].nodes[0]){
+							this._aniKeys=aniData[0].nodes[0].keys;
+						}
+					}
+				}
+			}
+		});
+
+		EffectAnimation.EffectAnimationBegin="effectanimationbegin";
+		return EffectAnimation;
+	})(FrameAnimation)
+
+
+	/**
 	*@private
 	*/
-	//class laya.display.GraphicAnimation extends laya.display.FrameAnimation
+	//class laya.utils.GraphicAnimation extends laya.display.FrameAnimation
 	var GraphicAnimation=(function(_super){
 		var GraphicNode;
 		function GraphicAnimation(){
@@ -48172,7 +51680,7 @@ var Laya=window.Laya=(function(window,document){
 			GraphicAnimation.__super.call(this);
 		}
 
-		__class(GraphicAnimation,'laya.display.GraphicAnimation',_super);
+		__class(GraphicAnimation,'laya.utils.GraphicAnimation',_super);
 		var __proto=GraphicAnimation.prototype;
 		/**
 		*@private
@@ -48207,8 +51715,14 @@ var Laya=window.Laya=(function(window,document){
 		__proto._createGraphicData=function(){
 			var gList=[];
 			var i=0,len=this.count;
+			var animationDataNew=this._animationNewFrames;
+			if (!animationDataNew)animationDataNew=[];
+			var preGraphic;
 			for (i=0;i < len;i++){
-				gList.push(this._createFrameGraphic(i));
+				if (animationDataNew[i] || !preGraphic){
+					preGraphic=this._createFrameGraphic(i);
+				}
+				gList.push(preGraphic);
 			}
 			this._gList=gList;
 		}
@@ -48220,7 +51734,7 @@ var Laya=window.Laya=(function(window,document){
 			var g=new Graphics();
 			if (!GraphicAnimation._rootMatrix)
 				GraphicAnimation._rootMatrix=new Matrix();
-			this._updateNodeGraphic2(this._rootNode,frame,g);
+			this._updateNodeGraphic(this._rootNode,frame,GraphicAnimation._rootMatrix,g);
 			return g;
 		}
 
@@ -48228,8 +51742,11 @@ var Laya=window.Laya=(function(window,document){
 			(alpha===void 0)&& (alpha=1);
 			var tNodeG;
 			tNodeG=this._nodeGDic[node.compId]=this._getNodeGraphicData(node.compId,frame,this._nodeGDic[node.compId]);
-			if (!tNodeG.resultTransform)
-				tNodeG.resultTransform=new Matrix();
+			var tGraphicAlpha=tNodeG.alpha *alpha;
+			if (tGraphicAlpha < 0.01)return;
+			if (!tNodeG.resultTransform){
+				tNodeG.resultTransform=Matrix.create();
+			};
 			var tResultTransform;
 			tResultTransform=tNodeG.resultTransform;
 			Matrix.mul(tNodeG.transform,parentTransfrom,tResultTransform);
@@ -48238,10 +51755,10 @@ var Laya=window.Laya=(function(window,document){
 				tTex=this._getTextureByUrl(tNodeG.skin);
 				if (tTex){
 					if (tResultTransform._checkTransform()){
-						g.drawTexture(tTex,0,0,tNodeG.width,tNodeG.height,tResultTransform,tNodeG.alpha *alpha);
+						g.drawTexture(tTex,0,0,tNodeG.width,tNodeG.height,tResultTransform,tGraphicAlpha);
 						tNodeG.resultTransform=null;
-						}else{
-						g.drawTexture(tTex,tResultTransform.tx,tResultTransform.ty,tNodeG.width,tNodeG.height,null,tNodeG.alpha *alpha);
+						}else {
+						g.drawTexture(tTex,tResultTransform.tx,tResultTransform.ty,tNodeG.width,tNodeG.height,null,tGraphicAlpha);
 					}
 				}
 			};
@@ -48252,20 +51769,23 @@ var Laya=window.Laya=(function(window,document){
 			var i=0,len=0;
 			len=childs.length;
 			for (i=0;i < len;i++){
-				this._updateNodeGraphic(childs[i],frame,tResultTransform,g,tNodeG.alpha *alpha);
+				this._updateNodeGraphic(childs[i],frame,tResultTransform,g,tGraphicAlpha);
 			}
 		}
 
 		__proto._updateNoChilds=function(tNodeG,g){
-			var tTex;
-			if (!tNodeG.skin || !(tTex=this._getTextureByUrl(tNodeG.skin)))return;
+			if (!tNodeG.skin)
+				return;
+			var tTex=this._getTextureByUrl(tNodeG.skin);
+			if (!tTex)
+				return;
 			var tTransform=tNodeG.transform;
 			tTransform._checkTransform();
 			var onlyTranslate=false;
 			onlyTranslate=!tTransform.bTransform;
 			if (!onlyTranslate){
 				g.drawTexture(tTex,0,0,tNodeG.width,tNodeG.height,tTransform.clone(),tNodeG.alpha);
-				}else{
+				}else {
 				g.drawTexture(tTex,tTransform.tx,tTransform.ty,tNodeG.width,tNodeG.height,null,tNodeG.alpha);
 			}
 		}
@@ -48293,8 +51813,7 @@ var Laya=window.Laya=(function(window,document){
 			}
 			if (!onlyTranslate){
 				g.transform(tTransform.clone());
-			}
-			else if (hasTrans){
+				}else if (hasTrans){
 				g.translate(tTransform.tx,tTransform.ty);
 			};
 			var childs;
@@ -48315,12 +51834,10 @@ var Laya=window.Laya=(function(window,document){
 			}
 			if (ifSave){
 				g.restore();
-			}
-			else {
+				}else {
 				if (!onlyTranslate){
 					g.transform(tTransform.clone().invert());
-				}
-				else if (hasTrans){
+					}else if (hasTrans){
 					g.translate(-tTransform.tx,-tTransform.ty);
 				}
 			}
@@ -48372,11 +51889,10 @@ var Laya=window.Laya=(function(window,document){
 
 		__proto._getNodeGraphicData=function(nodeID,frame,rst){
 			if (!rst)
-				rst=new GraphicNode();
+				rst=GraphicNode.create();
 			if (!rst.transform){
-				rst.transform=new Matrix();
-			}
-			else {
+				rst.transform=Matrix.create();
+				}else{
 				rst.transform.identity();
 			};
 			var node=this.getNodeDataByID(nodeID);
@@ -48393,17 +51909,24 @@ var Laya=window.Laya=(function(window,document){
 			var skewX=params[11],skewY=params[12]
 			width=params[3];
 			height=params[4];
+			if (width==0 || height==0)url=null;
+			if (width==-1)width=0;
+			if (height==-1)height=0;
 			var tex;
 			rst.skin=url;
-			if (url){
-				tex=this._getTextureByUrl(url);
-				if (tex){}
-					else {
-					console.log("lost skin:",url);
-				}
-			}
 			rst.width=width;
 			rst.height=height;
+			if (url){
+				tex=this._getTextureByUrl(url);
+				if (tex){
+					if (!width)
+						width=tex.sourceWidth;
+					if (!height)
+						height=tex.sourceHeight;
+					}else {
+					console.warn("lost skin:",url,",you may load pics first");
+				}
+			}
 			rst.alpha=params[10];
 			var m;
 			m=rst.transform;
@@ -48450,7 +51973,7 @@ var Laya=window.Laya=(function(window,document){
 		/**
 		*@private
 		*/
-		__proto.setAniData=function(uiView){
+		__proto.setAniData=function(uiView,aniName){
 			if (uiView.animations){
 				this._nodeDefaultProps={};
 				this._nodeGDic={};
@@ -48465,18 +51988,23 @@ var Laya=window.Laya=(function(window,document){
 				var tAniO;
 				for (i=0;i < len;i++){
 					tAniO=animations[i];
+					this._labels=null;
+					if (aniName && aniName !=tAniO.name){
+						continue ;
+					}
 					if (!tAniO)
 						continue ;
 					try {
 						this._calGraphicData(tAniO);
-					}
-					catch (e){
-						console.log("parse animation fail:"+tAniO.name+",empty animation created");
+						}catch (e){
+						console.warn("parse animation fail:"+tAniO.name+",empty animation created");
 						this._gList=[];
 					};
 					var frameO={};
 					frameO.interval=1000 / tAniO["frameRate"];
 					frameO.frames=this._gList;
+					frameO.labels=this._labels;
+					frameO.name=tAniO.name;
 					anilist.push(frameO);
 					aniDic[tAniO.name]=frameO;
 				}
@@ -48486,6 +52014,59 @@ var Laya=window.Laya=(function(window,document){
 			GraphicAnimation._temParam.length=0;
 		}
 
+		__proto.parseByData=function(aniData){
+			var rootNode,aniO;
+			rootNode=aniData.nodeRoot;
+			aniO=aniData.aniO;
+			delete aniData.nodeRoot;
+			delete aniData.aniO;
+			this._nodeDefaultProps={};
+			this._nodeGDic={};
+			if (this._nodeList)
+				this._nodeList.length=0;
+			this._rootNode=rootNode;
+			this._parseNodeList(rootNode);
+			this._labels=null;
+			try {
+				this._calGraphicData(aniO);
+				}catch (e){
+				console.warn("parse animation fail:"+aniO.name+",empty animation created");
+				this._gList=[];
+			};
+			var frameO=aniData;
+			frameO.interval=1000 / aniO["frameRate"];
+			frameO.frames=this._gList;
+			frameO.labels=this._labels;
+			frameO.name=aniO.name;
+			return frameO;
+		}
+
+		/**
+		*@private
+		*/
+		__proto.setUpAniData=function(uiView){
+			if (uiView.animations){
+				var aniDic={};
+				var anilist=[];
+				var animations=uiView.animations;
+				var i=0,len=animations.length;
+				var tAniO;
+				for (i=0;i < len;i++){
+					tAniO=animations[i];
+					if (!tAniO)
+						continue ;
+					var frameO={};
+					frameO.name=tAniO.name;
+					frameO.aniO=tAniO;
+					frameO.nodeRoot=uiView;
+					anilist.push(frameO);
+					aniDic[tAniO.name]=frameO;
+				}
+				this.animationList=anilist;
+				this.animationDic=aniDic;
+			}
+		}
+
 		/**
 		*@private
 		*/
@@ -48493,13 +52074,30 @@ var Laya=window.Laya=(function(window,document){
 			this.animationList=null;
 			this.animationDic=null;
 			this._gList=null;
+			if (this._nodeGDic){
+				var key;
+				var tGNode;
+				for (key in this._nodeGDic){
+					tGNode=this._nodeGDic[key];
+					if (tGNode)tGNode.recover();
+				}
+			}
 			this._nodeGDic=null;
+		}
+
+		GraphicAnimation.parseAnimationByData=function(animationObject){
+			if (!GraphicAnimation._I)
+				GraphicAnimation._I=new GraphicAnimation();
+			var rst;
+			rst=GraphicAnimation._I.parseByData(animationObject);
+			GraphicAnimation._I._clear();
+			return rst;
 		}
 
 		GraphicAnimation.parseAnimationData=function(aniData){
 			if (!GraphicAnimation._I)
 				GraphicAnimation._I=new GraphicAnimation();
-			GraphicAnimation._I.setAniData(aniData);
+			GraphicAnimation._I.setUpAniData(aniData);
 			var rst;
 			rst={};
 			rst.animationList=GraphicAnimation._I.animationList;
@@ -48512,7 +52110,7 @@ var Laya=window.Laya=(function(window,document){
 		GraphicAnimation._I=null
 		GraphicAnimation._rootMatrix=null
 		__static(GraphicAnimation,
-		['_drawTextureCmd',function(){return this._drawTextureCmd=[["skin",null],["x",0],["y",0],["width",0],["height",0],["pivotX",0],["pivotY",0],["scaleX",1],["scaleY",1],["rotation",0],["alpha",1],["skewX",0],["skewY",0],["anchorX",0],["anchorY",0]];},'_tempMt',function(){return this._tempMt=new Matrix();}
+		['_drawTextureCmd',function(){return this._drawTextureCmd=[["skin",null],["x",0],["y",0],["width",-1],["height",-1],["pivotX",0],["pivotY",0],["scaleX",1],["scaleY",1],["rotation",0],["alpha",1],["skewX",0],["skewY",0],["anchorX",0],["anchorY",0]];},'_tempMt',function(){return this._tempMt=new Matrix();}
 		]);
 		GraphicAnimation.__init$=function(){
 			//class GraphicNode
@@ -48526,207 +52124,30 @@ var Laya=window.Laya=(function(window,document){
 					this.alpha=1;
 				}
 				__class(GraphicNode,'');
+				var __proto=GraphicNode.prototype;
+				__proto.recover=function(){
+					this.skin=null;
+					this.width=0;
+					this.height=0;
+					this.alpha=1;
+					if (this.transform){
+						this.transform.destroy();
+						this.transform=null;
+					}
+					if (this.resultTransform){
+						this.resultTransform.destroy();
+						this.resultTransform=null;
+					}
+					Pool.recover("GraphicNode",this);
+				}
+				GraphicNode.create=function(){
+					return Pool.getItemByClass("GraphicNode",GraphicNode);
+				}
 				return GraphicNode;
 			})()
 		}
 
 		return GraphicAnimation;
-	})(FrameAnimation)
-
-
-	/**
-	*...
-	*@author ww
-	*/
-	//class laya.ui.EffectAnimation extends laya.display.FrameAnimation
-	var EffectAnimation=(function(_super){
-		function EffectAnimation(){
-			this._target=null;
-			this._playEvents=null;
-			this._initData={};
-			this._aniKeys=null;
-			this._effectClass=null;
-			EffectAnimation.__super.call(this);
-		}
-
-		__class(EffectAnimation,'laya.ui.EffectAnimation',_super);
-		var __proto=EffectAnimation.prototype;
-		__proto._onOtherBegin=function(effect){
-			if (effect==this)
-				return;
-			this.stop();
-		}
-
-		__proto.addEvent=function(){
-			if (!this._target || !this._playEvents)
-				return;
-			this._setControlNode(this._target);
-			this._target.on(this._playEvents,this,this._onPlayAction);
-		}
-
-		__proto._onPlayAction=function(){
-			if (!this._target)
-				return;
-			this._target.event("effectanimationbegin",[this]);
-			this._recordInitData();
-			this.play(0,false);
-		}
-
-		__proto._recordInitData=function(){
-			if (!this._aniKeys)
-				return;
-			var i=0,len=0;
-			len=this._aniKeys.length;
-			var key;
-			for (i=0;i < len;i++){
-				key=this._aniKeys[i];
-				this._initData[key]=this._target[key];
-			}
-		}
-
-		__proto._displayToIndex=function(value){
-			if (!this._animationData)
-				return;
-			if (value < 0)
-				value=0;
-			if (value > this._count)
-				value=this._count;
-			var nodes=this._animationData.nodes,i=0,len=nodes.length;
-			len=len > 1 ? 1 :len;
-			for (i=0;i < len;i++){
-				this._displayNodeToFrame(nodes[i],value);
-			}
-		}
-
-		__proto._displayNodeToFrame=function(node,frame,targetDic){
-			if (!this._target)
-				return;
-			var target;
-			target=this._target;
-			var frames=node.frames,key,propFrames,value;
-			var keys=node.keys,i=0,len=keys.length;
-			var secondFrames;
-			secondFrames=node.secondFrames;
-			var tSecondFrame=0;
-			var easeFun;
-			var tKeyFrames;
-			var startFrame;
-			var endFrame;
-			for (i=0;i < len;i++){
-				key=keys[i];
-				propFrames=frames[key];
-				tSecondFrame=secondFrames[key];
-				if (tSecondFrame==-1){
-					value=this._initData[key];
-				}
-				else {
-					if (frame < tSecondFrame){
-						tKeyFrames=node.keyframes[key];
-						startFrame=tKeyFrames[0];
-						if (startFrame.tween){
-							easeFun=Ease[startFrame.tweenMethod];
-							if (easeFun==null){
-								easeFun=Ease.linearNone;
-							}
-							endFrame=tKeyFrames[1];
-							value=easeFun(frame,this._initData[key],endFrame.value-this._initData[key],endFrame.index);
-						}
-						else {
-							value=this._initData[key];
-						}
-					}
-					else {
-						if (propFrames.length > frame){
-							value=propFrames[frame];
-						}
-						else {
-							value=propFrames[propFrames.length-1];
-						}
-					}
-				}
-				target[key]=value;
-			}
-		}
-
-		__proto._calculateNodeKeyFrames=function(node){
-			_super.prototype._calculateNodeKeyFrames.call(this,node);
-			var keyFrames=node.keyframes,key,tKeyFrames,target=node.target;
-			var secondFrames;
-			secondFrames={};
-			node.secondFrames=secondFrames;
-			for (key in keyFrames){
-				tKeyFrames=keyFrames[key];
-				if (tKeyFrames.length <=1){
-					secondFrames[key]=-1;
-				}
-				else {
-					secondFrames[key]=tKeyFrames[1].index;
-				}
-			}
-		}
-
-		__getset(0,__proto,'effectClass',null,function(classStr){
-			this._effectClass=ClassUtils.getClass(classStr);
-			if (this._effectClass){
-				var uiData;
-				uiData=this._effectClass["uiView"];
-				if (uiData){
-					var aniData;
-					aniData=uiData["animations"];
-					if (aniData && aniData[0]){
-						this._setUp({},aniData[0]);
-						if (aniData[0].nodes && aniData[0].nodes[0]){
-							this._aniKeys=aniData[0].nodes[0].keys;
-						}
-					}
-				}
-			}
-		});
-
-		__getset(0,__proto,'owner',null,function(v){
-			this.target=v;
-		});
-
-		__getset(0,__proto,'target',function(){
-			return this._target;
-			},function(v){
-			if (this._target){
-				this._target.off("effectanimationbegin",this,this._onOtherBegin);
-			}
-			this._target=v;
-			if (this._target){
-				this._target.on("effectanimationbegin",this,this._onOtherBegin);
-			}
-			this.addEvent();
-		});
-
-		__getset(0,__proto,'playEvent',null,function(event){
-			this._playEvents=event;
-			if (!event)
-				return;
-			this.addEvent();
-		});
-
-		EffectAnimation.EffectAnimationBegin="effectanimationbegin";
-		return EffectAnimation;
-	})(FrameAnimation)
-
-
-	/**
-	*关键帧动画播放类
-	*
-	*/
-	//class laya.ui.FrameClip extends laya.display.FrameAnimation
-	var FrameClip=(function(_super){
-		/**
-		*创建一个 <code>FrameClip</code> 实例。
-		*/
-		function FrameClip(){
-			FrameClip.__super.call(this);
-		}
-
-		__class(FrameClip,'laya.ui.FrameClip',_super);
-		return FrameClip;
 	})(FrameAnimation)
 
 
@@ -48775,7 +52196,7 @@ var Laya=window.Laya=(function(window,document){
 				var tAni;
 				var tAniO;
 				for (i=0;i < len;i++){
-					tAni=new FrameClip();
+					tAni=new FrameAnimation();
 					tAniO=animations[i];
 					tAni._setUp(this._idMap,tAniO);
 					this[tAniO.name]=tAni;
@@ -48827,7 +52248,7 @@ var Laya=window.Laya=(function(window,document){
 		View.createComp=function(uiView,comp,view){
 			comp=comp || View.getCompInstance(uiView);
 			if (!comp){
-				console.log("can not create:"+uiView.type);
+				console.warn("can not create:"+uiView.type);
 				return null;
 			};
 			var child=uiView.child;
@@ -48843,7 +52264,11 @@ var Laya=window.Laya=(function(window,document){
 						}else {
 						var tChild=View.createComp(node,null,view);
 						if (node.type=="Script"){
-							tChild["owner"]=comp;
+							if ("owner" in tChild){
+								tChild["owner"]=comp;
+								}else if ("target" in tChild){
+								tChild["target"]=comp;
+							}
 							}else if (node.props.renderType=="mask" || node.props.name=="mask"){
 							comp.mask=tChild;
 							}else {(
@@ -48867,19 +52292,16 @@ var Laya=window.Laya=(function(window,document){
 		View.setCompValue=function(comp,prop,value,view){
 			if (prop==="var" && view){
 				view[value]=comp;
-			}
-			else if (prop==="x" || prop==="y" || prop==="width" || prop==="height" || (typeof (comp[prop])=='number')){
-				comp[prop]=parseFloat(value);
-			}
-			else {
+				}else {
 				comp[prop]=(value==="true" ? true :(value==="false" ? false :value))
 			}
 		}
 
 		View.getCompInstance=function(json){
-			var runtime=json.props ? json.props.runtime :"";
+			var runtime=json.props?json.props.runtime:null;
 			var compClass;
 			compClass=runtime ? (View.viewClassMap[runtime] || View.uiClassMap[runtime]|| Laya["__classmap"][runtime]):View.uiClassMap[json.type];
+			if (json.props && json.props.hasOwnProperty("renderType")&& json.props["renderType"]=="instance")return compClass["instance"];
 			return compClass ? new compClass():null;
 		}
 
@@ -48895,7 +52317,7 @@ var Laya=window.Laya=(function(window,document){
 		View.uiMap={};
 		View.viewClassMap={};
 		__static(View,
-		['uiClassMap',function(){return this.uiClassMap={"ViewStack":ViewStack,"LinkButton":Button,"TextArea":TextArea,"ColorPicker":ColorPicker,"Box":Box,"Button":Button,"CheckBox":CheckBox,"Clip":Clip,"ComboBox":ComboBox,"Component":Component,"HScrollBar":HScrollBar,"HSlider":HSlider,"Image":Image,"Label":Label,"List":List,"Panel":Panel,"ProgressBar":ProgressBar,"Radio":Radio,"RadioGroup":RadioGroup,"ScrollBar":ScrollBar,"Slider":Slider,"Tab":Tab,"TextInput":TextInput,"View":View,"VScrollBar":VScrollBar,"VSlider":VSlider,"Tree":Tree,"HBox":HBox,"VBox":VBox,"Sprite":Sprite,"Animation":Animation,"Text":Text};}
+		['uiClassMap',function(){return this.uiClassMap={"ViewStack":ViewStack,"LinkButton":Button,"TextArea":TextArea,"ColorPicker":ColorPicker,"Box":Box,"Button":Button,"CheckBox":CheckBox,"Clip":Clip,"ComboBox":ComboBox,"Component":Component,"HScrollBar":HScrollBar,"HSlider":HSlider,"Image":Image,"Label":Label,"List":List,"Panel":Panel,"ProgressBar":ProgressBar,"Radio":Radio,"RadioGroup":RadioGroup,"ScrollBar":ScrollBar,"Slider":Slider,"Tab":Tab,"TextInput":TextInput,"View":View,"VScrollBar":VScrollBar,"VSlider":VSlider,"Tree":Tree,"HBox":HBox,"VBox":VBox,"Sprite":Sprite,"Animation":Animation,"Text":Text,"FontClip":FontClip};}
 		]);
 		View.__init$=function(){
 			View._regs()
@@ -48910,8 +52332,7 @@ var Laya=window.Laya=(function(window,document){
 	*<code>CheckBox</code> 组件还可以显示可选的文本标签，默认该标签位于 CheckBox 右侧。
 	*<p><code>CheckBox</code> 使用 <code>dataSource</code>赋值时的的默认属性是：<code>selected</code>。</p>
 	*
-	*@example 以下示例代码，创建了一个 <code>CheckBox</code> 实例。
-	*<listing version="3.0">
+	*@example <caption>以下示例代码，创建了一个 <code>CheckBox</code> 实例。</caption>
 	*package
 	*{
 		*import laya.ui.CheckBox;
@@ -48939,8 +52360,7 @@ var Laya=window.Laya=(function(window,document){
 				*}
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*Laya.init(640,800);//设置游戏画布宽高
 	*Laya.stage.bgColor="#efefef";//设置画布的背景颜色
 	*Laya.loader.load("resource/ui/check.png",laya.utils.Handler.create(this,loadComplete));//加载资源
@@ -48957,8 +52377,7 @@ var Laya=window.Laya=(function(window,document){
 	*{
 		*console.log("checkBox.selected = ",checkBox.selected);
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*import CheckBox=laya.ui.CheckBox;
 	*import Handler=laya.utils.Handler;
 	*class CheckBox_Example{
@@ -48981,7 +52400,6 @@ var Laya=window.Laya=(function(window,document){
 			*console.log("输出选中状态: checkBox.selected = "+checkBox.selected);
 			*}
 		*}
-	*</listing>
 	*/
 	//class laya.ui.CheckBox extends laya.ui.Button
 	var CheckBox=(function(_super){
@@ -49119,10 +52537,196 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
+	*字体切片，简化版的位图字体，只需设置一个切片图片和文字内容即可使用，效果同位图字体
+	*使用方式：设置位图字体皮肤skin，设置皮肤对应的字体内容sheet（如果多行，可以使用空格换行），示例：
+	*fontClip.skin="font1.png";//设置皮肤
+	*fontClip.sheet="abc123 456";//设置皮肤对应的内容，空格换行。此皮肤为2行5列（显示时skin会被等分为2行5列），第一行对应的文字为"abc123"，第二行为"456"
+	*fontClip.value="a1326";//显示"a1326"文字
+	*/
+	//class laya.ui.FontClip extends laya.ui.Clip
+	var FontClip=(function(_super){
+		function FontClip(skin,sheet){
+			this._valueArr=null;
+			this._indexMap=null;
+			this._sheet=null;
+			this._direction="horizontal";
+			this._spaceX=0;
+			this._spaceY=0;
+			this._align="left";
+			this._wordsW=0;
+			this._wordsH=0;
+			FontClip.__super.call(this);
+			if (skin)this.skin=skin;
+			if (sheet)this.sheet=sheet;
+		}
+
+		__class(FontClip,'laya.ui.FontClip',_super);
+		var __proto=FontClip.prototype;
+		__proto.createChildren=function(){
+			this._bitmap=new AutoBitmap();
+			this.on("loaded",this,this._onClipLoaded);
+		}
+
+		/**
+		*资源加载完毕
+		*/
+		__proto._onClipLoaded=function(){
+			this.callLater(this.changeValue);
+		}
+
+		/**渲染数值*/
+		__proto.changeValue=function(){
+			if (!this._sources)return;
+			if (!this._valueArr)return;
+			this.graphics.clear(true);
+			var texture;
+			texture=this._sources[0];
+			if (!texture)return;
+			var isHorizontal=(this._direction==="horizontal");
+			if (isHorizontal){
+				this._wordsW=this._valueArr.length *(texture.sourceWidth+this.spaceX);
+				this._wordsH=texture.sourceHeight;
+				}else{
+				this._wordsW=texture.sourceWidth;
+				this._wordsH=(texture.sourceHeight+this.spaceY)*this._valueArr.length;
+			};
+			var dX=0;
+			if (this._width){
+				switch(this._align){
+					case "center":
+						dX=0.5 *(this._width-this._wordsW);
+						break ;
+					case "right":
+						dX=this._width-this._wordsW;
+						break ;
+					default :
+						dX=0;
+					}
+			}
+			for (var i=0,sz=this._valueArr.length;i < sz;i++){
+				var index=this._indexMap[this._valueArr.charAt(i)];
+				if (!this.sources[index])continue ;
+				texture=this.sources[index];
+				if (isHorizontal)this.graphics.drawTexture(texture,dX+i *(texture.sourceWidth+this.spaceX),0,texture.sourceWidth,texture.sourceHeight);
+				else this.graphics.drawTexture(texture,0+dX,i *(texture.sourceHeight+this.spaceY),texture.sourceWidth,texture.sourceHeight);
+			}
+			if (!this._width){
+				this.resetLayoutX();
+				this.callLater(this.changeSize);
+			}
+			if (!this._height){
+				this.resetLayoutY();
+				this.callLater(this.changeSize);
+			}
+		}
+
+		__proto.destroy=function(destroyChild){
+			(destroyChild===void 0)&& (destroyChild=true);
+			this._valueArr=null;
+			this._indexMap=null;
+			this.graphics.clear(true);
+			this.removeSelf();
+			this.off("loaded",this,this._onClipLoaded);
+			_super.prototype.destroy.call(this,destroyChild);
+		}
+
+		/**
+		*设置位图字体内容，空格代表换行。比如"abc123 456"，代表第一行对应的文字为"abc123"，第二行为"456"
+		*/
+		__getset(0,__proto,'sheet',function(){
+			return this._sheet;
+			},function(value){
+			value+="";
+			this._sheet=value;
+			var arr=value.split(" ");
+			this._clipX=String(arr[0]).length;
+			this.clipY=arr.length;
+			this._indexMap={};
+			for (var i=0;i < this._clipY;i++){
+				var line=arr[i].split("");
+				for (var j=0,n=line.length;j < n;j++){
+					this._indexMap[line[j]]=i *this._clipX+j;
+				}
+			}
+		});
+
+		__getset(0,__proto,'height',_super.prototype._$get_height,function(value){
+			_super.prototype._$set_height.call(this,value);
+			this.callLater(this.changeValue);
+		});
+
+		/**
+		*布局方向。
+		*<p>默认值为"horizontal"。</p>
+		*<p><b>取值：</b>
+		*<li>"horizontal"：表示水平布局。</li>
+		*<li>"vertical"：表示垂直布局。</li>
+		*</p>
+		*/
+		__getset(0,__proto,'direction',function(){
+			return this._direction;
+			},function(value){
+			this._direction=value;
+			this.callLater(this.changeValue);
+		});
+
+		/**
+		*设置位图字体的显示内容
+		*/
+		__getset(0,__proto,'value',function(){
+			if (!this._valueArr)return "";
+			return this._valueArr;
+			},function(value){
+			value+="";
+			this._valueArr=value;
+			this.callLater(this.changeValue);
+		});
+
+		__getset(0,__proto,'width',_super.prototype._$get_width,function(value){
+			_super.prototype._$set_width.call(this,value);
+			this.callLater(this.changeValue);
+		});
+
+		/**X方向文字间隙*/
+		__getset(0,__proto,'spaceX',function(){
+			return this._spaceX;
+			},function(value){
+			this._spaceX=value;
+			if (this._direction==="horizontal")this.callLater(this.changeValue);
+		});
+
+		/**Y方向文字间隙*/
+		__getset(0,__proto,'spaceY',function(){
+			return this._spaceY;
+			},function(value){
+			this._spaceY=value;
+			if (!(this._direction==="horizontal"))this.callLater(this.changeValue);
+		});
+
+		/**水平对齐方式*/
+		__getset(0,__proto,'align',function(){
+			return this._align;
+			},function(v){
+			this._align=v;
+			this.callLater(this.changeValue);
+		});
+
+		__getset(0,__proto,'measureWidth',function(){
+			return this._wordsW;
+		});
+
+		__getset(0,__proto,'measureHeight',function(){
+			return this._wordsH;
+		});
+
+		return FontClip;
+	})(Clip)
+
+
+	/**
 	*<code>List</code> 控件可显示项目列表。默认为垂直方向列表。可通过UI编辑器自定义列表。
 	*
-	*@example 以下示例代码，创建了一个 <code>List</code> 实例。
-	*<listing version="3.0">
+	*@example <caption>以下示例代码，创建了一个 <code>List</code> 实例。</caption>
 	*package
 	*{
 		*import laya.ui.List;
@@ -49173,8 +52777,7 @@ var Laya=window.Laya=(function(window,document){
 			*addChild(label);
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*(function (_super){
 		*function Item(){
 			*Item.__super.call(this);//初始化父类
@@ -49212,8 +52815,7 @@ var Laya=window.Laya=(function(window,document){
 		*console.log("当前选择的项目索引： index= ",index);
 		*}
 	*
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*import List=laya.ui.List;
 	*import Handler=laya.utils.Handler;
 	*public class List_Example {
@@ -49255,7 +52857,6 @@ var Laya=window.Laya=(function(window,document){
 			*this.addChild(label);
 			*}
 		*}
-	*</listing>
 	*/
 	//class laya.ui.List extends laya.ui.Box
 	var List=(function(_super){
@@ -49287,6 +52888,7 @@ var Laya=window.Laya=(function(window,document){
 			this._cellChanged=false;
 			List.__super.call(this);
 			this._cells=[];
+			this._offset=new Point();
 		}
 
 		__class(List,'laya.ui.List',_super);
@@ -49319,6 +52921,11 @@ var Laya=window.Laya=(function(window,document){
 
 		__proto.onScrollEnd=function(){
 			_super.prototype._$set_cacheAs.call(this,this._$P.cacheAs);
+		}
+
+		__proto._removePreScrollBar=function(){
+			var preNode=this.removeChildByName("scrollBar");
+			if (preNode)preNode.destroy(true);
 		}
 
 		/**
@@ -49355,7 +52962,9 @@ var Laya=window.Laya=(function(window,document){
 
 		__proto._getOneCell=function(){
 			if (this._cells.length===0){
-				this._cells.push(this.createItem());
+				var item=this.createItem();
+				this._offset.setTo(item.x,item.y);
+				this._cells.push(item);
 			}
 			return this._cells[0];
 		}
@@ -49445,12 +53054,12 @@ var Laya=window.Laya=(function(window,document){
 		__proto.setContentSize=function(width,height){
 			this._content.width=width;
 			this._content.height=height;
-			if (this._scrollBar){
+			if (this._scrollBar||this._offset.x!=0||this._offset.y!=0){
 				this._content.scrollRect || (this._content.scrollRect=new Rectangle());
-				this._content.scrollRect.setTo(0,0,width,height);
-				this._content.conchModel && this._content.conchModel.scrollRect(0,0,width,height);
-				this.event("resize");
+				this._content.scrollRect.setTo(-this._offset.x,-this._offset.y,width,height);
+				this._content.conchModel && this._content.conchModel.scrollRect(-this._offset.x,-this._offset.y,width,height);
 			}
+			this.event("resize");
 		}
 
 		/**
@@ -49506,8 +53115,9 @@ var Laya=window.Laya=(function(window,document){
 			var scrollLine=Math.floor(scrollValue / this._cellSize);
 			if (!this.cacheContent){
 				var index=scrollLine *lineX;
+				var num=0;
 				if (index > this._startIndex){
-					var num=index-this._startIndex;
+					num=index-this._startIndex;
 					var down=true;
 					var toIndex=this._startIndex+lineX *(lineY+1);
 					this._isMoved=true;
@@ -49543,9 +53153,11 @@ var Laya=window.Laya=(function(window,document){
 			};
 			var r=this._content.scrollRect;
 			if (this._isVertical){
-				r.y=scrollValue;
+				r.y=scrollValue-this._offset.y;
+				r.x=-this._offset.x;
 				}else {
-				r.x=scrollValue;
+				r.y=-this._offset.y;
+				r.x=scrollValue-this._offset.x;
 			}
 			this._content.conchModel && this._content.conchModel.scrollRect(r.x,r.y,r.width,r.height);
 			this.repaint();
@@ -49576,7 +53188,7 @@ var Laya=window.Laya=(function(window,document){
 		__proto.renderItems=function(from,to){
 			(from===void 0)&& (from=0);
 			(to===void 0)&& (to=0);
-			for (var i=0,n=to || this._cells.length;i < n;i++){
+			for (var i=from,n=to || this._cells.length;i < n;i++){
 				this.renderItem(this._cells[i],this._startIndex+i);
 			}
 			this.changeSelectStatus();
@@ -49588,7 +53200,7 @@ var Laya=window.Laya=(function(window,document){
 		*@param index 单元格索引。
 		*/
 		__proto.renderItem=function(cell,index){
-			if (index >=0 && index < this._array.length){
+			if (this._array&&index >=0 && index < this._array.length){
 				cell.visible=true;
 				cell.dataSource=this._array[index];
 				if (!this.cacheContent){
@@ -49606,7 +53218,7 @@ var Laya=window.Laya=(function(window,document){
 		*刷新列表数据源。
 		*/
 		__proto.refresh=function(){
-			this.array=this._array;
+			this.startIndex=this._startIndex;
 		}
 
 		/**
@@ -49745,8 +53357,10 @@ var Laya=window.Laya=(function(window,document){
 
 		/**@inheritDoc */
 		__getset(0,__proto,'height',_super.prototype._$get_height,function(value){
-			_super.prototype._$set_height.call(this,value);
-			this._setCellChanged();
+			if (value !=this._height){
+				_super.prototype._$set_height.call(this,value);
+				this._setCellChanged();
+			}
 		});
 
 		/**
@@ -49776,7 +53390,7 @@ var Laya=window.Laya=(function(window,document){
 		__getset(0,__proto,'vScrollBarSkin',function(){
 			return this._scrollBar ? this._scrollBar.skin :null;
 			},function(value){
-			this.removeChildByName("scrollBar");
+			this._removePreScrollBar();
 			var scrollBar=new VScrollBar();
 			scrollBar.name="scrollBar";
 			scrollBar.right=0;
@@ -49807,7 +53421,7 @@ var Laya=window.Laya=(function(window,document){
 		__getset(0,__proto,'hScrollBarSkin',function(){
 			return this._scrollBar ? this._scrollBar.skin :null;
 			},function(value){
-			this.removeChildByName("scrollBar");
+			this._removePreScrollBar();
 			var scrollBar=new HScrollBar();
 			scrollBar.name="scrollBar";
 			scrollBar.bottom=0;
@@ -49846,8 +53460,10 @@ var Laya=window.Laya=(function(window,document){
 
 		/**@inheritDoc */
 		__getset(0,__proto,'width',_super.prototype._$get_width,function(value){
-			_super.prototype._$set_width.call(this,value);
-			this._setCellChanged();
+			if (value !=this._width){
+				_super.prototype._$set_width.call(this,value);
+				this._setCellChanged();
+			}
 		});
 
 		/**
@@ -49881,7 +53497,7 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*表示当前选择的项索引。
+		*表示当前选择的项索引。selectedIndex值更改会引起list重新渲染
 		*/
 		__getset(0,__proto,'selectedIndex',function(){
 			return this._selectedIndex;
@@ -49891,6 +53507,7 @@ var Laya=window.Laya=(function(window,document){
 				this.changeSelectStatus();
 				this.event("change");
 				this.selectHandler && this.selectHandler.runWith(value);
+				this.startIndex=this._startIndex;
 			}
 		});
 
@@ -49977,6 +53594,96 @@ var Laya=window.Laya=(function(window,document){
 
 		return List;
 	})(Box)
+
+
+	/**
+	*使用 <code>HScrollBar</code> （水平 <code>ScrollBar</code> ）控件，可以在因数据太多而不能在显示区域完全显示时控制显示的数据部分。
+	*@example <caption>以下示例代码，创建了一个 <code>HScrollBar</code> 实例。</caption>
+	*package
+	*{
+		*import laya.ui.HScrollBar;
+		*import laya.utils.Handler;
+		*public class HScrollBar_Example
+		*{
+			*private var hScrollBar:HScrollBar;
+			*public function HScrollBar_Example()
+			*{
+				*Laya.init(640,800);//设置游戏画布宽高。
+				*Laya.stage.bgColor="#efefef";//设置画布的背景颜色。
+				*Laya.loader.load(["resource/ui/hscroll.png","resource/ui/hscroll$bar.png","resource/ui/hscroll$down.png","resource/ui/hscroll$up.png"],Handler.create(this,onLoadComplete));//加载资源。
+				*}
+			*private function onLoadComplete():void
+			*{
+				*hScrollBar=new HScrollBar();//创建一个 HScrollBar 类的实例对象 hScrollBar 。
+				*hScrollBar.skin="resource/ui/hscroll.png";//设置 hScrollBar 的皮肤。
+				*hScrollBar.x=100;//设置 hScrollBar 对象的属性 x 的值，用于控制 hScrollBar 对象的显示位置。
+				*hScrollBar.y=100;//设置 hScrollBar 对象的属性 y 的值，用于控制 hScrollBar 对象的显示位置。
+				*hScrollBar.changeHandler=new Handler(this,onChange);//设置 hScrollBar 的滚动变化处理器。
+				*Laya.stage.addChild(hScrollBar);//将此 hScrollBar 对象添加到显示列表。
+				*}
+			*private function onChange(value:Number):void
+			*{
+				*trace("滚动条的位置： value="+value);
+				*}
+			*}
+		*}
+	*@example
+	*Laya.init(640,800);//设置游戏画布宽高
+	*Laya.stage.bgColor="#efefef";//设置画布的背景颜色
+	*var hScrollBar;
+	*var res=["resource/ui/hscroll.png","resource/ui/hscroll$bar.png","resource/ui/hscroll$down.png","resource/ui/hscroll$up.png"];
+	*Laya.loader.load(res,laya.utils.Handler.create(this,onLoadComplete));//加载资源。
+	*function onLoadComplete(){
+		*console.log("资源加载完成！");
+		*hScrollBar=new laya.ui.HScrollBar();//创建一个 HScrollBar 类的实例对象 hScrollBar 。
+		*hScrollBar.skin="resource/ui/hscroll.png";//设置 hScrollBar 的皮肤。
+		*hScrollBar.x=100;//设置 hScrollBar 对象的属性 x 的值，用于控制 hScrollBar 对象的显示位置。
+		*hScrollBar.y=100;//设置 hScrollBar 对象的属性 y 的值，用于控制 hScrollBar 对象的显示位置。
+		*hScrollBar.changeHandler=new laya.utils.Handler(this,onChange);//设置 hScrollBar 的滚动变化处理器。
+		*Laya.stage.addChild(hScrollBar);//将此 hScrollBar 对象添加到显示列表。
+		*}
+	*function onChange(value)
+	*{
+		*console.log("滚动条的位置： value="+value);
+		*}
+	*@example
+	*import HScrollBar=laya.ui.HScrollBar;
+	*import Handler=laya.utils.Handler;
+	*class HScrollBar_Example {
+		*private hScrollBar:HScrollBar;
+		*constructor(){
+			*Laya.init(640,800);//设置游戏画布宽高。
+			*Laya.stage.bgColor="#efefef";//设置画布的背景颜色。
+			*Laya.loader.load(["resource/ui/hscroll.png","resource/ui/hscroll$bar.png","resource/ui/hscroll$down.png","resource/ui/hscroll$up.png"],Handler.create(this,this.onLoadComplete));//加载资源。
+			*}
+		*private onLoadComplete():void {
+			*this.hScrollBar=new HScrollBar();//创建一个 HScrollBar 类的实例对象 hScrollBar 。
+			*this.hScrollBar.skin="resource/ui/hscroll.png";//设置 hScrollBar 的皮肤。
+			*this.hScrollBar.x=100;//设置 hScrollBar 对象的属性 x 的值，用于控制 hScrollBar 对象的显示位置。
+			*this.hScrollBar.y=100;//设置 hScrollBar 对象的属性 y 的值，用于控制 hScrollBar 对象的显示位置。
+			*this.hScrollBar.changeHandler=new Handler(this,this.onChange);//设置 hScrollBar 的滚动变化处理器。
+			*Laya.stage.addChild(this.hScrollBar);//将此 hScrollBar 对象添加到显示列表。
+			*}
+		*private onChange(value:number):void {
+			*console.log("滚动条的位置： value="+value);
+			*}
+		*}
+	*/
+	//class laya.ui.HScrollBar extends laya.ui.ScrollBar
+	var HScrollBar=(function(_super){
+		function HScrollBar(){HScrollBar.__super.call(this);;
+		};
+
+		__class(HScrollBar,'laya.ui.HScrollBar',_super);
+		var __proto=HScrollBar.prototype;
+		/**@inheritDoc */
+		__proto.initialize=function(){
+			_super.prototype.initialize.call(this);
+			this.slider.isVertical=false;
+		}
+
+		return HScrollBar;
+	})(ScrollBar)
 
 
 	/**
@@ -50083,8 +53790,8 @@ var Laya=window.Laya=(function(window,document){
 		/**@private */
 		__proto.changeScroll=function(){
 			this._scrollChanged=false;
-			var contentW=this.contentWidth;
-			var contentH=this.contentHeight;
+			var contentW=this.contentWidth || 1;
+			var contentH=this.contentHeight || 1;
 			var vscroll=this._vScrollBar;
 			var hscroll=this._hScrollBar;
 			var vShow=vscroll && contentH > this._height;
@@ -50297,97 +54004,108 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*使用 <code>HScrollBar</code> （水平 <code>ScrollBar</code> ）控件，可以在因数据太多而不能在显示区域完全显示时控制显示的数据部分。
-	*@example 以下示例代码，创建了一个 <code>HScrollBar</code> 实例。
-	*<listing version="3.0">
+	*使用 <code>HSlider</code> 控件，用户可以通过在滑块轨道的终点之间移动滑块来选择值。
+	*<p> <code>HSlider</code> 控件采用水平方向。滑块轨道从左向右扩展，而标签位于轨道的顶部或底部。</p>
+	*
+	*@example <caption>以下示例代码，创建了一个 <code>HSlider</code> 实例。</caption>
 	*package
 	*{
-		*import laya.ui.HScrollBar;
+		*import laya.ui.HSlider;
 		*import laya.utils.Handler;
-		*public class HScrollBar_Example
+		*public class HSlider_Example
 		*{
-			*private var hScrollBar:HScrollBar;
-			*public function HScrollBar_Example()
+			*private var hSlider:HSlider;
+			*public function HSlider_Example()
 			*{
 				*Laya.init(640,800);//设置游戏画布宽高。
 				*Laya.stage.bgColor="#efefef";//设置画布的背景颜色。
-				*Laya.loader.load(["resource/ui/hscroll.png","resource/ui/hscroll$bar.png","resource/ui/hscroll$down.png","resource/ui/hscroll$up.png"],Handler.create(this,onLoadComplete));//加载资源。
+				*Laya.loader.load(["resource/ui/hslider.png","resource/ui/hslider$bar.png"],Handler.create(this,onLoadComplete));//加载资源。
 				*}
 			*private function onLoadComplete():void
 			*{
-				*hScrollBar=new HScrollBar();//创建一个 HScrollBar 类的实例对象 hScrollBar 。
-				*hScrollBar.skin="resource/ui/hscroll.png";//设置 hScrollBar 的皮肤。
-				*hScrollBar.x=100;//设置 hScrollBar 对象的属性 x 的值，用于控制 hScrollBar 对象的显示位置。
-				*hScrollBar.y=100;//设置 hScrollBar 对象的属性 y 的值，用于控制 hScrollBar 对象的显示位置。
-				*hScrollBar.changeHandler=new Handler(this,onChange);//设置 hScrollBar 的滚动变化处理器。
-				*Laya.stage.addChild(hScrollBar);//将此 hScrollBar 对象添加到显示列表。
+				*hSlider=new HSlider();//创建一个 HSlider 类的实例对象 hSlider 。
+				*hSlider.skin="resource/ui/hslider.png";//设置 hSlider 的皮肤。
+				*hSlider.min=0;//设置 hSlider 最低位置值。
+				*hSlider.max=10;//设置 hSlider 最高位置值。
+				*hSlider.value=2;//设置 hSlider 当前位置值。
+				*hSlider.tick=1;//设置 hSlider 刻度值。
+				*hSlider.x=100;//设置 hSlider 对象的属性 x 的值，用于控制 hSlider 对象的显示位置。
+				*hSlider.y=100;//设置 hSlider 对象的属性 y 的值，用于控制 hSlider 对象的显示位置。
+				*hSlider.changeHandler=new Handler(this,onChange);//设置 hSlider 位置变化处理器。
+				*Laya.stage.addChild(hSlider);//把 hSlider 添加到显示列表。
 				*}
 			*private function onChange(value:Number):void
 			*{
-				*trace("滚动条的位置： value="+value);
+				*trace("滑块的位置： value="+value);
 				*}
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
-	*Laya.init(640,800);//设置游戏画布宽高
+	*@example
+	*Laya.init(640,800,"canvas");//设置游戏画布宽高、渲染模式
 	*Laya.stage.bgColor="#efefef";//设置画布的背景颜色
-	*var hScrollBar;
-	*var res=["resource/ui/hscroll.png","resource/ui/hscroll$bar.png","resource/ui/hscroll$down.png","resource/ui/hscroll$up.png"];
-	*Laya.loader.load(res,laya.utils.Handler.create(this,onLoadComplete));//加载资源。
+	*var hSlider;
+	*var res=["resource/ui/hslider.png","resource/ui/hslider$bar.png"];
+	*Laya.loader.load(res,laya.utils.Handler.create(this,onLoadComplete));
 	*function onLoadComplete(){
 		*console.log("资源加载完成！");
-		*hScrollBar=new laya.ui.HScrollBar();//创建一个 HScrollBar 类的实例对象 hScrollBar 。
-		*hScrollBar.skin="resource/ui/hscroll.png";//设置 hScrollBar 的皮肤。
-		*hScrollBar.x=100;//设置 hScrollBar 对象的属性 x 的值，用于控制 hScrollBar 对象的显示位置。
-		*hScrollBar.y=100;//设置 hScrollBar 对象的属性 y 的值，用于控制 hScrollBar 对象的显示位置。
-		*hScrollBar.changeHandler=new laya.utils.Handler(this,onChange);//设置 hScrollBar 的滚动变化处理器。
-		*Laya.stage.addChild(hScrollBar);//将此 hScrollBar 对象添加到显示列表。
+		*hSlider=new laya.ui.HSlider();//创建一个 HSlider 类的实例对象 hSlider 。
+		*hSlider.skin="resource/ui/hslider.png";//设置 hSlider 的皮肤。
+		*hSlider.min=0;//设置 hSlider 最低位置值。
+		*hSlider.max=10;//设置 hSlider 最高位置值。
+		*hSlider.value=2;//设置 hSlider 当前位置值。
+		*hSlider.tick=1;//设置 hSlider 刻度值。
+		*hSlider.x=100;//设置 hSlider 对象的属性 x 的值，用于控制 hSlider 对象的显示位置。
+		*hSlider.y=100;//设置 hSlider 对象的属性 y 的值，用于控制 hSlider 对象的显示位置。
+		*hSlider.changeHandler=new laya.utils.Handler(this,onChange);//设置 hSlider 位置变化处理器。
+		*Laya.stage.addChild(hSlider);//把 hSlider 添加到显示列表。
 		*}
 	*function onChange(value)
 	*{
-		*console.log("滚动条的位置： value="+value);
+		*console.log("滑块的位置： value="+value);
 		*}
-	*</listing>
-	*<listing version="3.0">
-	*import HScrollBar=laya.ui.HScrollBar;
+	*@example
 	*import Handler=laya.utils.Handler;
-	*class HScrollBar_Example {
-		*private hScrollBar:HScrollBar;
+	*import HSlider=laya.ui.HSlider;
+	*class HSlider_Example {
+		*private hSlider:HSlider;
 		*constructor(){
 			*Laya.init(640,800);//设置游戏画布宽高。
 			*Laya.stage.bgColor="#efefef";//设置画布的背景颜色。
-			*Laya.loader.load(["resource/ui/hscroll.png","resource/ui/hscroll$bar.png","resource/ui/hscroll$down.png","resource/ui/hscroll$up.png"],Handler.create(this,this.onLoadComplete));//加载资源。
+			*Laya.loader.load(["resource/ui/hslider.png","resource/ui/hslider$bar.png"],Handler.create(this,this.onLoadComplete));//加载资源。
 			*}
 		*private onLoadComplete():void {
-			*this.hScrollBar=new HScrollBar();//创建一个 HScrollBar 类的实例对象 hScrollBar 。
-			*this.hScrollBar.skin="resource/ui/hscroll.png";//设置 hScrollBar 的皮肤。
-			*this.hScrollBar.x=100;//设置 hScrollBar 对象的属性 x 的值，用于控制 hScrollBar 对象的显示位置。
-			*this.hScrollBar.y=100;//设置 hScrollBar 对象的属性 y 的值，用于控制 hScrollBar 对象的显示位置。
-			*this.hScrollBar.changeHandler=new Handler(this,this.onChange);//设置 hScrollBar 的滚动变化处理器。
-			*Laya.stage.addChild(this.hScrollBar);//将此 hScrollBar 对象添加到显示列表。
+			*this.hSlider=new HSlider();//创建一个 HSlider 类的实例对象 hSlider 。
+			*this.hSlider.skin="resource/ui/hslider.png";//设置 hSlider 的皮肤。
+			*this.hSlider.min=0;//设置 hSlider 最低位置值。
+			*this.hSlider.max=10;//设置 hSlider 最高位置值。
+			*this.hSlider.value=2;//设置 hSlider 当前位置值。
+			*this.hSlider.tick=1;//设置 hSlider 刻度值。
+			*this.hSlider.x=100;//设置 hSlider 对象的属性 x 的值，用于控制 hSlider 对象的显示位置。
+			*this.hSlider.y=100;//设置 hSlider 对象的属性 y 的值，用于控制 hSlider 对象的显示位置。
+			*this.hSlider.changeHandler=new Handler(this,this.onChange);//设置 hSlider 位置变化处理器。
+			*Laya.stage.addChild(this.hSlider);//把 hSlider 添加到显示列表。
 			*}
 		*private onChange(value:number):void {
-			*console.log("滚动条的位置： value="+value);
+			*console.log("滑块的位置： value="+value);
 			*}
 		*}
-	*</listing>
+	*
+	*@see laya.ui.Slider
 	*/
-	//class laya.ui.HScrollBar extends laya.ui.ScrollBar
-	var HScrollBar=(function(_super){
-		function HScrollBar(){HScrollBar.__super.call(this);;
-		};
-
-		__class(HScrollBar,'laya.ui.HScrollBar',_super);
-		var __proto=HScrollBar.prototype;
-		/**@inheritDoc */
-		__proto.initialize=function(){
-			_super.prototype.initialize.call(this);
-			this.slider.isVertical=false;
+	//class laya.ui.HSlider extends laya.ui.Slider
+	var HSlider=(function(_super){
+		/**
+		*创建一个 <code>HSlider</code> 类实例。
+		*@param skin 皮肤。
+		*/
+		function HSlider(skin){
+			HSlider.__super.call(this,skin);
+			this.isVertical=false;
 		}
 
-		return HScrollBar;
-	})(ScrollBar)
+		__class(HSlider,'laya.ui.HSlider',_super);
+		return HSlider;
+	})(Slider)
 
 
 	/**
@@ -50406,6 +54124,7 @@ var Laya=window.Laya=(function(window,document){
 			this._space=0;
 			this._labels=null;
 			this._labelColors=null;
+			this._labelFont=null;
 			this._labelStrokeColor=null;
 			this._strokeColors=null;
 			this._labelStroke=NaN;
@@ -50563,6 +54282,7 @@ var Laya=window.Laya=(function(window,document){
 					this._labelPadding && (btn.labelPadding=this._labelPadding);
 					this._labelAlign && (btn.labelAlign=this._labelAlign);
 					this._stateNum && (btn.stateNum=this._stateNum);
+					this._labelFont && (btn.labelFont=this._labelFont);
 					if (this._direction==="horizontal"){
 						btn.y=0;
 						btn.x=left;
@@ -50705,7 +54425,8 @@ var Laya=window.Laya=(function(window,document){
 		});
 
 		/**
-		*表示按钮文本标签的字体大小。
+		*表示按钮的状态值，以数字表示，默认为3态。
+		*@see laya.ui.Button#stateNum
 		*/
 		__getset(0,__proto,'stateNum',function(){
 			return this._stateNum;
@@ -50724,6 +54445,19 @@ var Laya=window.Laya=(function(window,document){
 			},function(value){
 			if (this._labelBold !=value){
 				this._labelBold=value;
+				this._setLabelChanged();
+			}
+		});
+
+		/**
+		*表示按钮文本标签的字体名称，以字符串形式表示。
+		*@see laya.display.Text.font()
+		*/
+		__getset(0,__proto,'labelFont',function(){
+			return this._labelFont;
+			},function(value){
+			if (this._labelFont !=value){
+				this._labelFont=value;
 				this._setLabelChanged();
 			}
 		});
@@ -50795,115 +54529,6 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*使用 <code>HSlider</code> 控件，用户可以通过在滑块轨道的终点之间移动滑块来选择值。
-	*<p> <code>HSlider</code> 控件采用水平方向。滑块轨道从左向右扩展，而标签位于轨道的顶部或底部。</p>
-	*
-	*@example 以下示例代码，创建了一个 <code>HSlider</code> 实例。
-	*<listing version="3.0">
-	*package
-	*{
-		*import laya.ui.HSlider;
-		*import laya.utils.Handler;
-		*public class HSlider_Example
-		*{
-			*private var hSlider:HSlider;
-			*public function HSlider_Example()
-			*{
-				*Laya.init(640,800);//设置游戏画布宽高。
-				*Laya.stage.bgColor="#efefef";//设置画布的背景颜色。
-				*Laya.loader.load(["resource/ui/hslider.png","resource/ui/hslider$bar.png"],Handler.create(this,onLoadComplete));//加载资源。
-				*}
-			*private function onLoadComplete():void
-			*{
-				*hSlider=new HSlider();//创建一个 HSlider 类的实例对象 hSlider 。
-				*hSlider.skin="resource/ui/hslider.png";//设置 hSlider 的皮肤。
-				*hSlider.min=0;//设置 hSlider 最低位置值。
-				*hSlider.max=10;//设置 hSlider 最高位置值。
-				*hSlider.value=2;//设置 hSlider 当前位置值。
-				*hSlider.tick=1;//设置 hSlider 刻度值。
-				*hSlider.x=100;//设置 hSlider 对象的属性 x 的值，用于控制 hSlider 对象的显示位置。
-				*hSlider.y=100;//设置 hSlider 对象的属性 y 的值，用于控制 hSlider 对象的显示位置。
-				*hSlider.changeHandler=new Handler(this,onChange);//设置 hSlider 位置变化处理器。
-				*Laya.stage.addChild(hSlider);//把 hSlider 添加到显示列表。
-				*}
-			*private function onChange(value:Number):void
-			*{
-				*trace("滑块的位置： value="+value);
-				*}
-			*}
-		*}
-	*</listing>
-	*<listing version="3.0">
-	*Laya.init(640,800,"canvas");//设置游戏画布宽高、渲染模式
-	*Laya.stage.bgColor="#efefef";//设置画布的背景颜色
-	*var hSlider;
-	*var res=["resource/ui/hslider.png","resource/ui/hslider$bar.png"];
-	*Laya.loader.load(res,laya.utils.Handler.create(this,onLoadComplete));
-	*function onLoadComplete(){
-		*console.log("资源加载完成！");
-		*hSlider=new laya.ui.HSlider();//创建一个 HSlider 类的实例对象 hSlider 。
-		*hSlider.skin="resource/ui/hslider.png";//设置 hSlider 的皮肤。
-		*hSlider.min=0;//设置 hSlider 最低位置值。
-		*hSlider.max=10;//设置 hSlider 最高位置值。
-		*hSlider.value=2;//设置 hSlider 当前位置值。
-		*hSlider.tick=1;//设置 hSlider 刻度值。
-		*hSlider.x=100;//设置 hSlider 对象的属性 x 的值，用于控制 hSlider 对象的显示位置。
-		*hSlider.y=100;//设置 hSlider 对象的属性 y 的值，用于控制 hSlider 对象的显示位置。
-		*hSlider.changeHandler=new laya.utils.Handler(this,onChange);//设置 hSlider 位置变化处理器。
-		*Laya.stage.addChild(hSlider);//把 hSlider 添加到显示列表。
-		*}
-	*function onChange(value)
-	*{
-		*console.log("滑块的位置： value="+value);
-		*}
-	*</listing>
-	*<listing version="3.0">
-	*import Handler=laya.utils.Handler;
-	*import HSlider=laya.ui.HSlider;
-	*class HSlider_Example {
-		*private hSlider:HSlider;
-		*constructor(){
-			*Laya.init(640,800);//设置游戏画布宽高。
-			*Laya.stage.bgColor="#efefef";//设置画布的背景颜色。
-			*Laya.loader.load(["resource/ui/hslider.png","resource/ui/hslider$bar.png"],Handler.create(this,this.onLoadComplete));//加载资源。
-			*}
-		*private onLoadComplete():void {
-			*this.hSlider=new HSlider();//创建一个 HSlider 类的实例对象 hSlider 。
-			*this.hSlider.skin="resource/ui/hslider.png";//设置 hSlider 的皮肤。
-			*this.hSlider.min=0;//设置 hSlider 最低位置值。
-			*this.hSlider.max=10;//设置 hSlider 最高位置值。
-			*this.hSlider.value=2;//设置 hSlider 当前位置值。
-			*this.hSlider.tick=1;//设置 hSlider 刻度值。
-			*this.hSlider.x=100;//设置 hSlider 对象的属性 x 的值，用于控制 hSlider 对象的显示位置。
-			*this.hSlider.y=100;//设置 hSlider 对象的属性 y 的值，用于控制 hSlider 对象的显示位置。
-			*this.hSlider.changeHandler=new Handler(this,this.onChange);//设置 hSlider 位置变化处理器。
-			*Laya.stage.addChild(this.hSlider);//把 hSlider 添加到显示列表。
-			*}
-		*private onChange(value:number):void {
-			*console.log("滑块的位置： value="+value);
-			*}
-		*}
-	*</listing>
-	*
-	*@see laya.ui.Slider
-	*/
-	//class laya.ui.HSlider extends laya.ui.Slider
-	var HSlider=(function(_super){
-		/**
-		*创建一个 <code>HSlider</code> 类实例。
-		*@param skin 皮肤。
-		*/
-		function HSlider(skin){
-			HSlider.__super.call(this,skin);
-			this.isVertical=false;
-		}
-
-		__class(HSlider,'laya.ui.HSlider',_super);
-		return HSlider;
-	})(Slider)
-
-
-	/**
 	*<code>Radio</code> 控件使用户可在一组互相排斥的选择中做出一种选择。
 	*用户一次只能选择 <code>Radio</code> 组中的一个成员。选择未选中的组成员将取消选择该组中当前所选的 <code>Radio</code> 控件。
 	*@see laya.ui.RadioGroup
@@ -50966,8 +54591,7 @@ var Laya=window.Laya=(function(window,document){
 	/**
 	*<code>Tree</code> 控件使用户可以查看排列为可扩展树的层次结构数据。
 	*
-	*@example 以下示例代码，创建了一个 <code>Tree</code> 实例。
-	*<listing version="3.0">
+	*@example
 	*package
 	*{
 		*import laya.ui.Tree;
@@ -51038,8 +54662,7 @@ var Laya=window.Laya=(function(window,document){
 			*addChild(arrow);
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*Laya.init(640,800);//设置游戏画布宽高、渲染模式
 	*Laya.stage.bgColor="#efefef";//设置画布的背景颜色
 	*var res=["resource/ui/vscroll.png","resource/ui/vscroll$bar.png","resource/ui/vscroll$down.png","resource/ui/vscroll$up.png","resource/ui/clip_selectBox.png","resource/ui/clip_tree_folder.png","resource/ui/clip_tree_arrow.png"];
@@ -51094,8 +54717,7 @@ var Laya=window.Laya=(function(window,document){
 			*};
 		*Laya.class(Item,"mypackage.treeExample.Item",_super);//注册类 Item 。
 		*})(laya.ui.Box);
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*import Tree=laya.ui.Tree;
 	*import Browser=laya.utils.Browser;
 	*import Handler=laya.utils.Handler;
@@ -51159,7 +54781,6 @@ var Laya=window.Laya=(function(window,document){
 			*this.addChild(arrow);
 			*}
 		*}
-	*</listing>
 	*/
 	//class laya.ui.Tree extends laya.ui.Box
 	var Tree=(function(_super){
@@ -51289,6 +54910,7 @@ var Laya=window.Laya=(function(window,document){
 			var arrow=e.currentTarget;
 			var index=arrow.tag;
 			this._list.array[index].isOpen=!this._list.array[index].isOpen;
+			this.event("open");
 			this._list.array=this.getArray();
 		}
 
@@ -51715,8 +55337,7 @@ var Laya=window.Laya=(function(window,document){
 	*
 	*使用 <code>VScrollBar</code> （垂直 <code>ScrollBar</code> ）控件，可以在因数据太多而不能在显示区域完全显示时控制显示的数据部分。
 	*
-	*@example 以下示例代码，创建了一个 <code>VScrollBar</code> 实例。
-	*<listing version="3.0">
+	*@example <caption>以下示例代码，创建了一个 <code>VScrollBar</code> 实例。</caption>
 	*package
 	*{
 		*import laya.ui.vScrollBar;
@@ -51746,8 +55367,7 @@ var Laya=window.Laya=(function(window,document){
 				*}
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*Laya.init(640,800);//设置游戏画布宽高
 	*Laya.stage.bgColor="#efefef";//设置画布的背景颜色
 	*var vScrollBar;
@@ -51764,8 +55384,7 @@ var Laya=window.Laya=(function(window,document){
 	*function onChange(value){
 		*console.log("滚动条的位置： value="+value);
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*import VScrollBar=laya.ui.VScrollBar;
 	*import Handler=laya.utils.Handler;
 	*class VScrollBar_Example {
@@ -51787,7 +55406,6 @@ var Laya=window.Laya=(function(window,document){
 			*console.log("滚动条的位置： value="+value);
 			*}
 		*}
-	*</listing>
 	*/
 	//class laya.ui.VScrollBar extends laya.ui.ScrollBar
 	var VScrollBar=(function(_super){
@@ -51802,8 +55420,7 @@ var Laya=window.Laya=(function(window,document){
 	/**
 	*<code>TextInput</code> 类用于创建显示对象以显示和输入文本。
 	*
-	*@example 以下示例代码，创建了一个 <code>TextInput</code> 实例。
-	*<listing version="3.0">
+	*@example <caption>以下示例代码，创建了一个 <code>TextInput</code> 实例。</caption>
 	*package
 	*{
 		*import laya.display.Stage;
@@ -51835,8 +55452,7 @@ var Laya=window.Laya=(function(window,document){
 				*}
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*Laya.init(640,800);//设置游戏画布宽高
 	*Laya.stage.bgColor="#efefef";//设置画布的背景颜色
 	*Laya.loader.load(["resource/ui/input.png"],laya.utils.Handler.create(this,onLoadComplete));//加载资源。
@@ -51855,8 +55471,7 @@ var Laya=window.Laya=(function(window,document){
 		*textInput.height=200;//设置 textInput 的高度。
 		*Laya.stage.addChild(textInput);//将 textInput 添加到显示列表。
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*import Stage=laya.display.Stage;
 	*import TextInput=laya.ui.TextInput;
 	*import Handler=laya.utils.Handler;
@@ -51882,7 +55497,6 @@ var Laya=window.Laya=(function(window,document){
 			*Laya.stage.addChild(textInput);//将 textInput 添加到显示列表。
 			*}
 		*}
-	*</listing>
 	*/
 	//class laya.ui.TextInput extends laya.ui.Label
 	var TextInput=(function(_super){
@@ -51964,12 +55578,33 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
+		*当前文本内容字符串。
+		*@see laya.display.Text.text
+		*/
+		__getset(0,__proto,'text',_super.prototype._$get_text,function(value){
+			if (this._tf.text !=value){
+				value=value+"";
+				this._tf.text=value;
+				this.event("change");
+			}
+		});
+
+		/**
 		*表示此对象包含的文本背景 <code>AutoBitmap</code> 组件实例。
 		*/
 		__getset(0,__proto,'bg',function(){
 			return this._bg;
 			},function(value){
 			this.graphics=this._bg=value;
+		});
+
+		/**
+		*设置原生input输入框的y坐标偏移。
+		*/
+		__getset(0,__proto,'inputElementYAdjuster',function(){
+			return (this._tf).inputElementYAdjuster;
+			},function(value){
+			(this._tf).inputElementYAdjuster=value;
 		});
 
 		/**
@@ -51980,15 +55615,6 @@ var Laya=window.Laya=(function(window,document){
 			return (this._tf).multiline;
 			},function(value){
 			(this._tf).multiline=value;
-		});
-
-		/**
-		*设置原生input输入框的y坐标偏移。
-		*/
-		__getset(0,__proto,'inputElementYAdjuster',function(){
-			return (this._tf).inputElementYAdjuster;
-			},function(value){
-			(this._tf).inputElementYAdjuster=value;
 		});
 
 		/**
@@ -52118,8 +55744,7 @@ var Laya=window.Laya=(function(window,document){
 	*使用 <code>VSlider</code> 控件，用户可以通过在滑块轨道的终点之间移动滑块来选择值。
 	*<p> <code>VSlider</code> 控件采用垂直方向。滑块轨道从下往上扩展，而标签位于轨道的左右两侧。</p>
 	*
-	*@example 以下示例代码，创建了一个 <code>VSlider</code> 实例。
-	*<listing version="3.0">
+	*@example <caption>以下示例代码，创建了一个 <code>VSlider</code> 实例。</caption>
 	*package
 	*{
 		*import laya.ui.HSlider;
@@ -52153,8 +55778,7 @@ var Laya=window.Laya=(function(window,document){
 				*}
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*Laya.init(640,800);//设置游戏画布宽高
 	*Laya.stage.bgColor="#efefef";//设置画布的背景颜色
 	*var vSlider;
@@ -52174,8 +55798,7 @@ var Laya=window.Laya=(function(window,document){
 	*function onChange(value){
 		*console.log("滑块的位置： value="+value);
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*import HSlider=laya.ui.HSlider;
 	*import VSlider=laya.ui.VSlider;
 	*import Handler=laya.utils.Handler;
@@ -52202,7 +55825,6 @@ var Laya=window.Laya=(function(window,document){
 			*console.log("滑块的位置： value="+value);
 			*}
 		*}
-	*</listing>
 	*@see laya.ui.Slider
 	*/
 	//class laya.ui.VSlider extends laya.ui.Slider
@@ -52613,6 +56235,8 @@ var Laya=window.Laya=(function(window,document){
 		ContextMenu.createMenuByArray2=function(args){
 			var cmenu=new ContextMenu();
 			var template=[];
+			var tMenuStr;
+			var tMenuO;
 			for (var j=0,n=args.length;j < n;j++){
 				var item=args[j];
 				if (item==""){
@@ -52621,21 +56245,30 @@ var Laya=window.Laya=(function(window,document){
 					var arr=item;
 					var last=template[template.length-1];
 					for (var k=0;k < arr.length;k++){
+						tMenuStr=arr[k];
 						if (arr[k]==""){
 							arr[k]={type:"separator"};
 							}else {
-							arr[k]={label:ContextMenu.getContextMenuLang(arr[k]),click:click}
+							tMenuO=arr[k]={label:ContextMenu.getContextMenuLang(arr[k]),click:click,preLabel:arr[k]};
+							if(ContextMenu.shortDic[tMenuStr]){
+								tMenuO["accelerator"]=ContextMenu.shortDic[tMenuStr];
+							}
 						}
 					}
 					last.submenu=arr;
 					}else {
-					template.push({label:ContextMenu.getContextMenuLang(item),click:click});
+					tMenuStr=item;
+					tMenuO={label:ContextMenu.getContextMenuLang(item),click:click,preLabel:item};
+					template.push(tMenuO);
+					if(ContextMenu.shortDic[tMenuStr]){
+						tMenuO["accelerator"]=ContextMenu.shortDic[tMenuStr];
+					}
 				}
 			}
 			function click (item,focusedWindow){
-				cmenu.event("select",ContextMenu.revertMenuLang(item.label));
+				cmenu.event("select",item.preLabel);
 			}
-			if (SystemSetting.isCMDVer)return;
+			if (SystemSetting.isCMDVer)return null;
 			var menu;
 			const remote=require("electron").remote;;
 			const Menu=remote.Menu;;
@@ -52662,6 +56295,18 @@ var Laya=window.Laya=(function(window,document){
 
 		ContextMenu._menuList=[];
 		ContextMenu.revertLangDic={};
+		__static(ContextMenu,
+		['shortDic',function(){return this.shortDic={
+				"转换为容器":"CmdOrCtrl+B",
+				"转换类型":"CmdOrCtrl+T",
+				"复制":"CmdOrCtrl+C",
+				"剪切":"CmdOrCtrl+X",
+				"粘贴":"CmdOrCtrl+V",
+				"删除":"Delete",
+				"打散容器":"CmdOrCtrl+U"
+		};}
+
+		]);
 		return ContextMenu;
 	})(Box)
 
@@ -54263,7 +57908,7 @@ var Laya=window.Laya=(function(window,document){
 			TreeNodeRender.__super.call(this);
 			this.selectBox=new Clip("comp/clip_selectBox.png",1,2);
 			this.selectBox.pos(13,0);
-			this.selectBox.height=30;
+			this.selectBox.height=TimeGrid.frameHeight;
 			this.selectBox.left=12;
 			this.selectBox.right=0;
 			this.selectBox.name="selectBox";
@@ -54283,11 +57928,11 @@ var Laya=window.Laya=(function(window,document){
 			this.label.text="tree node";
 			this.label.name="label";
 			this.label.color="#ffffff";
-			this.label.height=30;
+			this.label.height=TimeGrid.frameHeight;
 			this.label.y=5+this.dY;
 			this.addChild(this.label);
 			this.left=this.right=0;
-			this.height=30;
+			this.height=TimeGrid.frameHeight;
 		}
 
 		__class(TreeNodeRender,'laya.editor.view.timeline.tree.TreeNodeRender',_super);
@@ -55182,11 +58827,11 @@ var Laya=window.Laya=(function(window,document){
 
 	/**
 	*<code>Dialog</code> 组件是一个弹出对话框，实现对话框弹出，拖动，模式窗口功能。
-	*可以通过UIConfig设置弹出框背景透明度，模式窗口点击边缘是否关闭，点击窗口是否切换层次等
+	*可以通过UIConfig设置弹出框背景透明度，模式窗口点击边缘是否关闭等
 	*通过设置zOrder属性，可以更改弹出的层次
+	*通过设置popupEffect和closeEffect可以设置弹出效果和关闭效果，如果不想有任何弹出关闭效果，可以设置前述属性为空
 	*
-	*@example 以下示例代码，创建了一个 <code>Dialog</code> 实例。
-	*<listing version="3.0">
+	*@example <caption>以下示例代码，创建了一个 <code>Dialog</code> 实例。</caption>
 	*package
 	*{
 		*import laya.ui.Dialog;
@@ -55237,8 +58882,7 @@ var Laya=window.Laya=(function(window,document){
 			*addChild(button);
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*Laya.init(640,800);//设置游戏画布宽高、渲染模式
 	*Laya.stage.bgColor="#efefef";//设置画布的背景颜色
 	*var dialog;
@@ -55273,8 +58917,7 @@ var Laya=window.Laya=(function(window,document){
 			*console.log("通过点击 name 为"+name+"的组件，关闭了dialog。");
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*import Dialog=laya.ui.Dialog;
 	*import Handler=laya.utils.Handler;
 	*class Dialog_Example {
@@ -55313,13 +58956,14 @@ var Laya=window.Laya=(function(window,document){
 			*this.addChild(button);
 			*}
 		*}
-	*</listing>
 	*/
 	//class laya.ui.Dialog extends laya.ui.View
 	var Dialog=(function(_super){
 		function Dialog(){
 			this.popupCenter=true;
 			this.closeHandler=null;
+			this.popupEffect=null;
+			this.closeEffect=null;
 			this.group=null;
 			this.isModal=false;
 			this._dragArea=null;
@@ -55330,6 +58974,8 @@ var Laya=window.Laya=(function(window,document){
 		var __proto=Dialog.prototype;
 		/**@inheritDoc */
 		__proto.initialize=function(){
+			this.popupEffect=Dialog.manager.popupEffectHandler;
+			this.closeEffect=Dialog.manager.closeEffectHandler;
 			this._dealDragArea();
 			this.on("click",this,this._onClick);
 		}
@@ -55388,14 +59034,20 @@ var Laya=window.Laya=(function(window,document){
 			Dialog.manager.open(this,closeOther);
 		}
 
+		/**打开完成后，调用此方法（如果有弹出动画，则在动画完成后执行）*/
+		__proto.onOpened=function(){}
 		/**
 		*关闭对话框。
 		*@param type 如果是点击默认关闭按钮触发，则传入关闭按钮的名字(name)，否则为null。
 		*/
 		__proto.close=function(type){
-			Dialog.manager.close(this);
+			Dialog.manager.close(this,type);
 		}
 
+		/**关闭完成后，调用此方法（如果有关闭动画，则在动画完成后执行）
+		*@param type 如果是点击默认关闭按钮触发，则传入关闭按钮的名字(name)，否则为null。
+		*/
+		__proto.onClosed=function(type){}
 		/**@private */
 		__proto._onMouseDown=function(e){
 			var point=this.getMousePoint();
@@ -55410,7 +59062,6 @@ var Laya=window.Laya=(function(window,document){
 		*</p>
 		*
 		*@see #includeExamplesSummary 请参考示例
-		*@return
 		*/
 		__getset(0,__proto,'dragArea',function(){
 			if (this._dragArea)return this._dragArea.toString();
@@ -55462,8 +59113,8 @@ var Laya=window.Laya=(function(window,document){
 			return Dialog.manager.getDialogsByGroup(group);
 		}
 
-		Dialog.closeByGround=function(group){
-			return Dialog.manager.closeByGround(group);
+		Dialog.closeByGroup=function(group){
+			return Dialog.manager.closeByGroup(group);
 		}
 
 		Dialog.CLOSE="close";
@@ -55478,7 +59129,7 @@ var Laya=window.Laya=(function(window,document){
 
 
 	/**
-	*<code>VBox</code> 是一个垂直布局容器类。
+	*<code>HBox</code> 是一个水平布局容器类。
 	*/
 	//class laya.ui.HBox extends laya.ui.LayoutBox
 	var HBox=(function(_super){
@@ -55499,14 +59150,14 @@ var Laya=window.Laya=(function(window,document){
 			var maxHeight=0;
 			for (var i=0,n=this.numChildren;i < n;i++){
 				var item=this.getChildAt(i);
-				if (item){
+				if (item&&item.layoutEnabled){
 					items.push(item);
-					maxHeight=Math.max(maxHeight,item.height *item.scaleY);
+					maxHeight=this._height?this._height:Math.max(maxHeight,item.height *item.scaleY);
 				}
 			}
 			this.sortItem(items);
 			var left=0;
-			for (i=0,n=this.numChildren;i < n;i++){
+			for (i=0,n=items.length;i < n;i++){
 				item=items[i];
 				item.x=left;
 				left+=item.width *item.scaleX+this._space;
@@ -55520,6 +59171,13 @@ var Laya=window.Laya=(function(window,document){
 			}
 			this.changeSize();
 		}
+
+		__getset(0,__proto,'height',_super.prototype._$get_height,function(value){
+			if (this._height !=value){
+				_super.prototype._$set_height.call(this,value);
+				this.callLater(this.changeItems);
+			}
+		});
 
 		HBox.NONE="none";
 		HBox.TOP="top";
@@ -55546,14 +59204,14 @@ var Laya=window.Laya=(function(window,document){
 			var maxWidth=0;
 			for (var i=0,n=this.numChildren;i < n;i++){
 				var item=this.getChildAt(i);
-				if (item){
+				if (item&&item.layoutEnabled){
 					items.push(item);
-					maxWidth=Math.max(maxWidth,item.width *item.scaleX);
+					maxWidth=this._width?this._width:Math.max(maxWidth,item.width *item.scaleX);
 				}
 			}
 			this.sortItem(items);
 			var top=0;
-			for (i=0,n=this.numChildren;i < n;i++){
+			for (i=0,n=items.length;i < n;i++){
 				item=items[i];
 				item.y=top;
 				top+=item.height *item.scaleY+this._space;
@@ -55568,6 +59226,13 @@ var Laya=window.Laya=(function(window,document){
 			this.changeSize();
 		}
 
+		__getset(0,__proto,'width',_super.prototype._$get_width,function(value){
+			if (this._width !=value){
+				_super.prototype._$set_width.call(this,value);
+				this.callLater(this.changeItems);
+			}
+		});
+
 		VBox.NONE="none";
 		VBox.LEFT="left";
 		VBox.CENTER="center";
@@ -55580,8 +59245,7 @@ var Laya=window.Laya=(function(window,document){
 	*<code>RadioGroup</code> 控件定义一组 <code>Radio</code> 控件，这些控件相互排斥；
 	*因此，用户每次只能选择一个 <code>Radio</code> 控件。
 	*
-	*@example 以下示例代码，创建了一个 <code>RadioGroup</code> 实例。
-	*<listing version="3.0">
+	*@example <caption>以下示例代码，创建了一个 <code>RadioGroup</code> 实例。</caption>
 	*package
 	*{
 		*import laya.ui.Radio;
@@ -55611,8 +59275,7 @@ var Laya=window.Laya=(function(window,document){
 				*}
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*Laya.init(640,800);//设置游戏画布宽高、渲染模式
 	*Laya.stage.bgColor="#efefef";//设置画布的背景颜色
 	*Laya.loader.load(["resource/ui/radio.png"],laya.utils.Handler.create(this,onLoadComplete));
@@ -55628,8 +59291,7 @@ var Laya=window.Laya=(function(window,document){
 	*function onSelect(index){
 		*console.log("当前选择的单选按钮索引: index= ",index);
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*import Radio=laya.ui.Radio;
 	*import RadioGroup=laya.ui.RadioGroup;
 	*import Handler=laya.utils.Handler;
@@ -55652,7 +59314,6 @@ var Laya=window.Laya=(function(window,document){
 			*console.log("当前选择的单选按钮索引: index= ",index);
 			*}
 		*}
-	*</listing>
 	*/
 	//class laya.ui.RadioGroup extends laya.ui.UIGroup
 	var RadioGroup=(function(_super){
@@ -55674,8 +59335,7 @@ var Laya=window.Laya=(function(window,document){
 	*<code>Tab</code> 组件用来定义选项卡按钮组。 *
 	*@internal <p>属性：<code>selectedIndex</code> 的默认值为-1。</p>
 	*
-	*@example 以下示例代码，创建了一个 <code>Tab</code> 实例。
-	*<listing version="3.0">
+	*@example <caption>以下示例代码，创建了一个 <code>Tab</code> 实例。</caption>
 	*package
 	*{
 		*import laya.ui.Tab;
@@ -55704,8 +59364,7 @@ var Laya=window.Laya=(function(window,document){
 				*}
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*Laya.init(640,800);//设置游戏画布宽高
 	*Laya.stage.bgColor="#efefef";//设置画布的背景颜色
 	*Laya.loader.load(["resource/ui/tab.png"],laya.utils.Handler.create(this,onLoadComplete));
@@ -55721,8 +59380,7 @@ var Laya=window.Laya=(function(window,document){
 	*function onSelect(index){
 		*console.log("当前选择的标签页索引: index= ",index);
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*import Tab=laya.ui.Tab;
 	*import Handler=laya.utils.Handler;
 	*class Tab_Example {
@@ -55744,7 +59402,6 @@ var Laya=window.Laya=(function(window,document){
 			*console.log("当前选择的表情页索引: index= ",index);
 			*}
 		*}
-	*</listing>
 	*/
 	//class laya.ui.Tab extends laya.ui.UIGroup
 	var Tab=(function(_super){
@@ -55767,8 +59424,7 @@ var Laya=window.Laya=(function(window,document){
 
 	/**
 	*<code>TextArea</code> 类用于创建显示对象以显示和输入文本。
-	*@example 以下示例代码，创建了一个 <code>TextArea</code> 实例。
-	*<listing version="3.0">
+	*@example <caption>以下示例代码，创建了一个 <code>TextArea</code> 实例。</caption>
 	*package
 	*{
 		*import laya.ui.TextArea;
@@ -55799,8 +59455,7 @@ var Laya=window.Laya=(function(window,document){
 				*}
 			*}
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*Laya.init(640,800);//设置游戏画布宽高、渲染模式
 	*Laya.stage.bgColor="#efefef";//设置画布的背景颜色
 	*Laya.loader.load(["resource/ui/input.png"],laya.utils.Handler.create(this,onLoadComplete));//加载资源。
@@ -55819,8 +59474,7 @@ var Laya=window.Laya=(function(window,document){
 		*textArea.height=200;//设置 textArea 的高度。
 		*Laya.stage.addChild(textArea);//将 textArea 添加到显示列表。
 		*}
-	*</listing>
-	*<listing version="3.0">
+	*@example
 	*import TextArea=laya.ui.TextArea;
 	*import Handler=laya.utils.Handler;
 	*class TextArea_Example {
@@ -55845,7 +59499,6 @@ var Laya=window.Laya=(function(window,document){
 			*Laya.stage.addChild(textArea);//将 textArea 添加到显示列表。
 			*}
 		*}
-	*</listing>
 	*/
 	//class laya.ui.TextArea extends laya.ui.TextInput
 	var TextArea=(function(_super){
@@ -56566,7 +60219,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(ColorPickerPanelUI,
-		['uiView',function(){return this.uiView={"props":{"height":"320","scenecolor":"#dddddd","width":"200"},"type":"View","child":[{"props":{"y":"137","bottom":"0","left":"0","sizeGrid":"4,4,4,4","skin":"view/bg_panel4.png","top":"0","right":"0","x":"165"},"type":"Image"},{"props":{"y":"5","var":"pickBack","width":"189","height":"180","skin":"comp/blank2.png","x":"5"},"type":"Image"},{"props":{"y":"202","text":"Color：","width":"50","align":"right","height":"18","color":"#c5c5c5","x":"2"},"type":"Label"},{"props":{"skin":"comp/input_22.png","var":"colorTxt","text":"#ffffff","width":"138","left":"50","sizeGrid":"0,3,0,3","height":"22","y":"200","color":"#c5c5c5","right":"5","x":"50"},"type":"TextInput"},{"props":{"y":"229","text":"Red：","width":"50","align":"right","height":"18","color":"#c5c5c5","x":"2"},"type":"Label"},{"props":{"skin":"comp/input_22.png","var":"redTxt","text":"255","width":"135","left":"50","sizeGrid":"0,3,0,3","height":"22","y":"227","color":"#c5c5c5","right":"5","x":"50"},"type":"TextInput"},{"props":{"y":"258","text":"Green：","width":"50","align":"right","height":"18","color":"#c5c5c5","x":"2"},"type":"Label"},{"props":{"skin":"comp/input_22.png","var":"greenTxt","text":"255","width":"132","left":"50","sizeGrid":"0,3,0,3","height":"22","y":"256","color":"#c5c5c5","right":"5","x":"50"},"type":"TextInput"},{"props":{"y":"287","text":"Blue：","width":"50","align":"right","height":"18","color":"#c5c5c5","x":"2"},"type":"Label"},{"props":{"skin":"comp/input_22.png","var":"blueTxt","text":"255","width":"135","left":"50","sizeGrid":"0,3,0,3","height":"22","y":"285","color":"#c5c5c5","right":"5","x":"50"},"type":"TextInput"}]};}
+		['uiView',function(){return this.uiView={"type":"View","child":[{"type":"Image","props":{"y":"137","bottom":"0","left":"0","sizeGrid":"4,4,4,4","top":"0","skin":"view/bg_panel4.png","right":"0","x":"165"}},{"type":"Image","props":{"y":"5","width":"189","var":"pickBack","height":"180","skin":"comp/blank2.png","x":"5"}},{"type":"Label","props":{"y":"202","text":"Color：","width":"50","align":"right","height":"18","color":"#c5c5c5","x":"2"}},{"type":"TextInput","props":{"height":"22","y":"200","color":"#c5c5c5","text":"#ffffff","width":"138","left":"50","var":"colorTxt","sizeGrid":"0,3,0,3","skin":"comp/input_22.png","right":"5","x":"50"}},{"type":"Label","props":{"y":"229","text":"Red：","width":"50","align":"right","height":"18","color":"#c5c5c5","x":"2"}},{"type":"TextInput","props":{"height":"22","y":"227","color":"#c5c5c5","text":"255","width":"135","left":"50","var":"redTxt","sizeGrid":"0,3,0,3","skin":"comp/input_22.png","right":"5","x":"50"}},{"type":"Label","props":{"y":"258","text":"Green：","width":"50","align":"right","height":"18","color":"#c5c5c5","x":"2"}},{"type":"TextInput","props":{"height":"22","y":"256","color":"#c5c5c5","text":"255","width":"132","left":"50","var":"greenTxt","sizeGrid":"0,3,0,3","skin":"comp/input_22.png","right":"5","x":"50"}},{"type":"Label","props":{"y":"287","text":"Blue：","width":"50","align":"right","height":"18","color":"#c5c5c5","x":"2"}},{"type":"TextInput","props":{"height":"22","y":"285","color":"#c5c5c5","text":"255","width":"135","left":"50","var":"blueTxt","sizeGrid":"0,3,0,3","skin":"comp/input_22.png","right":"5","x":"50"}}],"props":{"height":"320","scenecolor":"#dddddd","width":"200"}};}
 		]);
 		return ColorPickerPanelUI;
 	})(View)
@@ -56588,7 +60241,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(LayoutTabUI,
-		['uiView',function(){return this.uiView={"props":{"scenecolor":"#dddddd"},"type":"View","child":[{"props":{"skin":"view/tab_panel.png","labelColors":"#dddddd,#888888,#e0e0e0","label":"label","height":"25","y":"0","var":"btn","width":"75","x":"0"},"type":"Button"},{"props":{"scaleX":"0.5","y":"7","scaleY":"0.5","skin":"view/btn_close1.png","var":"close","x":"59"},"type":"Button"}]};}
+		['uiView',function(){return this.uiView={"type":"View","child":[{"type":"Button","props":{"y":"0","label":"label","var":"btn","height":"25","skin":"view/tab_panel.png","labelColors":"#dddddd,#888888,#e0e0e0","width":"75","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","y":"7","scaleY":"0.5","var":"close","skin":"view/btn_close1.png","x":"59"}}],"props":{"scenecolor":"#dddddd"}};}
 		]);
 		return LayoutTabUI;
 	})(View)
@@ -56610,32 +60263,9 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(viewTabUI,
-		['uiView',function(){return this.uiView={"props":{"scenecolor":"#dddddd"},"type":"View","child":[{"props":{"skin":"view/tab_panel.png","labelColors":"#dddddd,#888888,#e0e0e0","labelMargin":"0,0,15,0","label":"label","height":"25","y":"0","var":"btn","width":"75","x":"0"},"type":"Button"},{"props":{"scaleX":"0.5","y":"7","scaleY":"0.5","skin":"view/btn_close1.png","var":"close","x":"58"},"type":"Button"}]};}
+		['uiView',function(){return this.uiView={"type":"View","child":[{"type":"Button","props":{"labelMargin":"0,0,15,0","y":"0","label":"label","var":"btn","height":"25","skin":"view/tab_panel.png","labelColors":"#dddddd,#888888,#e0e0e0","width":"75","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","y":"7","scaleY":"0.5","var":"close","skin":"view/btn_close1.png","x":"58"}}],"props":{"scenecolor":"#dddddd"}};}
 		]);
 		return viewTabUI;
-	})(View)
-
-
-	/**
-	*可拖动布局框的基类
-	*@author ww
-	*/
-	//class laya.ide.ui.DragView extends laya.ui.View
-	var DragView=(function(_super){
-		function DragView(){
-			this.minWidth=50;
-			this.minHeight=50;
-			this.defaultWidth=100;
-			this.defaultHeight=100;
-			this.title="";
-			this.canClose=true;
-			this.canMix=true;
-			this.freeSize=false;
-			DragView.__super.call(this);
-		}
-
-		__class(DragView,'laya.ide.ui.DragView',_super);
-		return DragView;
 	})(View)
 
 
@@ -56678,6 +60308,30 @@ var Laya=window.Laya=(function(window,document){
 	})(TextInput)
 
 
+	/**
+	*可拖动布局框的基类
+	*@author ww
+	*/
+	//class laya.ide.ui.DragView extends laya.ui.View
+	var DragView=(function(_super){
+		function DragView(){
+			this.minWidth=50;
+			this.minHeight=50;
+			this.defaultWidth=100;
+			this.defaultHeight=100;
+			this.title="";
+			this.helpUrl="";
+			this.canClose=true;
+			this.canMix=true;
+			this.freeSize=false;
+			DragView.__super.call(this);
+		}
+
+		__class(DragView,'laya.ide.ui.DragView',_super);
+		return DragView;
+	})(View)
+
+
 	//class laya.editor.ui.group.ItemGroupUI extends laya.ui.View
 	var ItemGroupUI=(function(_super){
 		function ItemGroupUI(){
@@ -56696,7 +60350,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(ItemGroupUI,
-		['uiView',function(){return this.uiView={"props":{"scenecolor":"#dddddd"},"type":"View","child":[{"props":{"y":"0","var":"groubBar","width":"100","left":"0","mouseEnabled":"true","height":"20","skin":"view/bg_bar.png","right":"0","x":"0"},"type":"Image"},{"props":{"var":"groupLabl","text":"label","mouseChildren":"false","mouseEnabled":"false","y":"0","color":"#d8d8d8","x":"29"},"type":"Label"},{"props":{"y":"4","var":"arrowClip","mouseChildren":"false","mouseEnabled":"false","height":"12","skin":"comp/clip_tree.png","clipY":"2","width":"11","x":"15"},"type":"Clip"},{"props":{"x":"0","var":"groupBox","left":"0","y":"20","right":"0","mouseEnabled":"true"},"type":"Box","child":[{"props":{"skin":"comp/button.png","labelColors":"#dddddd,#dddddd,#dddddd","label":"label","sizeGrid":"0,4,0,4"},"type":"Button"}]}]};}
+		['uiView',function(){return this.uiView={"type":"View","child":[{"type":"Image","props":{"y":"0","mouseEnabled":"true","width":"100","left":"0","var":"groubBar","height":"20","skin":"view/bg_bar.png","right":"0","x":"0"}},{"type":"Label","props":{"y":"0","text":"label","mouseChildren":"false","mouseEnabled":"false","var":"groupLabl","color":"#d8d8d8","x":"29"}},{"type":"Clip","props":{"y":"4","clipY":"2","mouseChildren":"false","mouseEnabled":"false","var":"arrowClip","height":"12","skin":"comp/clip_tree.png","width":"11","x":"15"}},{"type":"Box","child":[{"type":"Button","props":{"sizeGrid":"0,4,0,4","skin":"comp/button.png","labelColors":"#dddddd,#dddddd,#dddddd","label":"label"}}],"props":{"x":"0","y":"20","mouseEnabled":"true","var":"groupBox","right":"0","left":"0"}}],"props":{"scenecolor":"#dddddd"}};}
 		]);
 		return ItemGroupUI;
 	})(View)
@@ -56707,6 +60361,7 @@ var Laya=window.Laya=(function(window,document){
 		function LayoutRecUI(){
 			this.back=null;
 			this.tab=null;
+			this.tipIcon=null;
 			LayoutRecUI.__super.call(this);
 		}
 
@@ -56718,7 +60373,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(LayoutRecUI,
-		['uiView',function(){return this.uiView={"props":{"hitTestPrior":"true"},"type":"View","child":[{"props":{"y":"0","var":"back","width":"600","left":"0","sizeGrid":"0,3,0,3","height":"25","skin":"view/bg_panel_layoutrec.png","top":"0","right":"0","x":"0"},"type":"Image"},{"props":{"y":"0","skin":"view/tab_panel.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","var":"tab","x":"0"},"type":"Tab"}]};}
+		['uiView',function(){return this.uiView={"type":"View","child":[{"type":"Image","props":{"sizeGrid":"0,3,0,3","y":"0","width":"600","left":"0","var":"back","height":"25","top":"0","skin":"view/bg_panel_layoutrec.png","right":"0","x":"0"}},{"type":"Tab","props":{"var":"tab","y":"0","skin":"view/tab_panel.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"0"}},{"type":"Image","props":{"y":"6","width":"14","var":"tipIcon","height":"14","visible":"false","skin":"comp/iconhelp.png","right":"5","x":"581"}}],"props":{"hitTestPrior":"true"}};}
 		]);
 		return LayoutRecUI;
 	})(View)
@@ -56744,9 +60399,53 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(MenuBarUI,
-		['uiView',function(){return this.uiView={"props":{"height":"34","scenecolor":"#dddddd","width":"600"},"type":"View","child":[{"props":{"y":"0","width":"200","left":"0","sizeGrid":"4,4,4,4","height":"34","skin":"view/bg_menu.png","right":"0","x":"0"},"type":"Image"},{"props":{"y":"6","skin":"view/logo.png","x":"13"},"type":"Image"},{"props":{"var":"tab","y":"5","x":"40"},"type":"Tab","child":[{"props":{"skin":"view/btn_menu.png","labelColors":"#e0e0e0,#e0e0e0,#e0e0e0","name":"item0","label":"项目(P)"},"type":"Button"},{"props":{"skin":"view/btn_menu.png","labelColors":"#e0e0e0,#e0e0e0,#e0e0e0","name":"item1","label":"文件(F)","x":"68"},"type":"Button"},{"props":{"skin":"view/btn_menu.png","labelColors":"#e0e0e0,#e0e0e0,#e0e0e0","name":"item2","label":"编辑(E)","x":"136"},"type":"Button"},{"props":{"skin":"view/btn_menu.png","labelColors":"#e0e0e0,#e0e0e0,#e0e0e0","name":"item3","label":"视图(V)","x":"204"},"type":"Button"},{"props":{"skin":"view/btn_menu.png","labelColors":"#e0e0e0,#e0e0e0,#e0e0e0","name":"item5","label":"发布(I)","x":"340"},"type":"Button"},{"props":{"skin":"view/btn_menu.png","labelColors":"#e0e0e0,#e0e0e0,#e0e0e0","name":"item6","label":"插件(T)","x":"408"},"type":"Button"},{"props":{"visible":"false","labelColors":"#e0e0e0,#e0e0e0,#e0e0e0","label":"关于(A)","skin":"view/btn_menu.png","name":"item7","x":"476"},"type":"Button"},{"props":{"y":"0","labelColors":"#e0e0e0,#e0e0e0,#e0e0e0","label":"窗口(W)","skin":"view/btn_menu.png","name":"item4","x":"272"},"type":"Button"}]},{"props":{"var":"btnBox","y":"1","right":"1","x":"712"},"type":"Box","child":[{"props":{"skin":"view/btn_min.png","var":"minBtn","y":"0","x":"65"},"type":"Button"},{"props":{"var":"backBtn","skin":"view/btn_max.png","y":"0","x":"98"},"type":"Button"},{"props":{"var":"closeBtn","skin":"view/btn_close2.png","y":"0","x":"131"},"type":"Button"},{"props":{"y":"5","labelColors":"#e0e0e0,#e0e0e0,#e0e0e0","label":"代码模式","var":"switchBtn","height":"24","skin":"view/btn_menu.png","name":"item5","width":"79","x":"-12"},"type":"Button"}]}]};}
+		['uiView',function(){return this.uiView={"type":"View","child":[{"type":"Image","props":{"sizeGrid":"4,4,4,4","y":"0","width":"200","left":"0","height":"34","skin":"view/bg_menu.png","right":"0","x":"0"}},{"type":"Image","props":{"y":"6","skin":"view/logo.png","x":"13"}},{"type":"Tab","child":[{"type":"Button","props":{"name":"item0","skin":"view/btn_menu.png","labelColors":"#e0e0e0,#e0e0e0,#e0e0e0","label":"项目(P)"}},{"type":"Button","props":{"name":"item1","skin":"view/btn_menu.png","labelColors":"#e0e0e0,#e0e0e0,#e0e0e0","label":"文件(F)","x":"68"}},{"type":"Button","props":{"name":"item2","skin":"view/btn_menu.png","labelColors":"#e0e0e0,#e0e0e0,#e0e0e0","label":"编辑(E)","x":"136"}},{"type":"Button","props":{"name":"item3","skin":"view/btn_menu.png","labelColors":"#e0e0e0,#e0e0e0,#e0e0e0","label":"视图(V)","x":"204"}},{"type":"Button","props":{"name":"item5","skin":"view/btn_menu.png","labelColors":"#e0e0e0,#e0e0e0,#e0e0e0","label":"发布(I)","x":"340"}},{"type":"Button","props":{"name":"item6","skin":"view/btn_menu.png","labelColors":"#e0e0e0,#e0e0e0,#e0e0e0","label":"插件(T)","x":"408"}},{"type":"Button","props":{"visible":"false","label":"关于(A)","name":"item7","skin":"view/btn_menu.png","labelColors":"#e0e0e0,#e0e0e0,#e0e0e0","x":"476"}},{"type":"Button","props":{"y":"0","label":"窗口(W)","name":"item4","skin":"view/btn_menu.png","labelColors":"#e0e0e0,#e0e0e0,#e0e0e0","x":"272"}}],"props":{"var":"tab","y":"5","x":"40"}},{"type":"Box","child":[{"type":"Button","props":{"var":"minBtn","y":"0","skin":"view/btn_min.png","x":"65"}},{"type":"Button","props":{"var":"backBtn","y":"0","skin":"view/btn_max.png","x":"98"}},{"type":"Button","props":{"var":"closeBtn","y":"0","skin":"view/btn_close2.png","x":"131"}},{"type":"Button","props":{"y":"5","label":"代码模式","var":"switchBtn","height":"24","name":"item5","skin":"view/btn_menu.png","labelColors":"#e0e0e0,#e0e0e0,#e0e0e0","width":"79","x":"-12"}}],"props":{"var":"btnBox","y":"1","right":"1","x":"712"}}],"props":{"height":"34","scenecolor":"#dddddd","width":"600"}};}
 		]);
 		return MenuBarUI;
+	})(View)
+
+
+	//class laya.editor.ui.other.HelpTipUI extends laya.ui.View
+	var HelpTipUI=(function(_super){
+		function HelpTipUI(){
+			this.tipTxt=null;
+			this.closeBtn=null;
+			HelpTipUI.__super.call(this);
+		}
+
+		__class(HelpTipUI,'laya.editor.ui.other.HelpTipUI',_super);
+		var __proto=HelpTipUI.prototype;
+		__proto.createChildren=function(){
+			laya.ui.Component.prototype.createChildren.call(this);
+			this.createView(HelpTipUI.uiView);
+		}
+
+		__static(HelpTipUI,
+		['uiView',function(){return this.uiView={"type":"View","child":[{"type":"Image","props":{"y":"0","skin":"view/helptipbg.png","x":"0"}},{"type":"Label","props":{"var":"tipTxt","y":"11","text":"点击这里查看帮助","width":"165","align":"center","height":"43","color":"#f1ea71","fontSize":"12","x":"-24"}},{"type":"Button","props":{"scaleX":"0.5","y":"2","scaleY":"0.5","var":"closeBtn","skin":"view/btn_close1.png","x":"98"}}],"props":{"height":"46","width":"114"}};}
+		]);
+		return HelpTipUI;
+	})(View)
+
+
+	//class laya.editor.ui.other.ResTypeSettingViewUI extends laya.ui.View
+	var ResTypeSettingViewUI=(function(_super){
+		function ResTypeSettingViewUI(){
+			this.typeList=null;
+			this.okBtn=null;
+			ResTypeSettingViewUI.__super.call(this);
+		}
+
+		__class(ResTypeSettingViewUI,'laya.editor.ui.other.ResTypeSettingViewUI',_super);
+		var __proto=ResTypeSettingViewUI.prototype;
+		__proto.createChildren=function(){
+			laya.ui.Component.prototype.createChildren.call(this);
+			this.createView(ResTypeSettingViewUI.uiView);
+		}
+
+		__static(ResTypeSettingViewUI,
+		['uiView',function(){return this.uiView={"type":"View","child":[{"type":"List","child":[{"type":"Box","child":[{"type":"Label","props":{"y":"4","text":"type","width":"77","align":"left","height":"20","name":"nameTxt","color":"#c5c5c5","x":"0"}},{"type":"TextInput","props":{"height":"24","name":"inputTxt","color":"#c5c5c5","width":"80","sizeGrid":"0,3,0,3","y":"0","skin":"comp/input_24.png","x":"89"}}],"props":{"height":"26","y":"0","name":"render","width":"191","x":"0"}}],"props":{"y":"25","width":"366","x":"18","var":"typeList","height":"234","vScrollBarSkin":"comp/vscroll.png"}},{"type":"Button","props":{"y":"269","label":"确定","var":"okBtn","sizeGrid":"0,4,0,4","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","x":"145"}}],"props":{"height":"300","width":"400"}};}
+		]);
+		return ResTypeSettingViewUI;
 	})(View)
 
 
@@ -56773,7 +60472,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(AddGraphicAniUI,
-		['uiView',function(){return this.uiView={"props":{"height":"250","scenecolor":"#dddddd","width":"550"},"type":"View","child":[{"props":{"y":"96","color":"#c5c5c5","text":"参考宽度，实际无效","x":"428"},"type":"Label"},{"props":{"y":"134","color":"#c5c5c5","text":"参考高度，实际无效","x":"428"},"type":"Label"},{"props":{"y":"54","var":"nametip","color":"#c5c5c5","text":"页面名称：","x":"10"},"type":"Label"},{"props":{"y":"93","var":"widthTip","color":"#c5c5c5","text":"页面宽度：","x":"10"},"type":"Label"},{"props":{"y":"133","var":"heightTip","color":"#c5c5c5","text":"页面高度：","x":"10"},"type":"Label"},{"props":{"y":"171","wordWrap":"true","text":"参考背景：","width":"73","height":"40","color":"#c5c5c5","x":"10"},"type":"Label"},{"props":{"y":"47","var":"nameTxt","width":"451","sizeGrid":"0,3,0,3","height":"32","skin":"comp/input_32.png","color":"#c5c5c5","x":"83"},"type":"TextInput"},{"props":{"var":"widthTxt","skin":"comp/input_32.png","text":"600","width":"339","sizeGrid":"0,3,0,3","height":"32","y":"86","color":"#c5c5c5","x":"83"},"type":"TextInput"},{"props":{"var":"heightTxt","skin":"comp/input_32.png","text":"400","width":"339","sizeGrid":"0,3,0,3","height":"32","y":"126","color":"#c5c5c5","x":"83"},"type":"TextInput"},{"props":{"scaleX":"0.5","y":"171","var":"bgColorPicker","skin":"comp/color.png","scaleY":"0.5","selectedcolor":"#dddddd","x":"83"},"type":"ColorPicker"},{"props":{"y":"173","text":"(可选，设计面板的背景颜色)","width":"417","height":"18","color":"#c5c5c5","x":"103"},"type":"Label"},{"props":{"y":"16","text":"动画类型：","width":"74","height":"18","var":"typetip","color":"#c5c5c5","x":"10"},"type":"Label"},{"props":{"skin":"comp/combo_32.png","scrollBarSkin":"comp/vscroll.png","labels":"View,Dialog","width":"451","selectedIndex":"0","sizeGrid":"0,20,0,3","height":"32","var":"typeDrop","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","y":"8","x":"83"},"type":"ComboBox"}]};}
+		['uiView',function(){return this.uiView={"type":"View","child":[{"type":"Label","props":{"y":"96","color":"#c5c5c5","text":"参考宽度，实际无效","x":"428"}},{"type":"Label","props":{"y":"134","color":"#c5c5c5","text":"参考高度，实际无效","x":"428"}},{"type":"Label","props":{"var":"nametip","y":"54","color":"#c5c5c5","text":"页面名称：","x":"10"}},{"type":"Label","props":{"var":"widthTip","y":"93","color":"#c5c5c5","text":"页面宽度：","x":"10"}},{"type":"Label","props":{"var":"heightTip","y":"133","color":"#c5c5c5","text":"页面高度：","x":"10"}},{"type":"Label","props":{"y":"171","wordWrap":"true","text":"参考背景：","width":"73","height":"40","color":"#c5c5c5","x":"10"}},{"type":"TextInput","props":{"height":"32","y":"47","color":"#c5c5c5","width":"451","var":"nameTxt","sizeGrid":"0,3,0,3","skin":"comp/input_32.png","x":"83"}},{"type":"TextInput","props":{"height":"32","y":"86","color":"#c5c5c5","text":"600","width":"339","var":"widthTxt","sizeGrid":"0,3,0,3","skin":"comp/input_32.png","x":"83"}},{"type":"TextInput","props":{"height":"32","y":"126","color":"#c5c5c5","text":"400","width":"339","var":"heightTxt","sizeGrid":"0,3,0,3","skin":"comp/input_32.png","x":"83"}},{"type":"ColorPicker","props":{"scaleX":"0.5","y":"171","scaleY":"0.5","selectedcolor":"#dddddd","var":"bgColorPicker","skin":"comp/color.png","x":"83"}},{"type":"Label","props":{"y":"173","text":"(可选，设计面板的背景颜色)","width":"417","height":"18","color":"#c5c5c5","x":"103"}},{"type":"Label","props":{"y":"16","text":"动画类型：","width":"74","var":"typetip","height":"18","color":"#c5c5c5","x":"10"}},{"type":"ComboBox","props":{"height":"32","scrollBarSkin":"comp/vscroll.png","labels":"View,Dialog","selectedIndex":"0","var":"typeDrop","sizeGrid":"0,20,0,3","y":"8","skin":"comp/combo_32.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","width":"451","x":"83"}}],"props":{"height":"250","scenecolor":"#dddddd","width":"550"}};}
 		]);
 		return AddGraphicAniUI;
 	})(View)
@@ -56806,7 +60505,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(AddPageUI,
-		['uiView',function(){return this.uiView={"props":{"height":"250","scenecolor":"#dddddd","width":"550"},"type":"View","child":[{"props":{"y":"16","var":"typetip","color":"#c5c5c5","text":"页面类型：","x":"10"},"type":"Label"},{"props":{"y":"54","var":"nametip","color":"#c5c5c5","text":"页面名称：","x":"10"},"type":"Label"},{"props":{"y":"94","color":"#c5c5c5","text":"参考视图：","x":"10"},"type":"Label"},{"props":{"y":"133","var":"widthTip","color":"#c5c5c5","text":"页面宽度：","x":"10"},"type":"Label"},{"props":{"y":"173","var":"heightTip","color":"#c5c5c5","text":"页面高度：","x":"10"},"type":"Label"},{"props":{"y":"211","wordWrap":"true","text":"参考背景：","width":"72","height":"40","color":"#c5c5c5","x":"10"},"type":"Label"},{"props":{"skin":"comp/combo_32.png","scrollBarSkin":"comp/vscroll.png","labels":"View,Dialog","width":"451","selectedIndex":"0","sizeGrid":"0,20,0,3","height":"32","var":"typeDrop","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","y":"8","x":"83"},"type":"ComboBox"},{"props":{"y":"47","var":"nameTxt","width":"451","sizeGrid":"0,3,0,3","height":"32","skin":"comp/input_32.png","color":"#c5c5c5","x":"83"},"type":"TextInput"},{"props":{"y":"86","var":"imgTxt","width":"300","sizeGrid":"0,3,0,3","height":"32","skin":"comp/input_32.png","color":"#c5c5c5","x":"83"},"type":"TextInput"},{"props":{"var":"widthTxt","skin":"comp/input_32.png","text":"600","width":"339","sizeGrid":"0,3,0,3","height":"32","y":"126","color":"#c5c5c5","x":"83"},"type":"TextInput"},{"props":{"var":"heightTxt","skin":"comp/input_32.png","text":"400","width":"339","sizeGrid":"0,3,0,3","height":"32","y":"166","color":"#c5c5c5","x":"83"},"type":"TextInput"},{"props":{"scaleX":"0.5","y":"211","var":"bgColorPicker","skin":"comp/color.png","scaleY":"0.5","selectedcolor":"#dddddd","x":"83"},"type":"ColorPicker"},{"props":{"y":"94","wordWrap":"true","text":"(可选，参考背景)","height":"40","color":"#c5c5c5","x":"435"},"type":"Label"},{"props":{"y":"213","text":"(可选，设计面板的背景颜色)","width":"352","height":"18","color":"#c5c5c5","x":"105"},"type":"Label"},{"props":{"skin":"comp/btn_browser.png","var":"selectBtn","width":"40","height":"32","y":"86","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","label":"选择","x":"383"},"type":"Button"},{"props":{"skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"仅作为参考宽度","y":"138","var":"widthCheck","x":"428"},"type":"CheckBox"},{"props":{"skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"仅作为参考高度","y":"178","var":"heightCheck","x":"428"},"type":"CheckBox"}]};}
+		['uiView',function(){return this.uiView={"type":"View","child":[{"type":"Label","props":{"var":"typetip","y":"16","color":"#c5c5c5","text":"页面类型：","x":"10"}},{"type":"Label","props":{"var":"nametip","y":"54","color":"#c5c5c5","text":"页面名称：","x":"10"}},{"type":"Label","props":{"y":"94","color":"#c5c5c5","text":"参考视图：","x":"10"}},{"type":"Label","props":{"var":"widthTip","y":"133","color":"#c5c5c5","text":"页面宽度：","x":"10"}},{"type":"Label","props":{"var":"heightTip","y":"173","color":"#c5c5c5","text":"页面高度：","x":"10"}},{"type":"Label","props":{"y":"211","wordWrap":"true","text":"参考背景：","width":"72","height":"40","color":"#c5c5c5","x":"10"}},{"type":"ComboBox","props":{"height":"32","scrollBarSkin":"comp/vscroll.png","labels":"View,Dialog","selectedIndex":"0","var":"typeDrop","sizeGrid":"0,20,0,3","y":"8","skin":"comp/combo_32.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","width":"451","x":"83"}},{"type":"TextInput","props":{"height":"32","y":"47","color":"#c5c5c5","width":"451","var":"nameTxt","sizeGrid":"0,3,0,3","skin":"comp/input_32.png","x":"83"}},{"type":"TextInput","props":{"sizeGrid":"0,3,0,3","y":"86","color":"#c5c5c5","width":"300","var":"imgTxt","height":"32","skin":"comp/input_32.png","x":"83"}},{"type":"TextInput","props":{"height":"32","y":"126","color":"#c5c5c5","text":"600","width":"339","var":"widthTxt","sizeGrid":"0,3,0,3","skin":"comp/input_32.png","x":"83"}},{"type":"TextInput","props":{"height":"32","y":"166","color":"#c5c5c5","text":"400","width":"339","var":"heightTxt","sizeGrid":"0,3,0,3","skin":"comp/input_32.png","x":"83"}},{"type":"ColorPicker","props":{"scaleX":"0.5","y":"211","scaleY":"0.5","selectedcolor":"#dddddd","var":"bgColorPicker","skin":"comp/color.png","x":"83"}},{"type":"Label","props":{"y":"94","wordWrap":"true","text":"(可选，参考背景)","height":"40","color":"#c5c5c5","x":"435"}},{"type":"Label","props":{"y":"213","text":"(可选，设计面板的背景颜色)","width":"352","height":"18","color":"#c5c5c5","x":"105"}},{"type":"Button","props":{"y":"86","width":"40","var":"selectBtn","height":"32","skin":"comp/btn_browser.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","label":"选择","x":"383"}},{"type":"CheckBox","props":{"y":"138","label":"仅作为参考宽度","var":"widthCheck","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"428"}},{"type":"CheckBox","props":{"y":"178","label":"仅作为参考高度","var":"heightCheck","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"428"}}],"props":{"height":"250","scenecolor":"#dddddd","width":"550"}};}
 		]);
 		return AddPageUI;
 	})(View)
@@ -56828,7 +60527,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(AddParticleUI,
-		['uiView',function(){return this.uiView={"props":{"height":"250","scenecolor":"#dddddd","width":"550"},"type":"View","child":[{"props":{"y":"54","color":"#c5c5c5","text":"粒子名称：","x":"10"},"type":"Label"},{"props":{"skin":"comp/input_32.png","y":"47","width":"451","sizeGrid":"0,3,0,3","height":"32","var":"nameTxt","color":"#c5c5c5","x":"83"},"type":"TextInput"},{"props":{"y":"16","color":"#c5c5c5","text":"粒子类型：","x":"10"},"type":"Label"},{"props":{"skin":"comp/combo_32.png","scrollBarSkin":"comp/vscroll.png","labels":"重力模式,半径模式","width":"451","selectedIndex":"0","sizeGrid":"0,20,0,3","height":"32","y":"8","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","var":"typeDrop","x":"83"},"type":"ComboBox"}]};}
+		['uiView',function(){return this.uiView={"type":"View","child":[{"type":"Label","props":{"y":"54","color":"#c5c5c5","text":"粒子名称：","x":"10"}},{"type":"TextInput","props":{"height":"32","y":"47","color":"#c5c5c5","width":"451","var":"nameTxt","sizeGrid":"0,3,0,3","skin":"comp/input_32.png","x":"83"}},{"type":"Label","props":{"y":"16","color":"#c5c5c5","text":"粒子类型：","x":"10"}},{"type":"ComboBox","props":{"height":"32","scrollBarSkin":"comp/vscroll.png","labels":"重力模式,半径模式","selectedIndex":"0","var":"typeDrop","sizeGrid":"0,20,0,3","y":"8","skin":"comp/combo_32.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","width":"451","x":"83"}}],"props":{"height":"250","scenecolor":"#dddddd","width":"550"}};}
 		]);
 		return AddParticleUI;
 	})(View)
@@ -56851,7 +60550,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(AddScriptUI,
-		['uiView',function(){return this.uiView={"props":{"height":"250","scenecolor":"#dddddd","width":"550"},"type":"View","child":[{"props":{"y":"54","color":"#c5c5c5","text":"脚本名称：","x":"10"},"type":"Label"},{"props":{"skin":"comp/input_32.png","y":"47","width":"451","sizeGrid":"0,3,0,3","height":"32","var":"nameTxt","color":"#c5c5c5","x":"83"},"type":"TextInput"},{"props":{"y":"16","color":"#c5c5c5","text":"脚本类型：","x":"10"},"type":"Label"},{"props":{"skin":"comp/combo_32.png","scrollBarSkin":"comp/vscroll.png","labels":"扩展脚本,附加脚本","width":"451","selectedIndex":"0","sizeGrid":"0,20,0,3","height":"32","y":"8","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","var":"typeDrop","x":"83"},"type":"ComboBox"},{"props":{"y":"94","color":"#c5c5c5","text":"运行类名：","x":"10"},"type":"Label"},{"props":{"skin":"comp/input_32.png","y":"87","width":"340","sizeGrid":"0,3,0,3","height":"32","var":"classTxt","color":"#c5c5c5","x":"83"},"type":"TextInput"},{"props":{"y":"91","wordWrap":"true","text":"(运行时的类名，比如game.view.MyScript)","width":"117","height":"41","color":"#c5c5c5","x":"433"},"type":"Label"}]};}
+		['uiView',function(){return this.uiView={"type":"View","child":[{"type":"Label","props":{"y":"54","color":"#c5c5c5","text":"脚本名称：","x":"10"}},{"type":"TextInput","props":{"height":"32","y":"47","color":"#c5c5c5","width":"451","var":"nameTxt","sizeGrid":"0,3,0,3","skin":"comp/input_32.png","x":"83"}},{"type":"Label","props":{"y":"16","color":"#c5c5c5","text":"脚本类型：","x":"10"}},{"type":"ComboBox","props":{"height":"32","scrollBarSkin":"comp/vscroll.png","labels":"扩展脚本,附加脚本","selectedIndex":"0","var":"typeDrop","sizeGrid":"0,20,0,3","y":"8","skin":"comp/combo_32.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","width":"451","x":"83"}},{"type":"Label","props":{"y":"94","color":"#c5c5c5","text":"运行类名：","x":"10"}},{"type":"TextInput","props":{"height":"32","y":"87","color":"#c5c5c5","width":"340","var":"classTxt","sizeGrid":"0,3,0,3","skin":"comp/input_32.png","x":"83"}},{"type":"Label","props":{"y":"91","wordWrap":"true","text":"(运行时的类名，比如game.view.MyScript)","width":"117","height":"41","color":"#c5c5c5","x":"433"}}],"props":{"height":"250","scenecolor":"#dddddd","width":"550"}};}
 		]);
 		return AddScriptUI;
 	})(View)
@@ -56875,7 +60574,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(PropGroupUI,
-		['uiView',function(){return this.uiView={"props":{"hitTestPrior":"true","scenecolor":"#dddddd"},"type":"View","child":[{"props":{"y":"0","var":"groubBar","width":"100","left":"0","mouseEnabled":"true","height":"24","skin":"view/bg_bar.png","right":"0","x":"0"},"type":"Image"},{"props":{"var":"groupLabl","text":"label","mouseChildren":"false","mouseEnabled":"false","y":"3","color":"#efeded","x":"19"},"type":"Label"},{"props":{"y":"4","var":"arrowClip","mouseChildren":"false","mouseEnabled":"false","height":"12","skin":"comp/clip_tree.png","clipY":"2","width":"11","x":"5"},"type":"Clip"},{"props":{"x":"0","var":"groupBox","left":"0","y":"24","right":"0","mouseEnabled":"true"},"type":"Box","child":[{"props":{"skin":"comp/button.png","labelColors":"#dddddd,#dddddd,#dddddd","label":"label","sizeGrid":"0,4,0,4"},"type":"Button"}]}]};}
+		['uiView',function(){return this.uiView={"type":"View","child":[{"type":"Image","props":{"y":"0","mouseEnabled":"true","width":"100","left":"0","var":"groubBar","height":"24","skin":"view/bg_bar.png","right":"0","x":"0"}},{"type":"Label","props":{"y":"3","text":"label","mouseChildren":"false","mouseEnabled":"false","var":"groupLabl","color":"#efeded","x":"19"}},{"type":"Clip","props":{"y":"4","clipY":"2","mouseChildren":"false","mouseEnabled":"false","var":"arrowClip","height":"12","skin":"comp/clip_tree.png","width":"11","x":"5"}},{"type":"Box","child":[{"type":"Button","props":{"sizeGrid":"0,4,0,4","skin":"comp/button.png","labelColors":"#dddddd,#dddddd,#dddddd","label":"label"}}],"props":{"x":"0","y":"24","mouseEnabled":"true","var":"groupBox","right":"0","left":"0"}}],"props":{"scenecolor":"#dddddd","hitTestPrior":"true"}};}
 		]);
 		return PropGroupUI;
 	})(View)
@@ -56895,7 +60594,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(QuickToolUI,
-		['uiView',function(){return this.uiView={"props":{"hitTestPrior":"true","height":"32","title":"工具","scenecolor":"#dddddd","width":"900"},"type":"View","child":[{"props":{"y":"5","name":"addFolder","x":"20","toolTip":"新建页面文件夹","skin":"view/folder_add.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"addPage","x":"54","toolTip":"新建页面","skin":"view/page_add.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"save","x":"94","toolTip":"保存页面","skin":"view/save.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"saveAll","x":"128","toolTip":"保存所有页面","skin":"view/saveall.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"back","x":"168","toolTip":"恢复","skin":"view/back.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"reBack","x":"202","toolTip":"撤销恢复","skin":"view/re.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"zoomIn","x":"242","toolTip":"缩小视图","skin":"view/zoom_in.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"zoomOut","x":"276","toolTip":"放大视图","skin":"view/zoom_out.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"zoomBack","x":"310","toolTip":"恢复视图","skin":"view/zoom_back.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"refresh","x":"354","toolTip":"刷新资源及页面","skin":"view/res.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"publish","x":"388","toolTip":"发布","skin":"view/publish.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"alignLeft","x":"432","toolTip":"左对齐","skin":"view/align_left.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"alignCenter","x":"466","toolTip":"垂直居中对齐","skin":"view/align_center.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"alignRight","x":"500","toolTip":"右对齐","skin":"view/align_right.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"alignTop","x":"534","toolTip":"顶部对齐","skin":"view/align_top.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"alignMiddle","x":"566","toolTip":"水平居中对齐","skin":"view/align_middle.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"alignbottom","x":"600","toolTip":"底部对齐","skin":"view/align_bottom.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"spaceH","x":"644","toolTip":"水平平均间隔","skin":"view/space_h.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"spaceV","x":"678","toolTip":"垂直平均间隔","skin":"view/space_v.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"topLeft","x":"722","toolTip":"移动到左上角","skin":"view/move_top_left.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"topRight","x":"756","toolTip":"移动到右上角","skin":"view/move_top_right.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"center","x":"850","toolTip":"移动到水平居中","skin":"view/center.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"middle","x":"884","toolTip":"移动到垂直居中","skin":"view/middle.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"bottomLeft","x":"786","toolTip":"移动到左下角","skin":"view/move_bottom_left.png","stateNum":"2"},"type":"Button"},{"props":{"y":"5","name":"bottomRight","x":"816","toolTip":"移动到右下角","skin":"view/move_bottom_right.png","stateNum":"2"},"type":"Button"},{"props":{"y":"4","name":"tomiddle","x":"915","toolTip":"相对原点居中","skin":"view/tomiddle.png","stateNum":"2"},"type":"Button"}]};}
+		['uiView',function(){return this.uiView={"type":"View","child":[{"type":"Button","props":{"stateNum":"2","name":"addFolder","toolTip":"新建页面文件夹","y":"5","skin":"view/folder_add.png","x":"20"}},{"type":"Button","props":{"stateNum":"2","name":"addPage","toolTip":"新建页面","y":"5","skin":"view/page_add.png","x":"54"}},{"type":"Button","props":{"stateNum":"2","name":"save","toolTip":"保存页面","y":"5","skin":"view/save.png","x":"94"}},{"type":"Button","props":{"stateNum":"2","name":"saveAll","toolTip":"保存所有页面","y":"5","skin":"view/saveall.png","x":"128"}},{"type":"Button","props":{"stateNum":"2","name":"back","toolTip":"恢复","y":"5","skin":"view/back.png","x":"168"}},{"type":"Button","props":{"stateNum":"2","name":"reBack","toolTip":"撤销恢复","y":"5","skin":"view/re.png","x":"202"}},{"type":"Button","props":{"stateNum":"2","name":"zoomIn","toolTip":"缩小视图","y":"5","skin":"view/zoom_in.png","x":"242"}},{"type":"Button","props":{"stateNum":"2","name":"zoomOut","toolTip":"放大视图","y":"5","skin":"view/zoom_out.png","x":"276"}},{"type":"Button","props":{"stateNum":"2","name":"zoomBack","toolTip":"恢复视图","y":"5","skin":"view/zoom_back.png","x":"310"}},{"type":"Button","props":{"stateNum":"2","name":"refresh","toolTip":"刷新资源及页面","y":"5","skin":"view/res.png","x":"354"}},{"type":"Button","props":{"stateNum":"2","name":"publish","toolTip":"发布","y":"5","skin":"view/publish.png","x":"388"}},{"type":"Button","props":{"stateNum":"2","name":"alignLeft","toolTip":"左对齐","y":"5","skin":"view/align_left.png","x":"432"}},{"type":"Button","props":{"stateNum":"2","name":"alignCenter","toolTip":"垂直居中对齐","y":"5","skin":"view/align_center.png","x":"466"}},{"type":"Button","props":{"stateNum":"2","name":"alignRight","toolTip":"右对齐","y":"5","skin":"view/align_right.png","x":"500"}},{"type":"Button","props":{"stateNum":"2","name":"alignTop","toolTip":"顶部对齐","y":"5","skin":"view/align_top.png","x":"534"}},{"type":"Button","props":{"stateNum":"2","name":"alignMiddle","toolTip":"水平居中对齐","y":"5","skin":"view/align_middle.png","x":"566"}},{"type":"Button","props":{"stateNum":"2","name":"alignbottom","toolTip":"底部对齐","y":"5","skin":"view/align_bottom.png","x":"600"}},{"type":"Button","props":{"stateNum":"2","name":"spaceH","toolTip":"水平平均间隔","y":"5","skin":"view/space_h.png","x":"644"}},{"type":"Button","props":{"stateNum":"2","name":"spaceV","toolTip":"垂直平均间隔","y":"5","skin":"view/space_v.png","x":"678"}},{"type":"Button","props":{"stateNum":"2","name":"topLeft","toolTip":"移动到左上角","y":"5","skin":"view/move_top_left.png","x":"722"}},{"type":"Button","props":{"stateNum":"2","name":"topRight","toolTip":"移动到右上角","y":"5","skin":"view/move_top_right.png","x":"756"}},{"type":"Button","props":{"stateNum":"2","name":"center","toolTip":"移动到水平居中","y":"5","skin":"view/center.png","x":"850"}},{"type":"Button","props":{"stateNum":"2","name":"middle","toolTip":"移动到垂直居中","y":"5","skin":"view/middle.png","x":"884"}},{"type":"Button","props":{"stateNum":"2","name":"bottomLeft","toolTip":"移动到左下角","y":"5","skin":"view/move_bottom_left.png","x":"786"}},{"type":"Button","props":{"stateNum":"2","name":"bottomRight","toolTip":"移动到右下角","y":"5","skin":"view/move_bottom_right.png","x":"816"}},{"type":"Button","props":{"stateNum":"2","name":"tomiddle","toolTip":"相对原点居中","y":"4","skin":"view/tomiddle.png","x":"915"}}],"props":{"height":"32","hitTestPrior":"true","scenecolor":"#dddddd","title":"工具","width":"900"}};}
 		]);
 		return QuickToolUI;
 	})(View)
@@ -56917,7 +60616,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(TemplateItemUI,
-		['uiView',function(){return this.uiView={"props":{"height":"80","width":"80","scenecolor":"#dddddd"},"type":"View","child":[{"props":{"skin":"view/bg_content.png","bottom":"0","sizeGrid":"5,5,5,5","top":"0","right":"0","left":"0"},"type":"Image"},{"props":{"y":"8","var":"imgBg","bottom":"15","left":"2","skin":"comp/blank.png","top":"2","right":"2","x":"8"},"type":"Image"},{"props":{"y":"60","width":"74","left":"0","sizeGrid":"5,5,5,5","height":"20","skin":"view/bg_content.png","right":"0","x":"0"},"type":"Image"},{"props":{"y":"61","text":"控件名","width":"65","left":"5","align":"center","height":"18","var":"tLabel","color":"#dddddd","right":"5","x":"7"},"type":"Label"}]};}
+		['uiView',function(){return this.uiView={"type":"View","child":[{"type":"Image","props":{"bottom":"0","left":"0","sizeGrid":"5,5,5,5","top":"0","skin":"view/bg_content.png","right":"0"}},{"type":"Image","props":{"y":"8","bottom":"15","left":"2","var":"imgBg","top":"2","skin":"comp/blank.png","right":"2","x":"8"}},{"type":"Image","props":{"sizeGrid":"5,5,5,5","y":"60","width":"74","left":"0","height":"20","skin":"view/bg_content.png","right":"0","x":"0"}},{"type":"Label","props":{"var":"tLabel","y":"61","text":"控件名","width":"65","left":"5","align":"center","height":"18","color":"#dddddd","right":"5","x":"7"}}],"props":{"height":"80","scenecolor":"#dddddd","width":"80"}};}
 		]);
 		return TemplateItemUI;
 	})(View)
@@ -56943,7 +60642,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(PlayControlUI,
-		['uiView',function(){return this.uiView={"props":{"height":"34","scenecolor":"#dddddd","width":"123"},"type":"View","child":[{"props":{"scaleX":"0.5","var":"play","skin":"play/btn_play.png","mouseEnabled":"true","y":"4","scaleY":"0.5","name":"play","x":"50"},"type":"Button"},{"props":{"scaleX":"0.5","var":"next","skin":"play/btn_forward.png","mouseEnabled":"true","y":"4","scaleY":"0.5","name":"next","x":"72"},"type":"Button"},{"props":{"scaleX":"0.5","var":"toEndPos","skin":"play/btn_end.png","mouseEnabled":"true","y":"4","scaleY":"0.5","name":"toEndPos","x":"94"},"type":"Button"},{"props":{"scaleX":"0.5","var":"stop","skin":"play/btn_stop.png","mouseEnabled":"true","y":"4","scaleY":"0.5","name":"stop","x":"50"},"type":"Button"},{"props":{"scaleX":"0.5","var":"toBeginPos","skin":"play/btn_begin.png","mouseEnabled":"true","y":"4","scaleY":"0.5","name":"toBeginPos","x":"6"},"type":"Button"},{"props":{"scaleX":"0.5","var":"pre","skin":"play/btn_back.png","mouseEnabled":"true","y":"4","scaleY":"0.5","name":"pre","x":"28"},"type":"Button"}]};}
+		['uiView',function(){return this.uiView={"type":"View","child":[{"type":"Button","props":{"toolTip":"播放","scaleX":"0.5","y":"4","scaleY":"0.5","mouseEnabled":"true","var":"play","name":"play","skin":"play/btn_play.png","x":"50"}},{"type":"Button","props":{"toolTip":"前进","scaleX":"0.5","y":"4","scaleY":"0.5","mouseEnabled":"true","var":"next","name":"next","skin":"play/btn_forward.png","x":"72"}},{"type":"Button","props":{"toolTip":"跳到末尾","scaleX":"0.5","y":"4","scaleY":"0.5","mouseEnabled":"true","var":"toEndPos","name":"toEndPos","skin":"play/btn_end.png","x":"94"}},{"type":"Button","props":{"toolTip":"停止","scaleX":"0.5","y":"4","scaleY":"0.5","mouseEnabled":"true","var":"stop","name":"stop","skin":"play/btn_stop.png","x":"50"}},{"type":"Button","props":{"toolTip":"跳到开始","scaleX":"0.5","y":"4","scaleY":"0.5","mouseEnabled":"true","var":"toBeginPos","name":"toBeginPos","skin":"play/btn_begin.png","x":"6"}},{"type":"Button","props":{"toolTip":"后退","scaleX":"0.5","y":"4","scaleY":"0.5","mouseEnabled":"true","var":"pre","name":"pre","skin":"play/btn_back.png","x":"28"}}],"props":{"height":"34","scenecolor":"#dddddd","width":"123"}};}
 		]);
 		return PlayControlUI;
 	})(View)
@@ -56964,7 +60663,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(TimeGridUI,
-		['uiView',function(){return this.uiView={"props":{"scenecolor":"#dddddd"},"type":"View","child":[{"props":{"sizeGrid":"4,4,4,4","y":"183","skin":"view/bg_panel4.png","var":"bgPic","x":"202"},"type":"Image"}]};}
+		['uiView',function(){return this.uiView={"type":"View","child":[{"type":"Image","props":{"var":"bgPic","sizeGrid":"4,4,4,4","y":"183","skin":"view/bg_panel4.png","x":"202"}}],"props":{"scenecolor":"#dddddd"}};}
 		]);
 		return TimeGridUI;
 	})(View)
@@ -56990,7 +60689,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(UIViewerUI,
-		['uiView',function(){return this.uiView={"props":{"hitTestPrior":"true","height":"400","width":"600"},"type":"View","child":[{"props":{"y":"-62","bottom":"0","left":"0","sizeGrid":"4,4,4,4","skin":"view/bg_panel.png","top":"0","right":"0","x":"482"},"type":"Image"},{"props":{"var":"viewStack","bottom":"28","left":"0","mouseEnabled":"true","y":"2283","top":"0","right":"0","x":"82"},"type":"ViewStack","child":[{"props":{"name":"item0","var":"designView","bottom":"2","width":"600","left":"2","height":"280","top":"2","right":"2"},"type":"Box"},{"props":{"var":"codeView","text":"TextArea","top":"2","color":"#8080ff","fontSize":"14","name":"item1","leading":"10","x":"563","padding":"5,5,5,5","y":"445","bottom":"30","multiline":"true","left":"2","font":"Consolas","right":"2"},"type":"TextArea"}]},{"props":{"y":"387","bottom":"0","left":"0","mouseEnabled":"true","sizeGrid":"0,4,0,4","skin":"view/bg_panel_bar.png","right":"0","x":"5"},"type":"Image"},{"props":{"var":"scaleInfo","bottom":"0","width":"102","mouseEnabled":"false","align":"right","height":"20","y":"378","color":"#333333","right":"10","x":"488"},"type":"Label"},{"props":{"text":"label111","color":"#9f9f9f","valign":"center","x":"35","padding":"0,10,0,10","y":"373","wordWrap":"true","bottom":"0","width":"359","left":"35","align":"left","height":"24","var":"compInfo","right":"200"},"type":"Label"},{"props":{"y":"378","width":"14","left":"15","height":"14","skin":"comp/infoicon.png","bottom":"8","x":"4"},"type":"Image"},{"props":{"y":"379","var":"typeBtn","clipY":"2","right":"110","width":"70","height":"18","skin":"view/codeswitch.png","index":"0","bottom":"5","x":"420"},"type":"Clip"}]};}
+		['uiView',function(){return this.uiView={"type":"View","child":[{"type":"Image","props":{"y":"-62","bottom":"0","left":"0","sizeGrid":"4,4,4,4","top":"0","skin":"view/bg_panel.png","right":"0","x":"482"}},{"type":"ViewStack","child":[{"type":"Box","props":{"name":"item0","bottom":"2","width":"600","left":"2","var":"designView","height":"280","top":"2","right":"2"}},{"type":"TextArea","props":{"name":"item1","text":"TextArea","top":"2","color":"#8080ff","fontSize":"14","bottom":"30","leading":"10","x":"563","padding":"5,5,5,5","y":"445","multiline":"true","left":"2","var":"codeView","font":"Consolas","right":"2"}}],"props":{"y":"2283","bottom":"28","left":"0","var":"viewStack","mouseEnabled":"true","top":"0","right":"0","x":"82"}},{"type":"Image","props":{"y":"387","bottom":"0","left":"0","mouseEnabled":"true","sizeGrid":"0,4,0,4","skin":"view/bg_panel_bar.png","right":"0","x":"5"}},{"type":"Label","props":{"align":"right","y":"378","bottom":"0","width":"102","mouseEnabled":"false","var":"scaleInfo","height":"20","color":"#333333","right":"10","x":"488"}},{"type":"Label","props":{"var":"compInfo","text":"label111","valign":"center","color":"#9f9f9f","bottom":"0","x":"35","padding":"0,10,0,10","y":"373","wordWrap":"false","width":"359","left":"35","align":"left","height":"22"}},{"type":"Image","props":{"y":"378","width":"14","left":"15","height":"14","skin":"comp/infoicon.png","bottom":"8","x":"4"}},{"type":"Clip","props":{"y":"379","clipY":"2","width":"70","var":"typeBtn","height":"18","skin":"view/codeswitch.png","index":"0","bottom":"5","right":"110","x":"420"}}],"props":{"height":"400","hitTestPrior":"true","width":"600"}};}
 		]);
 		return UIViewerUI;
 	})(View)
@@ -57139,7 +60838,7 @@ var Laya=window.Laya=(function(window,document){
 				var tAni;
 				var tAniO;
 				for (i=0;i < len;i++){
-					tAni=new FrameClip();
+					tAni=new FrameAnimation();
 					tAniO=animations[i];
 					tAni._setUp(this._idMap,tAniO);
 					this[tAniO.name]=tAni;
@@ -57163,6 +60862,19 @@ var Laya=window.Laya=(function(window,document){
 			if(!ViewHook.I){
 				ViewHook.I=new ViewHook();
 				View["prototype"]["createView"]=ViewHook.I.createView1;
+				View["setCompValue"]=ViewHook.setCompValue;
+			}
+		}
+
+		ViewHook.setCompValue=function(comp,prop,value,view){
+			if (prop==="var" && view){
+				view[value]=comp;
+			}
+			else if (prop==="x" || prop==="y" || prop==="width" || prop==="height" || (typeof (comp[prop])=='number')){
+				comp[prop]=parseFloat(value);
+			}
+			else {
+				comp[prop]=(value==="true" ? true :(value==="false" ? false :value))
 			}
 		}
 
@@ -57199,6 +60911,168 @@ var Laya=window.Laya=(function(window,document){
 
 		return ViewHook;
 	})(View)
+
+
+	/**
+	*节点树基类
+	*@author ww
+	*@version 1.0
+	*
+	*@created 2015-12-25 下午2:21:31
+	*/
+	//class laya.ide.ui.NodeTree extends laya.ui.Tree
+	var NodeTree$1=(function(_super){
+		function NodeTree(){
+			this._treeData=null;
+			this.arrFilterFun=null;
+			NodeTree.__super.call(this);
+			this.spaceLeft=15;
+		}
+
+		__class(NodeTree,'laya.ide.ui.NodeTree',_super,'NodeTree$1');
+		var __proto=NodeTree.prototype;
+		// list.spaceY=2;
+		__proto.refreshList=function(){
+			this._list.array=this.getArray();
+		}
+
+		__proto.selectByCompId=function(compId){
+			var arr;
+			arr=this.list.array;
+			var i=0,len=0;
+			len=arr.length;
+			var tItem;
+			for(i=0;i<len;i++){
+				tItem=arr[i];
+				if(tItem.compId==compId){
+					this.list.selectedIndex=i;
+					return;
+				}
+			}
+		}
+
+		__proto.setTreeData=function(treeData){
+			this._treeData=treeData;
+			var treeArr;
+			treeArr=treeData.getTreeArr();
+			if(this.arrFilterFun!=null){
+				this.array=this.arrFilterFun(treeArr);
+				}else{
+				this.array=treeArr;
+			}
+		}
+
+		// trace("treeArr:",treeArr);
+		__proto.getDepth=function(item,num){
+			(num===void 0)&& (num=0);
+			if(!this._treeData){
+				return _super.prototype.getDepth.call(this,item,num);
+			};
+			var parent;
+			parent=this._treeData.getNodeParent(item);
+			if (parent==null)return num;
+			else return this.getDepth(parent,num+1);
+		}
+
+		/**
+		*@private
+		*获取项对象的上一级的打开状态。
+		*@param item
+		*@return
+		*/
+		__proto.getParentOpenStatus=function(item){
+			if(!this._treeData){
+				return _super.prototype.getParentOpenStatus.call(this,item);
+			};
+			var parent=this._treeData.getNodeParent(item);
+			if (parent==null){
+				return true;
+				}else {
+				if (parent.isOpen){
+					if (this._treeData.getNodeParent(parent)!=null)return this.getParentOpenStatus(parent);
+					else return true;
+					}else {
+					return false;
+				}
+			}
+		}
+
+		__proto.getParentIndex=function(item){
+			if(!this._treeData){
+				return this.getIndexByData(item.nodeParent);
+			}
+			return-1;
+		}
+
+		__proto.getIndexByData=function(dis){
+			var dataList;
+			dataList=this.list.array;
+			var i=0,len=0;
+			len=dataList.length;
+			for (i=0;i < len;i++){
+				if (dataList[i]==dis){
+					return i;
+				}
+			}
+			return-1;
+		}
+
+		/**
+		*@private
+		*判断两个项对象在树结构中的父节点是否相同。
+		*@param item1 项对象。
+		*@param item2 项对象。
+		*@return
+		*/
+		__proto.isSameParent=function(item1,item2){
+			if(!this._treeData){
+				return _super.prototype.isSameParent.call(this,item1,item2);
+			};
+			var parent1;
+			var parent2;
+			parent1=this._treeData.getNodeParent(item1);
+			parent2=this._treeData.getNodeParent(item2);
+			if (parent1==null && parent2==null)return true;
+			else if (parent1==null || parent2==null)return false
+			else {
+				if (parent1.label==parent2.label)return this.isSameParent(parent1,parent2);
+				else return false;
+			}
+		}
+
+		__proto.isSameNode=function(tarA,tarB){
+			if(!tarA)return false;
+			if(!tarB)return false;
+			if(tarA==tarB)return true;
+			if(tarA.compId){
+				if(tarA.compId==tarB.compId)return true;
+				return false;
+			}
+			return tarA.label==tarB.label;
+		}
+
+		/**
+		*@private
+		*处理数据项的打开状态。
+		*/
+		__proto.parseOpenStatus=function(oldSource,newSource){
+			for (var i=0,n=newSource.length;i < n;i++){
+				var newItem=newSource[i];
+				if (newItem.isDirectory){
+					for (var j=0,m=oldSource.length;j < m;j++){
+						var oldItem=oldSource[j];
+						if (oldItem.isDirectory && this.isSameNode(oldItem,newItem)){
+							newItem.isOpen=oldItem.isOpen;
+							break ;
+						}
+					}
+				}
+			}
+		}
+
+		NodeTree.TreeSpaceLeft=15;
+		return NodeTree;
+	})(Tree)
 
 
 	/**
@@ -57367,118 +61241,6 @@ var Laya=window.Laya=(function(window,document){
 		]);
 		return HookedView;
 	})(View)
-
-
-	/**
-	*节点树基类
-	*@author ww
-	*@version 1.0
-	*
-	*@created 2015-12-25 下午2:21:31
-	*/
-	//class laya.ide.ui.NodeTree extends laya.ui.Tree
-	var NodeTree$1=(function(_super){
-		function NodeTree(){
-			this._treeData=null;
-			this.arrFilterFun=null;
-			NodeTree.__super.call(this);
-			this.spaceLeft=15;
-		}
-
-		__class(NodeTree,'laya.ide.ui.NodeTree',_super,'NodeTree$1');
-		var __proto=NodeTree.prototype;
-		// list.spaceY=2;
-		__proto.refreshList=function(){
-			this._list.array=this.getArray();
-		}
-
-		__proto.selectByCompId=function(compId){
-			var arr;
-			arr=this.list.array;
-			var i=0,len=0;
-			len=arr.length;
-			var tItem;
-			for(i=0;i<len;i++){
-				tItem=arr[i];
-				if(tItem.compId==compId){
-					this.list.selectedIndex=i;
-					return;
-				}
-			}
-		}
-
-		__proto.setTreeData=function(treeData){
-			this._treeData=treeData;
-			var treeArr;
-			treeArr=treeData.getTreeArr();
-			if(this.arrFilterFun!=null){
-				this.array=this.arrFilterFun(treeArr);
-				}else{
-				this.array=treeArr;
-			}
-		}
-
-		// trace("treeArr:",treeArr);
-		__proto.getDepth=function(item,num){
-			(num===void 0)&& (num=0);
-			if(!this._treeData){
-				return _super.prototype.getDepth.call(this,item,num);
-			};
-			var parent;
-			parent=this._treeData.getNodeParent(item);
-			if (parent==null)return num;
-			else return this.getDepth(parent,num+1);
-		}
-
-		/**
-		*@private
-		*获取项对象的上一级的打开状态。
-		*@param item
-		*@return
-		*/
-		__proto.getParentOpenStatus=function(item){
-			if(!this._treeData){
-				return _super.prototype.getParentOpenStatus.call(this,item);
-			};
-			var parent=this._treeData.getNodeParent(item);
-			if (parent==null){
-				return true;
-				}else {
-				if (parent.isOpen){
-					if (this._treeData.getNodeParent(parent)!=null)return this.getParentOpenStatus(parent);
-					else return true;
-					}else {
-					return false;
-				}
-			}
-		}
-
-		/**
-		*@private
-		*判断两个项对象在树结构中的父节点是否相同。
-		*@param item1 项对象。
-		*@param item2 项对象。
-		*@return
-		*/
-		__proto.isSameParent=function(item1,item2){
-			if(!this._treeData){
-				return _super.prototype.isSameParent.call(this,item1,item2);
-			};
-			var parent1;
-			var parent2;
-			parent1=this._treeData.getNodeParent(item1);
-			parent2=this._treeData.getNodeParent(item2);
-			if (parent1==null && parent2==null)return true;
-			else if (parent1==null || parent2==null)return false
-			else {
-				if (parent1.label==parent2.label)return this.isSameParent(parent1,parent2);
-				else return false;
-			}
-		}
-
-		NodeTree.TreeSpaceLeft=15;
-		return NodeTree;
-	})(Tree)
 
 
 	//class laya.editor.core.UIView extends laya.editor.core.UIBox
@@ -57794,7 +61556,7 @@ var Laya=window.Laya=(function(window,document){
 					}
 					}catch (e){
 					var msg=Sys.lang("创建页面嵌套时遇到错误，可能是嵌套的页面丢失或者错误 \n页面:{0}\n路径:{1}\n错误{2}",source,sourcePath,e.toString());
-					alert(msg);
+					Alert.show(msg);
 					var classObj=Utils$1.getClass(UIConfigManager.getCompProp("Image","className"));
 					var rst;
 					rst=new classObj();
@@ -57807,7 +61569,7 @@ var Laya=window.Laya=(function(window,document){
 					return new classObj();
 					}catch (e){
 					msg=Sys.lang("创建[{0}]时遇到错误(手动实例一次本组件可定位错误)",name)+"\n"+e.toString();
-					alert(msg);
+					Alert.show(msg);
 					classObj=Utils$1.getClass(UIConfigManager.getCompProp("Image","className"));
 					rst=new classObj();
 					rst.skin="comp/loseskin.png";
@@ -58020,7 +61782,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(AlertUI,
-		['uiView',function(){return this.uiView={"props":{"height":"180","scenecolor":"#dddddd","width":"450"},"type":"Dialog","child":[{"props":{"y":"0","width":"450","sizeGrid":"60,10,10,10","height":"180","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"397","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","text":"提示","var":"titleLbl","color":"#c5c5c5","fontSize":"14","x":"28"},"type":"Label"},{"props":{"text":"确认内容","mouseEnabled":"false","color":"#c5c5c5","multiline":"true","x":"43","y":"66","wordWrap":"true","isHtml":"true","width":"364","align":"center","height":"56","var":"msgLbl","mouseChildren":"false"},"type":"Label"},{"props":{"skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","sizeGrid":"0,4,0,4","name":"sure","y":"123","x":"182"},"type":"Button"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"450","height":"180","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"397","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","text":"提示","var":"titleLbl","color":"#c5c5c5","fontSize":"14","x":"28"}},{"type":"Label","props":{"var":"msgLbl","text":"确认内容","mouseEnabled":"false","color":"#c5c5c5","multiline":"true","x":"43","y":"66","wordWrap":"true","width":"364","align":"center","height":"56","mouseChildren":"false","isHtml":"true"}},{"type":"Button","props":{"name":"sure","label":"确定","sizeGrid":"0,4,0,4","y":"123","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","x":"182"}}],"props":{"height":"180","scenecolor":"#dddddd","width":"450"}};}
 		]);
 		return AlertUI;
 	})(Dialog)
@@ -58031,6 +61793,8 @@ var Laya=window.Laya=(function(window,document){
 		function ConfirmUI(){
 			this.titleLbl=null;
 			this.msgLbl=null;
+			this.cancelBtn=null;
+			this.okBtn=null;
 			ConfirmUI.__super.call(this);
 		}
 
@@ -58042,7 +61806,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(ConfirmUI,
-		['uiView',function(){return this.uiView={"props":{"height":"180","scenecolor":"#dddddd","width":"450"},"type":"Dialog","child":[{"props":{"y":"0","width":"450","sizeGrid":"60,10,10,10","height":"180","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"397","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","text":"确认框","var":"titleLbl","color":"#c5c5c5","fontSize":"14","x":"28"},"type":"Label"},{"props":{"text":"确认内容","mouseEnabled":"false","color":"#c5c5c5","multiline":"true","x":"35.5","y":"67","wordWrap":"true","isHtml":"true","width":"379","align":"center","height":"54","var":"msgLbl","mouseChildren":"false"},"type":"Label"},{"props":{"skin":"comp/btn.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"取消","sizeGrid":"0,4,0,4","name":"cancel","y":"125","x":"247"},"type":"Button"},{"props":{"name":"sure","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","sizeGrid":"0,4,0,4","skin":"comp/button.png","y":"125","x":"117"},"type":"Button"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"450","height":"180","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"397","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","text":"确认框","var":"titleLbl","color":"#c5c5c5","fontSize":"14","x":"28"}},{"type":"Label","props":{"var":"msgLbl","text":"确认内容","mouseEnabled":"false","color":"#c5c5c5","multiline":"true","x":"35.5","y":"67","wordWrap":"true","width":"379","align":"center","height":"54","mouseChildren":"false","isHtml":"true"}},{"type":"Button","props":{"name":"cancel","label":"取消","var":"cancelBtn","sizeGrid":"0,4,0,4","y":"125","skin":"comp/btn.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","x":"247"}},{"type":"Button","props":{"name":"sure","label":"确定","var":"okBtn","sizeGrid":"0,4,0,4","y":"125","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","x":"117"}}],"props":{"height":"180","scenecolor":"#dddddd","width":"450"}};}
 		]);
 		return ConfirmUI;
 	})(Dialog)
@@ -58064,7 +61828,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(WaitingUI,
-		['uiView',function(){return this.uiView={"props":{"height":"180","scenecolor":"#dddddd","width":"450"},"type":"Dialog","child":[{"props":{"y":"0","width":"450","sizeGrid":"60,10,10,10","height":"180","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"y":"8","name":"drag","width":"433","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"var":"titleLbl","text":"处理中","y":"18","color":"#dddddd","fontSize":"14","x":"28"},"type":"Label"},{"props":{"var":"msgLbl","wordWrap":"true","text":"确认内容","width":"386","align":"center","height":"49","y":"89","color":"#dddddd","isHtml":"true","multiline":"true","x":"29.5"},"type":"Label"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"450","height":"180","skin":"view/bg_dialog.png","x":"0"}},{"type":"Image","props":{"y":"8","width":"433","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","text":"处理中","var":"titleLbl","color":"#dddddd","fontSize":"14","x":"28"}},{"type":"Label","props":{"align":"center","height":"49","y":"89","wordWrap":"true","text":"确认内容","width":"386","var":"msgLbl","multiline":"true","color":"#dddddd","isHtml":"true","x":"29.5"}}],"props":{"height":"180","scenecolor":"#dddddd","width":"450"}};}
 		]);
 		return WaitingUI;
 	})(Dialog)
@@ -58732,9 +62496,30 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(BoxCompUI,
-		['uiView',function(){return this.uiView={"props":{"height":"230","scenecolor":"#dddddd","width":"470"},"type":"Dialog","child":[{"props":{"y":"0","width":"470","sizeGrid":"60,10,10,10","height":"230","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"418","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"转换为容器","x":"28"},"type":"Label"},{"props":{"y":"70","text":"容器类型：","width":"129","height":"18","color":"#c5c5c5","x":"40"},"type":"Label"},{"props":{"skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","sizeGrid":"0,4,0,4","y":"165","name":"sure","x":"192"},"type":"Button"},{"props":{"y":"104","scrollBarSkin":"comp/vscroll.png","width":"390","sizeGrid":"0,20,0,3","height":"32","skin":"comp/combo_32.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","var":"typeDrop","x":"40.5"},"type":"ComboBox"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"470","height":"230","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"418","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"转换为容器","x":"28"}},{"type":"Label","props":{"y":"70","text":"容器类型：","width":"129","height":"18","color":"#c5c5c5","x":"40"}},{"type":"Button","props":{"y":"165","label":"确定","sizeGrid":"0,4,0,4","name":"sure","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","x":"192"}},{"type":"ComboBox","props":{"height":"32","y":"104","width":"390","var":"typeDrop","sizeGrid":"0,20,0,3","scrollBarSkin":"comp/vscroll.png","skin":"comp/combo_32.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"40.5"}}],"props":{"height":"230","scenecolor":"#dddddd","width":"470"}};}
 		]);
 		return BoxCompUI;
+	})(Dialog)
+
+
+	//class laya.editor.ui.other.ChangeCompTypeUI extends laya.ui.Dialog
+	var ChangeCompTypeUI=(function(_super){
+		function ChangeCompTypeUI(){
+			this.typeDrop=null;
+			ChangeCompTypeUI.__super.call(this);
+		}
+
+		__class(ChangeCompTypeUI,'laya.editor.ui.other.ChangeCompTypeUI',_super);
+		var __proto=ChangeCompTypeUI.prototype;
+		__proto.createChildren=function(){
+			laya.ui.Component.prototype.createChildren.call(this);
+			this.createView(ChangeCompTypeUI.uiView);
+		}
+
+		__static(ChangeCompTypeUI,
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"470","height":"230","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"418","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"转换类型","x":"28"}},{"type":"Label","props":{"y":"70","text":"组件类型：","width":"129","height":"18","color":"#c5c5c5","x":"40"}},{"type":"Button","props":{"y":"165","label":"确定","sizeGrid":"0,4,0,4","name":"sure","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","x":"192"}},{"type":"ComboBox","props":{"height":"32","y":"104","width":"390","var":"typeDrop","sizeGrid":"0,20,0,3","scrollBarSkin":"comp/vscroll.png","skin":"comp/combo_32.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"40.5"}}],"props":{"height":"230","scenecolor":"#dddddd","width":"470"}};}
+		]);
+		return ChangeCompTypeUI;
 	})(Dialog)
 
 
@@ -58756,7 +62541,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(ConvertProjectUI,
-		['uiView',function(){return this.uiView={"props":{"height":"290","scenecolor":"#dddddd","width":"530"},"type":"Dialog","child":[{"props":{"y":"0","width":"530","sizeGrid":"60,10,10,10","height":"290","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"478","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"转换项目","x":"28"},"type":"Label"},{"props":{"name":"sure","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","sizeGrid":"0,4,0,4","centerX":"0","skin":"comp/button.png","bottom":"24","width":"100"},"type":"Button"},{"props":{"var":"pathTxt","y":"144","width":"406","sizeGrid":"0,3,0,3","height":"32","skin":"comp/input_32.png","color":"#c5c5c5","x":"32"},"type":"TextInput"},{"props":{"skin":"comp/btn_browser.png","y":"144","text":"项目名称：","width":"60","height":"32","var":"browseBtn","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","label":"浏览","x":"438"},"type":"Button"},{"props":{"var":"pathOldTxt","y":"86","width":"406","sizeGrid":"0,3,0,3","height":"32","skin":"comp/input_32.png","color":"#c5c5c5","x":"32"},"type":"TextInput"},{"props":{"skin":"comp/btn_browser.png","y":"86","text":"项目名称：","width":"60","height":"32","var":"browseOldBtn","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","label":"浏览","x":"438"},"type":"Button"},{"props":{"y":"193","wordWrap":"true","text":"项目转换可以把旧的MornUI项目转换成LayaUI项目。","width":"466","height":"43","color":"#646464","fontSize":"12","x":"32"},"type":"Label"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"530","height":"290","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"478","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"转换项目","x":"28"}},{"type":"Button","props":{"centerX":"0","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","sizeGrid":"0,4,0,4","name":"sure","skin":"comp/button.png","bottom":"24","width":"100"}},{"type":"TextInput","props":{"height":"32","y":"144","color":"#c5c5c5","width":"406","var":"pathTxt","sizeGrid":"0,3,0,3","skin":"comp/input_32.png","x":"32"}},{"type":"Button","props":{"y":"144","text":"项目名称：","width":"60","var":"browseBtn","height":"32","skin":"comp/btn_browser.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","label":"浏览","x":"438"}},{"type":"TextInput","props":{"height":"32","y":"86","color":"#c5c5c5","width":"406","var":"pathOldTxt","sizeGrid":"0,3,0,3","skin":"comp/input_32.png","x":"32"}},{"type":"Button","props":{"y":"86","text":"项目名称：","width":"60","var":"browseOldBtn","height":"32","skin":"comp/btn_browser.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","label":"浏览","x":"438"}},{"type":"Label","props":{"y":"58","wordWrap":"true","text":"项目转换可以把旧的MornUI项目转换成LayaUI项目。","width":"466","height":"23","color":"#3399ff","fontSize":"12","x":"34"}}],"props":{"height":"290","scenecolor":"#dddddd","width":"530"}};}
 		]);
 		return ConvertProjectUI;
 	})(Dialog)
@@ -58782,7 +62567,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(FindAndReplaceUI,
-		['uiView',function(){return this.uiView={"props":{"height":"380","scenecolor":"#dddddd","width":"500"},"type":"Dialog","child":[{"props":{"y":"0","width":"500","sizeGrid":"60,10,10,10","height":"380","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"449","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"查找替换","x":"28"},"type":"Label"},{"props":{"y":"214","width":"454","sizeGrid":"4,4,4,4","height":"144","skin":"view/bg_panel.png","x":"24"},"type":"Image"},{"props":{"y":"193","text":"共找到 {0} 个页面，双击列表打开页面","width":"454","height":"18","var":"msgTxt","color":"#c5c5c5","x":"25"},"type":"Label"},{"props":{"var":"list","repeatX":"1","width":"450","height":"140","y":"217","vScrollBarSkin":"comp/vscroll.png","x":"26"},"type":"List","child":[{"props":{"name":"render","right":"0","left":"0"},"type":"Box","child":[{"props":{"skin":"comp/clip_selectBox.png","left":"0","height":"24","name":"selectBox","clipY":"2","right":"0"},"type":"Clip"},{"props":{"name":"label","text":"label","width":"150","left":"10","height":"24","color":"#c5c5c5","right":"80","x":"20"},"type":"Label"}]}]},{"props":{"y":"67.5","text":"查找文本：","width":"108","align":"right","height":"18","color":"#c5c5c5","x":"6"},"type":"Label"},{"props":{"y":"63","var":"findTxt","width":"315","sizeGrid":"0,3,0,3","height":"32","skin":"comp/input_32.png","color":"#c5c5c5","x":"117"},"type":"TextInput"},{"props":{"y":"107","text":"替换文本：","width":"114","align":"right","height":"18","color":"#c5c5c5","x":"0"},"type":"Label"},{"props":{"y":"103","var":"replaceTxt","width":"315","sizeGrid":"0,3,0,3","height":"32","skin":"comp/input_32.png","color":"#c5c5c5","x":"117"},"type":"TextInput"},{"props":{"var":"findBtn","y":"147","label":"查找","sizeGrid":"0,4,0,4","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","width":"100","x":"128"},"type":"Button"},{"props":{"skin":"comp/btn.png","y":"147","width":"100","sizeGrid":"0,4,0,4","var":"replaceBtn","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"替换","x":"272"},"type":"Button"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"500","height":"380","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"449","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"查找替换","x":"28"}},{"type":"Image","props":{"sizeGrid":"4,4,4,4","y":"214","width":"454","height":"144","skin":"view/bg_panel.png","x":"24"}},{"type":"Label","props":{"y":"193","text":"共找到 {0} 个页面，双击列表打开页面","width":"454","var":"msgTxt","height":"18","color":"#c5c5c5","x":"25"}},{"type":"List","child":[{"type":"Box","child":[{"type":"Clip","props":{"name":"selectBox","clipY":"2","left":"0","height":"24","skin":"comp/clip_selectBox.png","right":"0"}},{"type":"Label","props":{"name":"label","text":"label","width":"150","left":"10","height":"24","color":"#c5c5c5","right":"80","x":"20"}}],"props":{"name":"render","right":"0","left":"0"}}],"props":{"y":"217","width":"450","x":"26","var":"list","height":"140","repeatX":"1","vScrollBarSkin":"comp/vscroll.png"}},{"type":"Label","props":{"y":"67.5","text":"查找文本：","width":"108","align":"right","height":"18","color":"#c5c5c5","x":"6"}},{"type":"TextInput","props":{"height":"32","y":"63","color":"#c5c5c5","width":"315","var":"findTxt","sizeGrid":"0,3,0,3","skin":"comp/input_32.png","x":"117"}},{"type":"Label","props":{"y":"107","text":"替换文本：","width":"114","align":"right","height":"18","color":"#c5c5c5","x":"0"}},{"type":"TextInput","props":{"height":"32","y":"103","color":"#c5c5c5","width":"315","var":"replaceTxt","sizeGrid":"0,3,0,3","skin":"comp/input_32.png","x":"117"}},{"type":"Button","props":{"y":"147","label":"查找","var":"findBtn","sizeGrid":"0,4,0,4","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","width":"100","x":"128"}},{"type":"Button","props":{"y":"147","width":"100","var":"replaceBtn","sizeGrid":"0,4,0,4","skin":"comp/btn.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"替换","x":"272"}}],"props":{"height":"380","scenecolor":"#dddddd","width":"500"}};}
 		]);
 		return FindAndReplaceUI;
 	})(Dialog)
@@ -58808,7 +62593,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(FindUnUsedResUI,
-		['uiView',function(){return this.uiView={"props":{"height":"380","scenecolor":"#dddddd","width":"500"},"type":"Dialog","child":[{"props":{"y":"0","width":"500","sizeGrid":"60,10,10,10","height":"380","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"450","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"查找未被使用的资源","x":"28"},"type":"Label"},{"props":{"y":"158","width":"454","sizeGrid":"4,4,4,4","height":"200","skin":"view/bg_panel.png","x":"24"},"type":"Image"},{"props":{"var":"resultBox","y":"135","x":"25"},"type":"Box","child":[{"props":{"var":"msgTxt","color":"#c5c5c5","text":"共找到 {0} 个资源"},"type":"Label"},{"props":{"skin":"comp/btn.png","y":"0","width":"50","sizeGrid":"0,4,0,4","height":"20","var":"delBtn","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"删除","x":"347"},"type":"Button"},{"props":{"skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"全选","y":"3","var":"checkSelectAll","x":"410"},"type":"CheckBox"},{"props":{"var":"list","width":"450","height":"195","y":"26","vScrollBarSkin":"comp/vscroll.png","x":"1"},"type":"List","child":[{"props":{"name":"render","right":"0","left":"0"},"type":"Box","child":[{"props":{"skin":"comp/clip_selectBox.png","left":"0","height":"24","name":"selectBox","clipY":"2","right":"0"},"type":"Clip"},{"props":{"name":"label","text":"label","width":"360","height":"24","y":"0","color":"#c5c5c5","x":"5"},"type":"Label"},{"props":{"y":"4","name":"check","width":"13","height":"13","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"409"},"type":"CheckBox"}]}]}]},{"props":{"skin":"comp/button.png","var":"findBtn","width":"120","sizeGrid":"0,4,0,4","height":"40","y":"63","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"查找","x":"190"},"type":"Button"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"500","height":"380","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"450","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"查找未被使用的资源","x":"28"}},{"type":"Image","props":{"sizeGrid":"4,4,4,4","y":"158","width":"454","height":"200","skin":"view/bg_panel.png","x":"24"}},{"type":"Box","child":[{"type":"Label","props":{"var":"msgTxt","color":"#c5c5c5","text":"共找到 {0} 个资源"}},{"type":"Button","props":{"sizeGrid":"0,4,0,4","y":"0","width":"50","var":"delBtn","height":"20","skin":"comp/btn.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"删除","x":"347"}},{"type":"CheckBox","props":{"y":"3","label":"全选","var":"checkSelectAll","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"410"}},{"type":"List","child":[{"type":"Box","child":[{"type":"Clip","props":{"name":"selectBox","clipY":"2","left":"0","height":"24","skin":"comp/clip_selectBox.png","right":"0"}},{"type":"Label","props":{"name":"label","text":"label","width":"360","height":"24","y":"0","color":"#c5c5c5","x":"5"}},{"type":"CheckBox","props":{"y":"4","width":"13","height":"13","name":"check","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"409"}}],"props":{"name":"render","right":"0","left":"0"}}],"props":{"y":"26","width":"450","x":"1","var":"list","height":"195","vScrollBarSkin":"comp/vscroll.png"}}],"props":{"var":"resultBox","y":"135","x":"25"}},{"type":"Button","props":{"sizeGrid":"0,4,0,4","y":"63","width":"120","var":"findBtn","height":"40","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"查找","x":"190"}}],"props":{"height":"380","scenecolor":"#dddddd","width":"500"}};}
 		]);
 		return FindUnUsedResUI;
 	})(Dialog)
@@ -58830,7 +62615,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(LangPanelUI,
-		['uiView',function(){return this.uiView={"props":{"scenecolor":"#dddddd"},"type":"Dialog","child":[{"props":{"y":"0","width":"450","sizeGrid":"60,10,10,10","height":"220","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"396","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"提取语言包","x":"28"},"type":"Label"},{"props":{"name":"sure","y":"158","label":"确定","sizeGrid":"0,4,0,4","height":"30","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","width":"100","x":"100"},"type":"Button"},{"props":{"skin":"comp/btn.png","y":"158","width":"100","sizeGrid":"0,4,0,4","height":"30","name":"cancel","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"取消","x":"250"},"type":"Button"},{"props":{"y":"90","text":"导出路径：","width":"117","align":"right","height":"20","color":"#c5c5c5","x":"9"},"type":"Label"},{"props":{"y":"85","var":"langPath","width":"200","sizeGrid":"0,3,0,3","height":"32","skin":"comp/input_32.png","color":"#c5c5c5","x":"134"},"type":"TextInput"},{"props":{"skin":"comp/btn_browser.png","var":"langPathBtn","text":"项目名称：","width":"50","height":"32","y":"85","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","label":"浏览","x":"335"},"type":"Button"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"450","height":"220","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"396","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"导出语言包","x":"28"}},{"type":"Button","props":{"sizeGrid":"0,4,0,4","name":"sure","label":"确定","height":"30","y":"158","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","width":"100","x":"100"}},{"type":"Button","props":{"sizeGrid":"0,4,0,4","name":"cancel","width":"100","height":"30","y":"158","skin":"comp/btn.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"取消","x":"250"}},{"type":"Label","props":{"y":"90","text":"导出路径：","width":"117","align":"right","height":"20","color":"#c5c5c5","x":"9"}},{"type":"TextInput","props":{"height":"32","y":"85","color":"#c5c5c5","width":"200","var":"langPath","sizeGrid":"0,3,0,3","skin":"comp/input_32.png","x":"134"}},{"type":"Button","props":{"y":"85","text":"项目名称：","width":"50","var":"langPathBtn","height":"32","skin":"comp/btn_browser.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","label":"浏览","x":"335"}}],"props":{"scenecolor":"#dddddd"}};}
 		]);
 		return LangPanelUI;
 	})(Dialog)
@@ -58851,7 +62636,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(PluginDialogUI,
-		['uiView',function(){return this.uiView={"props":{"scenecolor":"#dddddd"},"type":"Dialog","child":[{"props":{"y":"0","bottom":"0","width":"450","left":"0","sizeGrid":"60,10,10,10","height":"220","skin":"view/bg_dialog.png","top":"0","right":"0","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"7","name":"drag","width":"396","left":"9","height":"38","skin":"comp/blank.png","right":"40","x":"9"},"type":"Image"},{"props":{"y":"17","text":"提取语言包","width":"169","height":"18","var":"title","color":"#c5c5c5","fontSize":"14","x":"21"},"type":"Label"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","bottom":"0","width":"450","left":"0","height":"220","top":"0","skin":"view/bg_dialog.png","right":"0","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"7","width":"396","left":"9","height":"38","name":"drag","skin":"comp/blank.png","right":"40","x":"9"}},{"type":"Label","props":{"y":"17","text":"提取语言包","width":"169","var":"title","height":"18","color":"#c5c5c5","fontSize":"14","x":"21"}}],"props":{"scenecolor":"#dddddd"}};}
 		]);
 		return PluginDialogUI;
 	})(Dialog)
@@ -58872,7 +62657,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(PreviewUI,
-		['uiView',function(){return this.uiView={"props":{"height":"400","scenecolor":"#dddddd","width":"600"},"type":"Dialog","child":[{"props":{"y":"137","bottom":"0","left":"0","sizeGrid":"4,4,4,4","skin":"view/bg_panel.png","top":"0","right":"0","x":"164"},"type":"Image"},{"props":{"y":"26","var":"panel","bottom":"5","left":"5","hScrollBarSkin":"comp/hscroll.png","top":"5","right":"5","vScrollBarSkin":"comp/vscroll.png","x":"21"},"type":"Panel","child":[{"props":{"skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"label","sizeGrid":"0,4,0,4"},"type":"Button"}]},{"props":{"scaleX":"0.5","name":"close","skin":"view/btn_close.png","scaleY":"0.5","y":"33","top":"5","right":"5","x":"550"},"type":"Button"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"y":"137","bottom":"0","left":"0","sizeGrid":"4,4,4,4","top":"0","skin":"view/bg_panel.png","right":"0","x":"164"}},{"type":"Panel","child":[{"type":"Button","props":{"sizeGrid":"0,4,0,4","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"label"}}],"props":{"vScrollBarSkin":"comp/vscroll.png","y":"26","hScrollBarSkin":"comp/hscroll.png","bottom":"5","left":"5","var":"panel","top":"5","right":"5","x":"21"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"5","y":"33","skin":"view/btn_close.png","right":"5","x":"550"}}],"props":{"height":"400","scenecolor":"#dddddd","width":"600"}};}
 		]);
 		return PreviewUI;
 	})(Dialog)
@@ -58896,9 +62681,33 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(RepeatCompUI,
-		['uiView',function(){return this.uiView={"props":{"height":"220","scenecolor":"#dddddd","width":"450"},"type":"Dialog","child":[{"props":{"y":"0","width":"450","sizeGrid":"60,10,10,10","height":"220","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"399","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"重复组件","x":"28"},"type":"Label"},{"props":{"y":"78","text":"行个数：","width":"114","align":"right","height":"18","color":"#c5c5c5","x":"30"},"type":"Label"},{"props":{"y":"76","var":"rowTxt","text":"5","width":"60","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"145"},"type":"TextInput"},{"props":{"skin":"comp/button.png","name":"sure","width":"100","sizeGrid":"0,4,0,4","y":"159","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","x":"175"},"type":"Button"},{"props":{"y":"78","text":"列个数：","width":"85","align":"right","height":"18","color":"#c5c5c5","x":"209"},"type":"Label"},{"props":{"y":"76","var":"columnTxt","text":"1","width":"60","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"295"},"type":"TextInput"},{"props":{"y":"118","text":"右间距：","width":"125","align":"right","height":"18","color":"#c5c5c5","x":"19"},"type":"Label"},{"props":{"y":"114","var":"paddingXTxt","text":"8","width":"60","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"145"},"type":"TextInput"},{"props":{"y":"118","text":"下间距：","width":"85","align":"right","height":"18","color":"#c5c5c5","x":"209"},"type":"Label"},{"props":{"y":"114","var":"paddingYTxt","text":"8","width":"60","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"295"},"type":"TextInput"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"450","height":"220","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"399","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"重复组件","x":"28"}},{"type":"Label","props":{"y":"78","text":"行个数：","width":"114","align":"right","height":"18","color":"#c5c5c5","x":"30"}},{"type":"TextInput","props":{"height":"24","y":"76","color":"#c5c5c5","text":"5","width":"60","var":"rowTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"145"}},{"type":"Button","props":{"y":"159","width":"100","sizeGrid":"0,4,0,4","name":"sure","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","x":"175"}},{"type":"Label","props":{"y":"78","text":"列个数：","width":"85","align":"right","height":"18","color":"#c5c5c5","x":"209"}},{"type":"TextInput","props":{"height":"24","y":"76","color":"#c5c5c5","text":"1","width":"60","var":"columnTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"295"}},{"type":"Label","props":{"y":"118","text":"右间距：","width":"125","align":"right","height":"18","color":"#c5c5c5","x":"19"}},{"type":"TextInput","props":{"height":"24","y":"114","color":"#c5c5c5","text":"8","width":"60","var":"paddingXTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"145"}},{"type":"Label","props":{"y":"118","text":"下间距：","width":"85","align":"right","height":"18","color":"#c5c5c5","x":"209"}},{"type":"TextInput","props":{"height":"24","y":"114","color":"#c5c5c5","text":"8","width":"60","var":"paddingYTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"295"}}],"props":{"height":"220","scenecolor":"#dddddd","width":"450"}};}
 		]);
 		return RepeatCompUI;
+	})(Dialog)
+
+
+	//class laya.editor.ui.other.SetIDENewUI extends laya.ui.Dialog
+	var SetIDENewUI=(function(_super){
+		function SetIDENewUI(){
+			this.typeTab=null;
+			this.views=null;
+			SetIDENewUI.__super.call(this);
+		}
+
+		__class(SetIDENewUI,'laya.editor.ui.other.SetIDENewUI',_super);
+		var __proto=SetIDENewUI.prototype;
+		__proto.createChildren=function(){
+			View.viewClassMap["laya.editor.view.other.ResTypeSettingView"]=ResTypeSettingView;
+			View.viewClassMap["laya.editor.view.other.SetIDEView"]=SetIDEView;
+			laya.ui.Component.prototype.createChildren.call(this);
+			this.createView(SetIDENewUI.uiView);
+		}
+
+		__static(SetIDENewUI,
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"y":"8","bottom":"0","left":"0","sizeGrid":"60,10,10,10","top":"0","skin":"view/bg_dialog.png","right":"0","x":"12"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","y":"8","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18","x":"12"}},{"type":"Image","props":{"y":"16","width":"517","height":"38","name":"drag","skin":"comp/blank.png","x":"21"}},{"type":"Label","props":{"y":"17","color":"#c5c5c5","fontSize":"14","text":"IDE设置","x":"25"}},{"type":"Tab","props":{"y":"78","labels":"常规,组件","var":"typeTab","skin":"comp/tab.png","direction":"vertical","labelColors":"#aaaaaa,#aaaaaa,#aaaaaa","x":"24"}},{"type":"ViewStack","child":[{"type":"ResTypeSettingView","props":{"name":"item1","runtime":"laya.editor.view.other.ResTypeSettingView","y":"-27","x":"-3"}},{"type":"SetIDEView","props":{"name":"item0","y":"10","runtime":"laya.editor.view.other.SetIDEView","x":"28"}}],"props":{"var":"views","y":"83","x":"117"}}],"props":{"height":"400","width":"600"}};}
+		]);
+		return SetIDENewUI;
 	})(Dialog)
 
 
@@ -58907,8 +62716,7 @@ var Laya=window.Laya=(function(window,document){
 		function SetIDEUI(){
 			this.autoSwitch=null;
 			this.showRule=null;
-			this.uiType=null;
-			this.uiExportPath=null;
+			this.frameSelect=null;
 			SetIDEUI.__super.call(this);
 		}
 
@@ -58920,9 +62728,34 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(SetIDEUI,
-		['uiView',function(){return this.uiView={"props":{"height":"220","scenecolor":"#dddddd","width":"300"},"type":"Dialog","child":[{"props":{"y":"0","bottom":"0","left":"0","sizeGrid":"60,10,10,10","skin":"view/bg_dialog.png","top":"0","right":"0","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"249","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"IDE设置","x":"28"},"type":"Label"},{"props":{"skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","sizeGrid":"0,4,0,4","y":"157","name":"sure","x":"115"},"type":"Button"},{"props":{"skin":"comp/checkbox.png","var":"autoSwitch","selected":"true","y":"72","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"发布后自动切换到代码模式","x":"81"},"type":"CheckBox"},{"props":{"skin":"comp/checkbox.png","var":"showRule","selected":"true","y":"95","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"默认是否显示标尺","x":"80"},"type":"CheckBox"},{"props":{"visible":"false","y":"267","x":"58"},"type":"Box","child":[{"props":{"y":"1","text":"UI模式：","width":"120","align":"right","height":"20","color":"#c5c5c5"},"type":"Label"},{"props":{"skin":"comp/combo_24.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","labels":"内嵌模式,加载模式","width":"200","sizeGrid":"0,20,0,3","height":"24","var":"uiType","x":"118"},"type":"ComboBox"},{"props":{"y":"32","text":"加载UI发布目录：","width":"120","align":"right","height":"20","color":"#c5c5c5"},"type":"Label"},{"props":{"y":"31","var":"uiExportPath","width":"200","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"118"},"type":"TextInput"},{"props":{"align":"left","y":"32","color":"#c5c5c5","text":"加载模式可用","x":"323"},"type":"Label"}]}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"y":"0","bottom":"0","left":"0","sizeGrid":"60,10,10,10","top":"0","skin":"view/bg_dialog.png","right":"0","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"249","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"IDE设置","x":"28"}},{"type":"Button","props":{"y":"157","label":"确定","sizeGrid":"0,4,0,4","name":"sure","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","x":"115"}},{"type":"CheckBox","props":{"y":"72","selected":"true","var":"autoSwitch","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":" 发布后自动切换到代码模式","x":"81"}},{"type":"CheckBox","props":{"y":"95","selected":"true","var":"showRule","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":" 默认是否显示标尺","x":"80"}},{"type":"HBox","child":[{"type":"ComboBox","props":{"sizeGrid":"0,20,0,3","scrollBarSkin":"comp/vscroll.png","labels":"30,60","selectedIndex":"0","var":"frameSelect","height":"22","skin":"comp/combo_22.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","width":"97","x":"42"}},{"type":"Label","props":{"y":"3","color":"#c5c5c5","text":"帧率"}}],"props":{"space":"2","y":"117","x":"81"}}],"props":{"height":"220","scenecolor":"#dddddd","width":"300"}};}
 		]);
 		return SetIDEUI;
+	})(Dialog)
+
+
+	//class laya.editor.ui.other.SetIDEViewUI extends laya.ui.Dialog
+	var SetIDEViewUI=(function(_super){
+		function SetIDEViewUI(){
+			this.frameSelect=null;
+			this.okBtn=null;
+			this.autoSwitch=null;
+			this.showRule=null;
+			this.autoFocus=null;
+			SetIDEViewUI.__super.call(this);
+		}
+
+		__class(SetIDEViewUI,'laya.editor.ui.other.SetIDEViewUI',_super);
+		var __proto=SetIDEViewUI.prototype;
+		__proto.createChildren=function(){
+			laya.ui.Component.prototype.createChildren.call(this);
+			this.createView(SetIDEViewUI.uiView);
+		}
+
+		__static(SetIDEViewUI,
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"HBox","child":[{"type":"ComboBox","props":{"sizeGrid":"0,20,0,3","scrollBarSkin":"comp/vscroll.png","labels":"30,60","selectedIndex":"0","var":"frameSelect","height":"22","skin":"comp/combo_22.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","width":"97","x":"42"}},{"type":"Label","props":{"y":"3","color":"#c5c5c5","text":"帧率"}}],"props":{"space":"2","y":"117","x":"81"}},{"type":"Button","props":{"y":"157","label":"确定","var":"okBtn","sizeGrid":"0,4,0,4","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","x":"115"}},{"type":"CheckBox","props":{"y":"72","selected":"true","var":"autoSwitch","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":" 发布后自动切换到代码模式","x":"80"}},{"type":"CheckBox","props":{"y":"95","selected":"true","var":"showRule","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":" 默认是否显示标尺","x":"80"}},{"type":"CheckBox","props":{"y":"51","selected":"true","var":"autoFocus","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"自动切换编辑区焦点","x":"80"}}],"props":{"height":"220","scenecolor":"#dddddd","width":"300"}};}
+		]);
+		return SetIDEViewUI;
 	})(Dialog)
 
 
@@ -58943,17 +62776,19 @@ var Laya=window.Laya=(function(window,document){
 			this.defaultFont=null;
 			this.resExportPathE=null;
 			this.resExportPathEBtn=null;
-			this.shareResPath=null;
-			this.shareResPathBtn=null;
 			this.picType=null;
+			this.atlasType=null;
 			this.textureWidth=null;
 			this.textureHeight=null;
 			this.picWidth=null;
 			this.picHeight=null;
 			this.power2=null;
 			this.trimempty=null;
+			this.copyRes=null;
 			this.uiType=null;
 			this.uiExportPath=null;
+			this.shareResPath=null;
+			this.shareResPathBtn=null;
 			SetProjectUI.__super.call(this);
 		}
 
@@ -58965,7 +62800,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(SetProjectUI,
-		['uiView',function(){return this.uiView={"props":{"height":"670","scenecolor":"#dddddd","width":"600"},"type":"Dialog","child":[{"props":{"y":"0","width":"600","sizeGrid":"60,10,10,10","height":"671","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"547","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"项目设置","x":"28"},"type":"Label"},{"props":{"y":"64.5","text":"位图资源类型：","width":"140","align":"right","height":"20","color":"#c5c5c5","x":"12"},"type":"Label"},{"props":{"y":"62","var":"resTypes","width":"200","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"150"},"type":"TextInput"},{"props":{"skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","sizeGrid":"0,4,0,4","y":"610","name":"sure","x":"250"},"type":"Button"},{"props":{"y":"99","text":"资源发布目录：","width":"142","align":"right","height":"20","color":"#c5c5c5","x":"10"},"type":"Label"},{"props":{"y":"97","var":"resExportPath","width":"200","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"150"},"type":"TextInput"},{"props":{"skin":"comp/btn_browser.png","var":"resExportPathBtn","text":"项目名称：","width":"50","height":"24","y":"97","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","label":"浏览","x":"351"},"type":"Button"},{"props":{"y":"265","skin":"comp/line.png","width":"496","x":"40"},"type":"Image"},{"props":{"y":"289","text":"UICode导入类：","width":"141","align":"right","height":"20","color":"#c5c5c5","x":"11"},"type":"Label"},{"props":{"padding":"5,5,5,5","y":"290","scrollBarSkin":"comp/vscroll.png","width":"300","sizeGrid":"0,3,0,3","height":"60","skin":"comp/input_32.png","color":"#c5c5c5","var":"codeImports","multiline":"true","x":"150"},"type":"TextArea"},{"props":{"align":"left","y":"309","color":"#c5c5c5","text":"回车换行","x":"459"},"type":"Label"},{"props":{"y":"361","text":"UICode发布目录：","width":"142","align":"right","height":"20","color":"#c5c5c5","x":"10"},"type":"Label"},{"props":{"y":"359","var":"codeExportPath","width":"200","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"150"},"type":"TextInput"},{"props":{"skin":"comp/btn_browser.png","var":"codeExportPathBtn","text":"项目名称：","width":"50","height":"24","y":"359","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","label":"浏览","x":"351"},"type":"Button"},{"props":{"y":"480","skin":"comp/line.png","width":"496","x":"40"},"type":"Image"},{"props":{"y":"490","text":"容器列表：","width":"120","align":"right","height":"20","color":"#c5c5c5","x":"32"},"type":"Label"},{"props":{"y":"488","var":"boxTypes","width":"200","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"150"},"type":"TextInput"},{"props":{"y":"522","text":"页面类型：","width":"120","align":"right","height":"20","color":"#c5c5c5","x":"32"},"type":"Label"},{"props":{"y":"520","var":"pageTypes","width":"200","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"150"},"type":"TextInput"},{"props":{"align":"left","y":"490","color":"#c5c5c5","text":"转换为容器功能使用","x":"355"},"type":"Label"},{"props":{"align":"left","y":"522","color":"#c5c5c5","text":"用于自定义页面继承","x":"355"},"type":"Label"},{"props":{"y":"558","text":"UI语言包路径：","width":"143","align":"right","height":"20","color":"#c5c5c5","x":"9"},"type":"Label"},{"props":{"y":"555","var":"langPath","width":"200","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"150"},"type":"TextInput"},{"props":{"skin":"comp/btn_browser.png","var":"langPathBtn","text":"项目名称：","width":"50","height":"24","y":"555","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","label":"浏览","x":"351"},"type":"Button"},{"props":{"y":"554","wordWrap":"true","text":"设置后，会按照语言包内的配置替换UI界面语言","width":"169","align":"left","height":"45","color":"#c5c5c5","x":"409"},"type":"Label"},{"props":{"y":"101","wordWrap":"true","text":"需和项目在同一个盘符","width":"131","align":"left","height":"30","color":"#c5c5c5","x":"406"},"type":"Label"},{"props":{"y":"360","wordWrap":"true","text":"需和项目在同一个盘符","width":"175","align":"left","height":"37","color":"#c5c5c5","x":"409"},"type":"Label"},{"props":{"y":"391","text":"语言：","width":"120","align":"right","height":"20","color":"#c5c5c5","x":"32"},"type":"Label"},{"props":{"skin":"comp/combo_24.png","var":"codeType","labels":"ActionScript3,TypeScript,JavaScript","width":"200","sizeGrid":"0,20,0,3","height":"24","y":"389","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"150"},"type":"ComboBox"},{"props":{"y":"226","text":"默认字体：","width":"142","align":"right","height":"20","color":"#c5c5c5","x":"11"},"type":"Label"},{"props":{"y":"224","var":"defaultFont","width":"200","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"150"},"type":"TextInput"},{"props":{"y":"130","text":"发布html目录：","width":"142","align":"right","height":"20","color":"#c5c5c5","x":"9"},"type":"Label"},{"props":{"y":"128","var":"resExportPathE","width":"200","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"149"},"type":"TextInput"},{"props":{"skin":"comp/btn_browser.png","var":"resExportPathEBtn","text":"项目名称：","width":"50","height":"24","y":"128","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","label":"浏览","x":"350"},"type":"Button"},{"props":{"y":"131","wordWrap":"true","text":"未打包图片输出目录","width":"128","align":"left","height":"31","color":"#c5c5c5","x":"405"},"type":"Label"},{"props":{"visible":"false","y":"409","x":"50"},"type":"Box","child":[{"props":{"y":"2","text":"共用资源目录：","width":"120","align":"right","height":"20","color":"#c5c5c5"},"type":"Label"},{"props":{"skin":"comp/input_24.png","width":"200","sizeGrid":"0,3,0,3","height":"24","var":"shareResPath","color":"#c5c5c5","x":"118"},"type":"TextInput"},{"props":{"skin":"comp/btn_browser.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","text":"项目名称：","width":"50","height":"24","var":"shareResPathBtn","label":"浏览","x":"319"},"type":"Button"},{"props":{"align":"left","y":"2","color":"#c5c5c5","text":"多项目共用的资源目录","x":"377"},"type":"Label"}]},{"props":{"y":"223","var":"picType","labels":"png32,png8","width":"84","selectedIndex":"0","sizeGrid":"0,20,0,3","height":"24","skin":"comp/combo_24.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"435"},"type":"ComboBox"},{"props":{"y":"226","text":"图片格式：","width":"78","align":"right","height":"20","color":"#c5c5c5","x":"359"},"type":"Label"},{"props":{"y":"163","text":"图集最大宽：","width":"143","align":"right","height":"20","color":"#c5c5c5","x":"9"},"type":"Label"},{"props":{"y":"161","var":"textureWidth","width":"80","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"150"},"type":"TextInput"},{"props":{"y":"163","text":"图集最大高：","width":"100","align":"right","height":"20","color":"#c5c5c5","x":"221"},"type":"Label"},{"props":{"y":"159","var":"textureHeight","width":"80","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"319"},"type":"TextInput"},{"props":{"y":"194","text":"单图最大宽：","width":"145","align":"right","height":"20","color":"#c5c5c5","x":"8"},"type":"Label"},{"props":{"y":"193","var":"picWidth","width":"80","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"150"},"type":"TextInput"},{"props":{"y":"194","text":"单图最大高：","width":"79","align":"right","height":"20","color":"#c5c5c5","x":"242"},"type":"Label"},{"props":{"y":"191","var":"picHeight","width":"80","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"319"},"type":"TextInput"},{"props":{"skin":"comp/checkbox.png","var":"power2","selected":"true","y":"165","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"是否限定2的幂次方","x":"407"},"type":"CheckBox"},{"props":{"skin":"comp/checkbox.png","var":"trimempty","selected":"false","y":"194","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"是否裁剪空白区域","x":"408"},"type":"CheckBox"},{"props":{"visible":"true","y":"420","x":"10"},"type":"Box","child":[{"props":{"y":"1","text":"UI模式：","width":"120","align":"right","height":"20","color":"#c5c5c5","x":"23"},"type":"Label"},{"props":{"skin":"comp/combo_24.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","labels":"内嵌模式,加载模式,分离模式","width":"200","sizeGrid":"0,20,0,3","height":"24","var":"uiType","x":"141"},"type":"ComboBox"},{"props":{"y":"32","text":"加载UI发布目录：","width":"143","align":"right","height":"20","color":"#c5c5c5"},"type":"Label"},{"props":{"y":"31","var":"uiExportPath","width":"200","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"141"},"type":"TextInput"},{"props":{"align":"left","y":"32","color":"#c5c5c5","text":"加载模式可用","x":"346"},"type":"Label"}]}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"height":"671","sizeGrid":"60,10,10,10","skin":"view/bg_dialog.png","width":"600"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"547","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"项目设置","x":"28"}},{"type":"Label","props":{"y":"66.5","text":"位图资源类型：","width":"140","align":"right","height":"20","color":"#c5c5c5","x":"13"}},{"type":"TextInput","props":{"height":"24","y":"62","color":"#c5c5c5","width":"200","var":"resTypes","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"150"}},{"type":"Button","props":{"y":"616","label":"确定","sizeGrid":"0,4,0,4","name":"sure","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","x":"250"}},{"type":"Label","props":{"y":"100","text":"资源发布目录：","width":"142","align":"right","height":"20","color":"#c5c5c5","x":"11"}},{"type":"TextInput","props":{"height":"24","y":"95","color":"#c5c5c5","width":"200","var":"resExportPath","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"150"}},{"type":"Button","props":{"y":"95","text":"项目名称：","width":"50","var":"resExportPathBtn","height":"24","skin":"comp/btn_browser.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","label":"浏览","x":"351"}},{"type":"Image","props":{"y":"285","skin":"comp/line.png","width":"496","x":"40"}},{"type":"Label","props":{"y":"296","text":"UICode导入类：","width":"141","align":"right","height":"20","color":"#c5c5c5","x":"12"}},{"type":"TextArea","props":{"padding":"5,5,5,5","sizeGrid":"0,3,0,3","y":"296","color":"#c5c5c5","width":"300","var":"codeImports","height":"60","scrollBarSkin":"comp/vscroll.png","skin":"comp/input_32.png","multiline":"true","x":"150"}},{"type":"Label","props":{"align":"left","y":"315","color":"#999999","text":"回车换行","x":"459"}},{"type":"Label","props":{"y":"369","text":"UICode发布目录：","width":"142","align":"right","height":"20","color":"#c5c5c5","x":"11"}},{"type":"TextInput","props":{"height":"24","y":"365","color":"#c5c5c5","width":"200","var":"codeExportPath","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"150"}},{"type":"Button","props":{"y":"365","text":"项目名称：","width":"50","var":"codeExportPathBtn","height":"24","skin":"comp/btn_browser.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","label":"浏览","x":"351"}},{"type":"Image","props":{"y":"486","skin":"comp/line.png","width":"496","x":"40"}},{"type":"Label","props":{"y":"498","text":"容器列表：","width":"120","align":"right","height":"20","color":"#c5c5c5","x":"33"}},{"type":"TextInput","props":{"height":"24","y":"494","color":"#c5c5c5","width":"200","var":"boxTypes","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"150"}},{"type":"Label","props":{"y":"530","text":"页面类型：","width":"120","align":"right","height":"20","color":"#c5c5c5","x":"33"}},{"type":"TextInput","props":{"height":"24","y":"526","color":"#c5c5c5","width":"200","var":"pageTypes","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"150"}},{"type":"Label","props":{"align":"left","y":"499","color":"#999999","text":"转换为容器功能使用","x":"355"}},{"type":"Label","props":{"align":"left","y":"531","color":"#999999","text":"用于自定义页面继承","x":"355"}},{"type":"Label","props":{"y":"564","text":"UI语言包路径：","width":"143","align":"right","height":"20","color":"#c5c5c5","x":"10"}},{"type":"TextInput","props":{"height":"24","y":"561","color":"#c5c5c5","width":"200","var":"langPath","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"150"}},{"type":"Button","props":{"y":"561","text":"项目名称：","width":"50","var":"langPathBtn","height":"24","skin":"comp/btn_browser.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","label":"浏览","x":"351"}},{"type":"Label","props":{"y":"560","wordWrap":"true","text":"设置后，会按照语言包内的配置替换UI界面语言","width":"169","align":"left","height":"45","color":"#999999","x":"409"}},{"type":"Label","props":{"y":"99","wordWrap":"true","text":"需和项目在同一个盘符","width":"131","align":"left","height":"30","color":"#999999","x":"405"}},{"type":"Label","props":{"y":"370","wordWrap":"true","text":"需和项目在同一个盘符","width":"175","align":"left","height":"37","color":"#999999","x":"409"}},{"type":"Label","props":{"y":"399","text":"语言：","width":"120","align":"right","height":"20","color":"#c5c5c5","x":"33"}},{"type":"ComboBox","props":{"height":"24","y":"395","labels":"ActionScript3,TypeScript,JavaScript","width":"200","var":"codeType","sizeGrid":"0,20,0,3","skin":"comp/combo_24.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"150"}},{"type":"Label","props":{"y":"257","text":"默认字体：","width":"142","align":"right","height":"20","color":"#c5c5c5","x":"11"}},{"type":"TextInput","props":{"height":"24","y":"254","color":"#c5c5c5","width":"200","var":"defaultFont","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"150"}},{"type":"Label","props":{"y":"131","text":"发布html目录：","width":"142","align":"right","height":"20","color":"#c5c5c5","x":"11"}},{"type":"TextInput","props":{"height":"24","y":"127","color":"#c5c5c5","width":"200","var":"resExportPathE","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"149"}},{"type":"Button","props":{"y":"127","text":"项目名称：","width":"50","var":"resExportPathEBtn","height":"24","skin":"comp/btn_browser.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","label":"浏览","x":"350"}},{"type":"Label","props":{"y":"130","wordWrap":"true","text":"未打包图片输出目录","width":"128","align":"left","height":"31","color":"#999999","x":"405"}},{"type":"ComboBox","props":{"sizeGrid":"0,20,0,3","y":"223","labels":"png32,png8","width":"80","var":"picType","height":"24","skin":"comp/combo_24.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","selectedIndex":"0","x":"319"}},{"type":"Label","props":{"y":"226","text":"图片格式：","width":"78","align":"right","height":"20","color":"#c5c5c5","x":"243"}},{"type":"ComboBox","props":{"sizeGrid":"0,20,0,3","y":"223","labels":"json,atlas","width":"80","var":"atlasType","height":"24","skin":"comp/combo_24.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","selectedIndex":"0","x":"150"}},{"type":"Label","props":{"y":"227","text":"图集后缀：","width":"78","align":"right","height":"20","color":"#c5c5c5","x":"75"}},{"type":"Label","props":{"y":"165","text":"图集最大宽：","width":"143","align":"right","height":"20","color":"#c5c5c5","x":"10"}},{"type":"TextInput","props":{"height":"24","y":"159","color":"#c5c5c5","width":"80","var":"textureWidth","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"150"}},{"type":"Label","props":{"y":"163","text":"图集最大高：","width":"100","align":"right","height":"20","color":"#c5c5c5","x":"221"}},{"type":"TextInput","props":{"height":"24","y":"159","color":"#c5c5c5","width":"80","var":"textureHeight","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"319"}},{"type":"Label","props":{"y":"196","text":"单图最大宽：","width":"145","align":"right","height":"20","color":"#c5c5c5","x":"8"}},{"type":"TextInput","props":{"height":"24","y":"191","color":"#c5c5c5","width":"80","var":"picWidth","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"150"}},{"type":"Label","props":{"y":"194","text":"单图最大高：","width":"79","align":"right","height":"20","color":"#c5c5c5","x":"242"}},{"type":"TextInput","props":{"height":"24","y":"191","color":"#c5c5c5","width":"80","var":"picHeight","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"319"}},{"type":"CheckBox","props":{"y":"165","selected":"true","var":"power2","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"是否限定2的幂次方","x":"405"}},{"type":"CheckBox","props":{"y":"194","selected":"false","var":"trimempty","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"是否裁剪空白区域","x":"405"}},{"type":"CheckBox","props":{"y":"226","selected":"false","var":"copyRes","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"复制未被打包的资源","x":"405"}},{"type":"Label","props":{"y":"429","text":"UI模式：","width":"120","align":"right","height":"20","color":"#c5c5c5","x":"33"}},{"type":"ComboBox","props":{"height":"24","y":"426","labels":"内嵌模式,加载模式,分离模式","width":"200","var":"uiType","sizeGrid":"0,20,0,3","skin":"comp/combo_24.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"151"}},{"type":"Label","props":{"y":"460","text":"加载UI发布目录：","width":"143","align":"right","height":"20","color":"#c5c5c5","x":"10"}},{"type":"TextInput","props":{"height":"24","y":"457","color":"#c5c5c5","width":"200","var":"uiExportPath","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"151"}},{"type":"Label","props":{"align":"left","y":"461","color":"#999999","text":"加载模式可用","x":"355"}},{"type":"Box","child":[{"type":"Label","props":{"y":"2","text":"共用资源目录：","width":"120","align":"right","height":"20","color":"#c5c5c5"}},{"type":"TextInput","props":{"height":"24","color":"#c5c5c5","width":"200","var":"shareResPath","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"118"}},{"type":"Button","props":{"text":"项目名称：","width":"50","var":"shareResPathBtn","height":"24","skin":"comp/btn_browser.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","label":"浏览","x":"319"}},{"type":"Label","props":{"align":"left","y":"2","color":"#999999","text":"多项目共用的资源目录","x":"377"}}],"props":{"visible":"false","y":"71","x":"49"}}],"props":{"height":"670","scenecolor":"#dddddd","width":"600"}};}
 		]);
 		return SetProjectUI;
 	})(Dialog)
@@ -58996,7 +62831,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(AddAnimationUI,
-		['uiView',function(){return this.uiView={"props":{"height":"330","scenecolor":"#dddddd","width":"450"},"type":"Dialog","child":[{"props":{"y":"0","width":"450","sizeGrid":"60,10,10,10","height":"330","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"y":"8","name":"drag","width":"400","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"15","var":"title","color":"#c5c5c5","text":"新增动画","x":"16"},"type":"Label"},{"props":{"y":"57","color":"#c5c5c5","text":"页面类型：","x":"78"},"type":"Label"},{"props":{"y":"90","color":"#c5c5c5","text":"页面名称：","x":"78"},"type":"Label"},{"props":{"y":"123","color":"#c5c5c5","text":"参考视图：","x":"78"},"type":"Label"},{"props":{"y":"156","color":"#c5c5c5","text":"页面宽度：","x":"78"},"type":"Label"},{"props":{"y":"189","color":"#c5c5c5","text":"页面高度：","x":"78"},"type":"Label"},{"props":{"y":"222","color":"#c5c5c5","text":"参考背景：","x":"78"},"type":"Label"},{"props":{"skin":"comp/combo_24.png","var":"typeDrop","labels":"View,Dialog","width":"140","selectedIndex":"0","sizeGrid":"0,20,0,3","height":"24","y":"55","scrollBarSkin":"comp/vscroll.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"151"},"type":"ComboBox"},{"props":{"y":"89","var":"nameTxt","width":"140","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"151"},"type":"TextInput"},{"props":{"y":"122","var":"imgTxt","width":"100","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"151"},"type":"TextInput"},{"props":{"var":"widthTxt","skin":"comp/input_24.png","text":"600","width":"140","sizeGrid":"0,3,0,3","height":"24","y":"155","color":"#c5c5c5","x":"151"},"type":"TextInput"},{"props":{"var":"heightTxt","skin":"comp/input_24.png","text":"400","width":"140","sizeGrid":"0,3,0,3","height":"24","y":"188","color":"#c5c5c5","x":"151"},"type":"TextInput"},{"props":{"scaleX":"0.5","y":"221","var":"bgColorPicker","skin":"comp/color.png","scaleY":"0.5","selectedcolor":"#dddddd","x":"151"},"type":"ColorPicker"},{"props":{"var":"sureBtn","y":"272","label":"新增","sizeGrid":"0,4,0,4","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","name":"sure","width":"100","x":"175"},"type":"Button"},{"props":{"y":"123","color":"#c5c5c5","text":"(可选，参考背景)","x":"306"},"type":"Label"},{"props":{"y":"221","wordWrap":"true","text":"(可选，设计面板的背景颜色)","width":"207","height":"36","color":"#c5c5c5","x":"173"},"type":"Label"},{"props":{"skin":"comp/btn.png","var":"selectBtn","width":"40","sizeGrid":"0,4,0,4","height":"22","y":"122","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"选择","x":"251"},"type":"Button"},{"props":{"skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"仅作为参考宽度","y":"159","var":"widthCheck","x":"298"},"type":"CheckBox"},{"props":{"skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"仅作为参考高度","y":"192","var":"heightCheck","x":"298"},"type":"CheckBox"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"450","height":"330","skin":"view/bg_dialog.png","x":"0"}},{"type":"Image","props":{"y":"8","width":"400","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Label","props":{"var":"title","y":"15","color":"#c5c5c5","text":"新增动画","x":"16"}},{"type":"Label","props":{"y":"57","color":"#c5c5c5","text":"页面类型：","x":"78"}},{"type":"Label","props":{"y":"90","color":"#c5c5c5","text":"页面名称：","x":"78"}},{"type":"Label","props":{"y":"123","color":"#c5c5c5","text":"参考视图：","x":"78"}},{"type":"Label","props":{"y":"156","color":"#c5c5c5","text":"页面宽度：","x":"78"}},{"type":"Label","props":{"y":"189","color":"#c5c5c5","text":"页面高度：","x":"78"}},{"type":"Label","props":{"y":"222","color":"#c5c5c5","text":"参考背景：","x":"78"}},{"type":"ComboBox","props":{"height":"24","y":"55","labels":"View,Dialog","selectedIndex":"0","var":"typeDrop","sizeGrid":"0,20,0,3","scrollBarSkin":"comp/vscroll.png","skin":"comp/combo_24.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","width":"140","x":"151"}},{"type":"TextInput","props":{"height":"24","y":"89","color":"#c5c5c5","width":"140","var":"nameTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"151"}},{"type":"TextInput","props":{"height":"24","y":"122","color":"#c5c5c5","width":"100","var":"imgTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"151"}},{"type":"TextInput","props":{"height":"24","y":"155","color":"#c5c5c5","text":"600","width":"140","var":"widthTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"151"}},{"type":"TextInput","props":{"height":"24","y":"188","color":"#c5c5c5","text":"400","width":"140","var":"heightTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"151"}},{"type":"ColorPicker","props":{"scaleX":"0.5","y":"221","scaleY":"0.5","selectedcolor":"#dddddd","var":"bgColorPicker","skin":"comp/color.png","x":"151"}},{"type":"Button","props":{"y":"272","label":"新增","var":"sureBtn","sizeGrid":"0,4,0,4","name":"sure","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","width":"100","x":"175"}},{"type":"Label","props":{"y":"123","color":"#c5c5c5","text":"(可选，参考背景)","x":"306"}},{"type":"Label","props":{"y":"221","wordWrap":"true","text":"(可选，设计面板的背景颜色)","width":"207","height":"36","color":"#c5c5c5","x":"173"}},{"type":"Button","props":{"sizeGrid":"0,4,0,4","y":"122","width":"40","var":"selectBtn","height":"22","skin":"comp/btn.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"选择","x":"251"}},{"type":"CheckBox","props":{"y":"159","label":"仅作为参考宽度","var":"widthCheck","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"298"}},{"type":"CheckBox","props":{"y":"192","label":"仅作为参考高度","var":"heightCheck","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"298"}}],"props":{"height":"330","scenecolor":"#dddddd","width":"450"}};}
 		]);
 		return AddAnimationUI;
 	})(Dialog)
@@ -59017,7 +62852,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(AddDirectoryUI,
-		['uiView',function(){return this.uiView={"props":{"height":"220","scenecolor":"#dddddd","width":"470"},"type":"Dialog","child":[{"props":{"y":"0","width":"470","sizeGrid":"60,10,10,10","height":"220","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"412","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","color":"#c5c5c5","text":"新增目录","x":"28"},"type":"Label"},{"props":{"y":"96","text":"目录名称：","width":"92","align":"right","height":"18","color":"#c5c5c5","x":"12"},"type":"Label"},{"props":{"y":"89","var":"nameTxt","width":"322","sizeGrid":"0,3,0,3","height":"32","skin":"comp/input_32.png","color":"#dddddd","x":"101"},"type":"TextInput"},{"props":{"skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"新增","sizeGrid":"0,4,0,4","y":"145","name":"sure","x":"192"},"type":"Button"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"470","height":"220","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"412","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","color":"#c5c5c5","text":"新增目录","x":"28"}},{"type":"Label","props":{"y":"96","text":"目录名称：","width":"92","align":"right","height":"18","color":"#c5c5c5","x":"12"}},{"type":"TextInput","props":{"height":"32","y":"89","color":"#dddddd","width":"322","var":"nameTxt","sizeGrid":"0,3,0,3","skin":"comp/input_32.png","x":"101"}},{"type":"Button","props":{"y":"145","label":"新增","sizeGrid":"0,4,0,4","name":"sure","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","x":"192"}}],"props":{"height":"220","scenecolor":"#dddddd","width":"470"}};}
 		]);
 		return AddDirectoryUI;
 	})(Dialog)
@@ -59030,6 +62865,8 @@ var Laya=window.Laya=(function(window,document){
 			this.title=null;
 			this.views=null;
 			this.sureBtn=null;
+			this.tipImg=null;
+			this.tipIcon=null;
 			AddDocumentUI.__super.call(this);
 		}
 
@@ -59045,7 +62882,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(AddDocumentUI,
-		['uiView',function(){return this.uiView={"props":{"height":"430","scenecolor":"#dddddd","width":"610"},"type":"Dialog","child":[{"props":{"y":"0","width":"610","sizeGrid":"60,10,10,10","height":"430","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"y":"89","width":"578","sizeGrid":"3,3,3,3","height":"325","skin":"view/bg_dialog2.png","x":"15"},"type":"Image"},{"props":{"selectedIndex":"0","var":"tab","y":"59","x":"15"},"type":"Tab","child":[{"props":{"skin":"comp/tab3.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","width":"75","height":"30","name":"item0","label":"页面"},"type":"Button"},{"props":{"skin":"comp/tab3.png","y":"0","width":"75","height":"30","name":"item1","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"粒子","x":"75"},"type":"Button"},{"props":{"skin":"comp/tab3.png","y":"0","width":"75","height":"30","name":"item2","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"动画","x":"150"},"type":"Button"},{"props":{"skin":"comp/tab3.png","y":"0","width":"75","height":"30","name":"item3","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"脚本","x":"225"},"type":"Button"}]},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"558","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","text":"新增","var":"title","color":"#c5c5c5","fontSize":"14","x":"28"},"type":"Label"},{"props":{"mouseEnabled":"true","var":"views","y":"96","x":"29"},"type":"ViewStack","child":[{"props":{"name":"item0","runtime":"laya.editor.view.page.AddPage"},"type":"AddPage"},{"props":{"name":"item1","runtime":"laya.editor.view.page.AddParticle"},"type":"AddParticle"},{"props":{"name":"item2","runtime":"laya.editor.view.page.AddAnimation"},"type":"AddGraphicAni"},{"props":{"name":"item3","runtime":"laya.editor.view.page.AddScript"},"type":"AddScript"}]},{"props":{"var":"sureBtn","y":"362","label":"确定","sizeGrid":"0,4,0,4","height":"30","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","name":"sure","width":"100","x":"458"},"type":"Button"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"610","height":"430","skin":"view/bg_dialog.png","x":"0"}},{"type":"Image","props":{"sizeGrid":"3,3,3,3","y":"89","width":"578","height":"325","skin":"view/bg_dialog2.png","x":"15"}},{"type":"Tab","child":[{"type":"Button","props":{"name":"item0","width":"75","height":"30","skin":"comp/tab3.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"页面"}},{"type":"Button","props":{"name":"item1","width":"75","height":"30","y":"0","skin":"comp/tab3.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"粒子","x":"75"}},{"type":"Button","props":{"name":"item2","width":"75","height":"30","y":"0","skin":"comp/tab3.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"动画","x":"150"}},{"type":"Button","props":{"name":"item3","width":"75","height":"30","y":"0","skin":"comp/tab3.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"脚本","x":"225"}}],"props":{"var":"tab","y":"59","selectedIndex":"0","x":"15"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"558","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","text":"新建","var":"title","color":"#c5c5c5","fontSize":"14","x":"28"}},{"type":"ViewStack","child":[{"type":"AddPage","props":{"name":"item0","runtime":"laya.editor.view.page.AddPage"}},{"type":"AddParticle","props":{"name":"item1","runtime":"laya.editor.view.page.AddParticle"}},{"type":"AddGraphicAni","props":{"name":"item2","runtime":"laya.editor.view.page.AddAnimation"}},{"type":"AddScript","props":{"name":"item3","runtime":"laya.editor.view.page.AddScript"}}],"props":{"var":"views","y":"96","mouseEnabled":"true","x":"29"}},{"type":"Button","props":{"sizeGrid":"0,4,0,4","y":"362","label":"确定","var":"sureBtn","height":"30","name":"sure","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","width":"100","x":"458"}},{"type":"Image","props":{"var":"tipImg","y":"108","skin":"view/question.png","visible":"false","x":"563"}},{"type":"Image","props":{"y":"65","width":"14","var":"tipIcon","height":"14","visible":"false","skin":"comp/iconhelp.png","x":"566"}}],"props":{"height":"430","scenecolor":"#dddddd","width":"610"}};}
 		]);
 		return AddDocumentUI;
 	})(Dialog)
@@ -59073,7 +62910,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(AddSceneUI,
-		['uiView',function(){return this.uiView={"props":{"scenecolor":"#dddddd"},"type":"Dialog","child":[{"props":{"y":"12","color":"#dddddd","text":"场景名称：","x":"10"},"type":"Label"},{"props":{"y":"45","color":"#dddddd","text":"参考视图：","x":"10"},"type":"Label"},{"props":{"y":"78","color":"#dddddd","text":"场景宽度：","x":"10"},"type":"Label"},{"props":{"y":"111","color":"#dddddd","text":"场景高度：","x":"10"},"type":"Label"},{"props":{"y":"144","color":"#dddddd","text":"参考背景：","x":"10"},"type":"Label"},{"props":{"y":"10","var":"nameTxt","width":"160","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#dddddd","x":"83"},"type":"TextInput"},{"props":{"y":"43","var":"imgTxt","width":"120","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#dddddd","x":"83"},"type":"TextInput"},{"props":{"y":"76","var":"widthTxt","text":"600","width":"160","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#dddddd","x":"83"},"type":"TextInput"},{"props":{"y":"109","var":"heightTxt","text":"400","width":"160","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#dddddd","x":"83"},"type":"TextInput"},{"props":{"scaleX":"0.5","y":"142","var":"bgColorPicker","skin":"comp/color.png","scaleY":"0.5","selectedcolor":"#dddddd","x":"83"},"type":"ColorPicker"},{"props":{"y":"44","color":"#dddddd","text":"(可选，参考背景)","x":"248"},"type":"Label"},{"props":{"y":"142","color":"#dddddd","text":"(可选，设计面板的背景颜色)","x":"104"},"type":"Label"},{"props":{"skin":"comp/btn.png","labelColors":"#dddddd,#dddddd,#dddddd","width":"40","sizeGrid":"0,4,0,4","height":"22","y":"43","var":"selectBtn","label":"选择","x":"202"},"type":"Button"},{"props":{"skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"仅作为参考宽度","y":"80","var":"widthCheck","x":"248"},"type":"CheckBox"},{"props":{"skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"仅作为参考高度","y":"113","var":"heightCheck","x":"248"},"type":"CheckBox"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Label","props":{"y":"12","color":"#dddddd","text":"场景名称：","x":"10"}},{"type":"Label","props":{"y":"45","color":"#dddddd","text":"参考视图：","x":"10"}},{"type":"Label","props":{"y":"78","color":"#dddddd","text":"场景宽度：","x":"10"}},{"type":"Label","props":{"y":"111","color":"#dddddd","text":"场景高度：","x":"10"}},{"type":"Label","props":{"y":"144","color":"#dddddd","text":"参考背景：","x":"10"}},{"type":"TextInput","props":{"height":"24","y":"10","skin":"comp/input_24.png","width":"160","var":"nameTxt","sizeGrid":"0,3,0,3","color":"#dddddd","x":"83"}},{"type":"TextInput","props":{"height":"24","y":"43","color":"#dddddd","width":"120","var":"imgTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"83"}},{"type":"TextInput","props":{"height":"24","y":"76","color":"#dddddd","text":"600","width":"160","var":"widthTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"83"}},{"type":"TextInput","props":{"height":"24","y":"109","color":"#dddddd","text":"400","width":"160","var":"heightTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"83"}},{"type":"ColorPicker","props":{"scaleX":"0.5","y":"142","scaleY":"0.5","selectedcolor":"#dddddd","var":"bgColorPicker","skin":"comp/color.png","x":"83"}},{"type":"Label","props":{"y":"44","color":"#dddddd","text":"(可选，参考背景)","x":"248"}},{"type":"Label","props":{"y":"142","color":"#dddddd","text":"(可选，设计面板的背景颜色)","x":"104"}},{"type":"Button","props":{"sizeGrid":"0,4,0,4","y":"43","width":"40","var":"selectBtn","height":"22","skin":"comp/btn.png","labelColors":"#dddddd,#dddddd,#dddddd","label":"选择","x":"202"}},{"type":"CheckBox","props":{"y":"80","label":"仅作为参考宽度","var":"widthCheck","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"248"}},{"type":"CheckBox","props":{"y":"113","label":"仅作为参考高度","var":"heightCheck","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"248"}}],"props":{"scenecolor":"#dddddd"}};}
 		]);
 		return AddSceneUI;
 	})(Dialog)
@@ -59095,7 +62932,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(MovePageUI,
-		['uiView',function(){return this.uiView={"props":{"height":"200","scenecolor":"#dddddd","width":"440"},"type":"Dialog","child":[{"props":{"y":"0","width":"440","sizeGrid":"60,10,10,10","height":"200","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"388","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"移动页面","x":"28"},"type":"Label"},{"props":{"y":"55","wordWrap":"true","text":"确定移动页面吗？","width":"332","align":"center","height":"43","var":"msgLbl","color":"#c5c5c5","multiline":"true","x":"54"},"type":"Label"},{"props":{"skin":"comp/checkbox.png","var":"updateCheck","selected":"true","y":"107","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"是否更新页面嵌套引用(不选择能提高性能)","x":"99"},"type":"CheckBox"},{"props":{"name":"sure","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","sizeGrid":"0,4,0,4","skin":"comp/button.png","y":"139","x":"100"},"type":"Button"},{"props":{"skin":"comp/btn.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"取消","sizeGrid":"0,4,0,4","name":"cancel","y":"139","x":"240"},"type":"Button"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"440","height":"200","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"388","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"移动页面","x":"28"}},{"type":"Label","props":{"var":"msgLbl","y":"55","wordWrap":"true","text":"确定移动页面吗？","width":"332","align":"center","height":"43","color":"#c5c5c5","multiline":"true","x":"54"}},{"type":"CheckBox","props":{"y":"107","selected":"true","var":"updateCheck","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"是否更新页面嵌套引用(不选择能提高性能)","x":"99"}},{"type":"Button","props":{"name":"sure","label":"确定","sizeGrid":"0,4,0,4","y":"139","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","x":"100"}},{"type":"Button","props":{"name":"cancel","label":"取消","sizeGrid":"0,4,0,4","y":"139","skin":"comp/btn.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","x":"240"}}],"props":{"height":"200","scenecolor":"#dddddd","width":"440"}};}
 		]);
 		return MovePageUI;
 	})(Dialog)
@@ -59116,7 +62953,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(NeedSaveUI,
-		['uiView',function(){return this.uiView={"props":{"height":"200","scenecolor":"#dddddd","width":"470"},"type":"Dialog","child":[{"props":{"y":"0","width":"470","sizeGrid":"60,10,10,10","height":"200","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"418","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"提醒","x":"28"},"type":"Label"},{"props":{"y":"73","wordWrap":"true","text":"是否保存修改？","width":"383","align":"center","height":"21","var":"msgLbl","color":"#c5c5c5","multiline":"true","x":"43.5"},"type":"Label"},{"props":{"y":"123","x":"62"},"type":"Box","child":[{"props":{"name":"sure","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"保存","sizeGrid":"0,4,0,4"},"type":"Button"},{"props":{"skin":"comp/btn.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"不保存","sizeGrid":"0,4,0,4","name":"cancel","x":"130"},"type":"Button"},{"props":{"skin":"comp/btn.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"取消关闭","sizeGrid":"0,4,0,4","name":"close","x":"260"},"type":"Button"}]}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"470","height":"200","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"418","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"提醒","x":"28"}},{"type":"Label","props":{"var":"msgLbl","y":"73","wordWrap":"true","text":"是否保存修改？","width":"383","align":"center","height":"21","color":"#c5c5c5","multiline":"true","x":"43.5"}},{"type":"Box","child":[{"type":"Button","props":{"sizeGrid":"0,4,0,4","name":"sure","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"保存"}},{"type":"Button","props":{"name":"cancel","label":"不保存","sizeGrid":"0,4,0,4","skin":"comp/btn.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","x":"130"}},{"type":"Button","props":{"name":"close","label":"取消关闭","sizeGrid":"0,4,0,4","skin":"comp/btn.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","x":"260"}}],"props":{"y":"123","x":"62"}}],"props":{"height":"200","scenecolor":"#dddddd","width":"470"}};}
 		]);
 		return NeedSaveUI;
 	})(Dialog)
@@ -59139,7 +62976,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(RenamePageUI,
-		['uiView',function(){return this.uiView={"props":{"height":"220","scenecolor":"#dddddd","width":"450"},"type":"Dialog","child":[{"props":{"y":"0","width":"450","sizeGrid":"60,10,10,10","height":"220","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"400","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"重命名页面","x":"28"},"type":"Label"},{"props":{"y":"88","text":"新名称：","width":"122","align":"right","height":"18","color":"#c5c5c5","x":"31"},"type":"Label"},{"props":{"y":"82","var":"nameTxt","sizeGrid":"0,3,0,3","height":"32","skin":"comp/input_32.png","color":"#c5c5c5","x":"157"},"type":"TextInput"},{"props":{"skin":"comp/checkbox.png","var":"updateCheck","selected":"true","y":"121","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"是否更新页面嵌套引用(不选择能提高性能)","x":"155"},"type":"CheckBox"},{"props":{"y":"56","text":"原名称：","width":"111","align":"right","height":"18","color":"#c5c5c5","x":"42"},"type":"Label"},{"props":{"var":"resLbl","text":"页面内容","width":"214","height":"20","y":"56","color":"#cccc00","x":"157"},"type":"Label"},{"props":{"name":"sure","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","sizeGrid":"0,4,0,4","skin":"comp/button.png","y":"156","x":"108"},"type":"Button"},{"props":{"skin":"comp/btn.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"取消","sizeGrid":"0,4,0,4","name":"cancel","y":"156","x":"248"},"type":"Button"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"450","height":"220","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"400","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"重命名页面","x":"28"}},{"type":"Label","props":{"y":"88","text":"新名称：","width":"122","align":"right","height":"18","color":"#c5c5c5","x":"31"}},{"type":"TextInput","props":{"height":"32","y":"82","color":"#c5c5c5","var":"nameTxt","sizeGrid":"0,3,0,3","skin":"comp/input_32.png","x":"157"}},{"type":"CheckBox","props":{"y":"121","selected":"true","var":"updateCheck","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"是否更新页面嵌套引用(不选择能提高性能)","x":"155"}},{"type":"Label","props":{"y":"56","text":"原名称：","width":"111","align":"right","height":"18","color":"#c5c5c5","x":"42"}},{"type":"Label","props":{"y":"56","text":"页面内容","width":"214","var":"resLbl","height":"20","color":"#cccc00","x":"157"}},{"type":"Button","props":{"name":"sure","label":"确定","sizeGrid":"0,4,0,4","y":"156","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","x":"108"}},{"type":"Button","props":{"name":"cancel","label":"取消","sizeGrid":"0,4,0,4","y":"156","skin":"comp/btn.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","x":"248"}}],"props":{"height":"220","scenecolor":"#dddddd","width":"450"}};}
 		]);
 		return RenamePageUI;
 	})(Dialog)
@@ -59162,7 +62999,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(SetPagePropUI,
-		['uiView',function(){return this.uiView={"props":{"height":"360","scenecolor":"#dddddd","width":"450"},"type":"Dialog","child":[{"props":{"y":"0","width":"450","sizeGrid":"60,10,10,10","height":"360","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"395","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"设置页面默认属性","x":"28"},"type":"Label"},{"props":{"y":"58","text":"页面内容","width":"260","height":"20","var":"nameLbl","color":"#cccc00","x":"126"},"type":"Label"},{"props":{"y":"58","text":"页面名称：","width":"95","align":"right","height":"18","color":"#c5c5c5","x":"27"},"type":"Label"},{"props":{"y":"89","text":"默认属性：","width":"93","align":"right","height":"18","color":"#c5c5c5","x":"29"},"type":"Label"},{"props":{"y":"120","wordWrap":"true","text":"示例(回车换行)\\ncolor=#00ff00\\nsize=14\\ntext=test","width":"100","height":"85","color":"#c5c5c5","isHtml":"true","multiline":"true","x":"26"},"type":"Label"},{"props":{"skin":"comp/button.png","name":"sure","width":"100","sizeGrid":"0,4,0,4","height":"30","y":"299","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","x":"126"},"type":"Button"},{"props":{"skin":"comp/input_32.png","color":"#c5c5c5","multiline":"true","x":"126","padding":"5,5,5,5","margin":"2,2,2,2","y":"87","wordWrap":"true","width":"249","sizeGrid":"3,3,3,3","height":"150","var":"propsTxt","vScrollBarSkin":"comp/vscroll.png"},"type":"TextArea"},{"props":{"y":"248","wordWrap":"true","text":"提示：页面嵌套时，会自动应用上面设置默认属性，此属性为全局属性","width":"269","height":"41","color":"#cc00","multiline":"true","x":"123"},"type":"Label"},{"props":{"y":"59","text":"导出类型：","width":"85","align":"right","height":"19","color":"#c5c5c5","x":"219"},"type":"Label"},{"props":{"skin":"comp/combo_22.png","var":"packType","labels":"默认,内嵌模式,加载模式,分离模式","width":"75","sizeGrid":"0,20,0,3","height":"22","y":"55","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"299"},"type":"ComboBox"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"450","height":"360","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"395","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"设置页面默认属性","x":"28"}},{"type":"Label","props":{"y":"58","text":"页面内容","width":"260","var":"nameLbl","height":"20","color":"#cccc00","x":"126"}},{"type":"Label","props":{"y":"58","text":"页面名称：","width":"95","align":"right","height":"18","color":"#c5c5c5","x":"27"}},{"type":"Label","props":{"y":"89","text":"默认属性：","width":"93","align":"right","height":"18","color":"#c5c5c5","x":"29"}},{"type":"Label","props":{"y":"120","wordWrap":"true","isHtml":"true","text":"示例(回车换行)\\ncolor=#00ff00\\nsize=14\\ntext=test","width":"100","height":"85","color":"#c5c5c5","multiline":"true","x":"26"}},{"type":"Button","props":{"sizeGrid":"0,4,0,4","y":"299","width":"100","height":"30","name":"sure","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","x":"126"}},{"type":"TextArea","props":{"var":"propsTxt","sizeGrid":"3,3,3,3","skin":"comp/input_32.png","multiline":"true","vScrollBarSkin":"comp/vscroll.png","margin":"2,2,2,2","y":"87","wordWrap":"true","width":"249","x":"126","padding":"5,5,5,5","height":"150","color":"#c5c5c5"}},{"type":"Label","props":{"y":"248","wordWrap":"true","text":"提示：页面嵌套时，会自动应用上面设置默认属性，此属性为全局属性","width":"269","height":"41","color":"#cc00","multiline":"true","x":"123"}},{"type":"Label","props":{"y":"59","text":"导出类型：","width":"85","align":"right","height":"19","color":"#c5c5c5","x":"219"}},{"type":"ComboBox","props":{"sizeGrid":"0,20,0,3","y":"55","labels":"默认,内嵌模式,加载模式,分离模式","width":"75","var":"packType","height":"22","skin":"comp/combo_22.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"299"}}],"props":{"height":"360","scenecolor":"#dddddd","width":"450"}};}
 		]);
 		return SetPagePropUI;
 	})(Dialog)
@@ -59193,7 +63030,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(SetPageUI,
-		['uiView',function(){return this.uiView={"props":{"height":"330","scenecolor":"#dddddd","width":"470"},"type":"Dialog","child":[{"props":{"y":"0","width":"470","sizeGrid":"60,10,10,10","height":"330","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"420","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","text":"设置页面","var":"title","color":"#c5c5c5","fontSize":"14","x":"28"},"type":"Label"},{"props":{"skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"仅作为参考宽度","y":"159","var":"widthCheck","x":"298"},"type":"CheckBox"},{"props":{"skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"仅作为参考高度","y":"192","var":"heightCheck","x":"298"},"type":"CheckBox"},{"props":{"y":"57","color":"#c5c5c5","text":"页面类型：","x":"78"},"type":"Label"},{"props":{"y":"90","color":"#c5c5c5","text":"页面名称：","x":"78"},"type":"Label"},{"props":{"y":"123","color":"#c5c5c5","text":"参考视图：","x":"78"},"type":"Label"},{"props":{"y":"156","color":"#c5c5c5","text":"页面宽度：","x":"78"},"type":"Label"},{"props":{"y":"189","color":"#c5c5c5","text":"页面高度：","x":"78"},"type":"Label"},{"props":{"y":"222","wordWrap":"true","text":"参考背景：","width":"68","height":"60","color":"#c5c5c5","x":"78"},"type":"Label"},{"props":{"skin":"comp/combo_24.png","var":"typeDrop","labels":"View,Dialog","width":"140","selectedIndex":"0","sizeGrid":"0,20,0,3","height":"24","y":"55","scrollBarSkin":"comp/vscroll.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"151"},"type":"ComboBox"},{"props":{"y":"89","var":"nameTxt","disabled":"true","width":"140","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"151"},"type":"TextInput"},{"props":{"y":"122","var":"imgTxt","width":"108","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"151"},"type":"TextInput"},{"props":{"var":"widthTxt","skin":"comp/input_24.png","text":"600","width":"140","sizeGrid":"0,3,0,3","height":"24","y":"155","color":"#c5c5c5","x":"151"},"type":"TextInput"},{"props":{"var":"heightTxt","skin":"comp/input_24.png","text":"400","width":"140","sizeGrid":"0,3,0,3","height":"24","y":"188","color":"#c5c5c5","x":"151"},"type":"TextInput"},{"props":{"scaleX":"0.5","y":"221","var":"bgColorPicker","skin":"comp/color.png","scaleY":"0.5","selectedcolor":"#dddddd","x":"151"},"type":"ColorPicker"},{"props":{"var":"sureBtn","y":"271","label":"修改","sizeGrid":"0,4,0,4","height":"30","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","name":"sure","width":"100","x":"175"},"type":"Button"},{"props":{"y":"123","wordWrap":"true","text":"(可选，参考背景)","width":"146","height":"32","color":"#c5c5c5","x":"306"},"type":"Label"},{"props":{"y":"223","text":"(可选，设计面板的背景颜色)","width":"226","height":"18","color":"#c5c5c5","x":"172"},"type":"Label"},{"props":{"y":"122","var":"selectBtn","label":"浏览","height":"24","skin":"comp/btn_browser.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","width":"46","x":"259"},"type":"Button"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"470","height":"330","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"420","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","text":"设置页面","var":"title","color":"#c5c5c5","fontSize":"14","x":"28"}},{"type":"CheckBox","props":{"y":"159","label":"仅作为参考宽度","var":"widthCheck","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"298"}},{"type":"CheckBox","props":{"y":"192","label":"仅作为参考高度","var":"heightCheck","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"298"}},{"type":"Label","props":{"y":"57","color":"#c5c5c5","text":"页面类型：","x":"78"}},{"type":"Label","props":{"y":"90","color":"#c5c5c5","text":"页面名称：","x":"78"}},{"type":"Label","props":{"y":"123","color":"#c5c5c5","text":"参考视图：","x":"78"}},{"type":"Label","props":{"y":"156","color":"#c5c5c5","text":"页面宽度：","x":"78"}},{"type":"Label","props":{"y":"189","color":"#c5c5c5","text":"页面高度：","x":"78"}},{"type":"Label","props":{"y":"222","wordWrap":"true","text":"参考背景：","width":"68","height":"60","color":"#c5c5c5","x":"78"}},{"type":"ComboBox","props":{"height":"24","y":"55","labels":"View,Dialog","selectedIndex":"0","var":"typeDrop","sizeGrid":"0,20,0,3","scrollBarSkin":"comp/vscroll.png","skin":"comp/combo_24.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","width":"140","x":"151"}},{"type":"TextInput","props":{"height":"24","y":"89","color":"#c5c5c5","disabled":"true","width":"140","var":"nameTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"151"}},{"type":"TextInput","props":{"height":"24","y":"122","color":"#c5c5c5","width":"108","var":"imgTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"151"}},{"type":"TextInput","props":{"height":"24","y":"155","color":"#c5c5c5","text":"600","width":"140","var":"widthTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"151"}},{"type":"TextInput","props":{"height":"24","y":"188","color":"#c5c5c5","text":"400","width":"140","var":"heightTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"151"}},{"type":"ColorPicker","props":{"scaleX":"0.5","y":"221","scaleY":"0.5","selectedcolor":"#dddddd","var":"bgColorPicker","skin":"comp/color.png","x":"151"}},{"type":"Button","props":{"sizeGrid":"0,4,0,4","y":"271","label":"修改","var":"sureBtn","height":"30","name":"sure","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","width":"100","x":"175"}},{"type":"Label","props":{"y":"123","wordWrap":"true","text":"(可选，参考背景)","width":"146","height":"32","color":"#c5c5c5","x":"306"}},{"type":"Label","props":{"y":"223","text":"(可选，设计面板的背景颜色)","width":"226","height":"18","color":"#c5c5c5","x":"172"}},{"type":"Button","props":{"y":"122","label":"浏览","var":"selectBtn","height":"24","skin":"comp/btn_browser.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5","width":"46","x":"259"}}],"props":{"height":"330","scenecolor":"#dddddd","width":"470"}};}
 		]);
 		return SetPageUI;
 	})(Dialog)
@@ -59215,7 +63052,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(MoveResUI,
-		['uiView',function(){return this.uiView={"props":{"height":"200","scenecolor":"#dddddd","width":"450"},"type":"Dialog","child":[{"props":{"y":"0","width":"450","sizeGrid":"60,10,10,10","height":"200","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"396","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"移动资源","x":"28"},"type":"Label"},{"props":{"y":"62","wordWrap":"true","leading":"10","text":"确定移动资源吗？","width":"350","align":"center","height":"66","var":"msgLbl","color":"#c5c5c5","multiline":"true","x":"50"},"type":"Label"},{"props":{"skin":"comp/checkbox.png","var":"updateCheck","selected":"true","y":"108","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","visible":"false","label":"是否更新页面引用(不选择能提高性能)","x":"116"},"type":"CheckBox"},{"props":{"name":"sure","y":"140","label":"确定","sizeGrid":"0,4,0,4","height":"30","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","width":"100","x":"100"},"type":"Button"},{"props":{"skin":"comp/btn.png","y":"140","width":"100","sizeGrid":"0,4,0,4","height":"30","name":"cancel","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"取消","x":"250"},"type":"Button"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"450","height":"200","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"396","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"移动资源","x":"28"}},{"type":"Label","props":{"var":"msgLbl","y":"62","wordWrap":"true","leading":"10","text":"确定移动资源吗？","width":"350","align":"center","height":"66","color":"#c5c5c5","multiline":"true","x":"50"}},{"type":"CheckBox","props":{"y":"108","selected":"true","var":"updateCheck","visible":"false","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"是否更新页面引用(不选择能提高性能)","x":"116"}},{"type":"Button","props":{"sizeGrid":"0,4,0,4","name":"sure","label":"确定","height":"30","y":"140","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","width":"100","x":"100"}},{"type":"Button","props":{"sizeGrid":"0,4,0,4","name":"cancel","width":"100","height":"30","y":"140","skin":"comp/btn.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"取消","x":"250"}}],"props":{"height":"200","scenecolor":"#dddddd","width":"450"}};}
 		]);
 		return MoveResUI;
 	})(Dialog)
@@ -59238,7 +63075,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(RenameResUI,
-		['uiView',function(){return this.uiView={"props":{"scenecolor":"#dddddd"},"type":"Dialog","child":[{"props":{"y":"0","width":"450","sizeGrid":"60,10,10,10","height":"220","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"396","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"重命名资源","x":"28"},"type":"Label"},{"props":{"y":"94","text":"新名称：","width":"134","align":"right","height":"18","color":"#c5c5c5","x":"12"},"type":"Label"},{"props":{"y":"89","var":"nameTxt","width":"150","sizeGrid":"0,3,0,3","height":"32","skin":"comp/input_32.png","color":"#c5c5c5","x":"150"},"type":"TextInput"},{"props":{"skin":"comp/checkbox.png","var":"updateCheck","selected":"true","y":"129","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"是否更新页面引用(不选择能提高性能)","x":"151"},"type":"CheckBox"},{"props":{"y":"63","text":"原名称：","width":"123","align":"right","height":"18","color":"#c5c5c5","x":"23"},"type":"Label"},{"props":{"var":"resLbl","text":"资源内容","width":"214","height":"20","y":"63","color":"#cccc00","x":"150"},"type":"Label"},{"props":{"name":"sure","y":"158","label":"确定","sizeGrid":"0,4,0,4","height":"30","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","width":"100","x":"100"},"type":"Button"},{"props":{"skin":"comp/btn.png","y":"158","width":"100","sizeGrid":"0,4,0,4","height":"30","name":"cancel","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"取消","x":"250"},"type":"Button"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"450","height":"220","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"396","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"重命名资源","x":"28"}},{"type":"Label","props":{"y":"94","text":"新名称：","width":"134","align":"right","height":"18","color":"#c5c5c5","x":"12"}},{"type":"TextInput","props":{"height":"32","y":"89","color":"#c5c5c5","width":"150","var":"nameTxt","sizeGrid":"0,3,0,3","skin":"comp/input_32.png","x":"150"}},{"type":"CheckBox","props":{"y":"129","selected":"true","var":"updateCheck","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"是否更新页面引用(不选择能提高性能)","x":"151"}},{"type":"Label","props":{"y":"63","text":"原名称：","width":"123","align":"right","height":"18","color":"#c5c5c5","x":"23"}},{"type":"Label","props":{"y":"63","text":"资源内容","width":"214","var":"resLbl","height":"20","color":"#cccc00","x":"150"}},{"type":"Button","props":{"sizeGrid":"0,4,0,4","name":"sure","label":"确定","height":"30","y":"158","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","width":"100","x":"100"}},{"type":"Button","props":{"sizeGrid":"0,4,0,4","name":"cancel","width":"100","height":"30","y":"158","skin":"comp/btn.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"取消","x":"250"}}],"props":{"scenecolor":"#dddddd"}};}
 		]);
 		return RenameResUI;
 	})(Dialog)
@@ -59260,9 +63097,31 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(SetDirPropUI,
-		['uiView',function(){return this.uiView={"props":{"height":"240","scenecolor":"#dddddd","width":"510"},"type":"Dialog","child":[{"props":{"y":"0","width":"510","mouseEnabled":"true","sizeGrid":"60,10,10,10","height":"240","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"468","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"目录属性设置","x":"28"},"type":"Label"},{"props":{"y":"60","text":"目录名称：","width":"145","align":"right","height":"18","color":"#c5c5c5","x":"13"},"type":"Label"},{"props":{"skin":"comp/button.png","name":"sure","width":"100","sizeGrid":"0,4,0,4","y":"171","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","x":"190"},"type":"Button"},{"props":{"y":"60","text":"页面内容","width":"260","height":"20","var":"nameLbl","color":"#cccc00","x":"162"},"type":"Label"},{"props":{"y":"109","text":"打包类型：","width":"145","align":"right","height":"19","color":"#c5c5c5","x":"13"},"type":"Label"},{"props":{"skin":"comp/combo_22.png","var":"packType","labels":"默认,打包,不打包","width":"237","sizeGrid":"0,20,0,3","height":"22","y":"105","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"161"},"type":"ComboBox"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"510","mouseEnabled":"true","height":"240","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"468","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"目录属性设置","x":"28"}},{"type":"Label","props":{"y":"60","text":"目录名称：","width":"145","align":"right","height":"18","color":"#c5c5c5","x":"13"}},{"type":"Button","props":{"y":"171","width":"100","sizeGrid":"0,4,0,4","name":"sure","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","x":"190"}},{"type":"Label","props":{"y":"60","text":"页面内容","width":"260","var":"nameLbl","height":"20","color":"#cccc00","x":"162"}},{"type":"Label","props":{"y":"109","text":"打包类型：","width":"145","align":"right","height":"19","color":"#c5c5c5","x":"13"}},{"type":"ComboBox","props":{"sizeGrid":"0,20,0,3","y":"105","labels":"默认,打包,不打包","width":"237","var":"packType","height":"22","skin":"comp/combo_22.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"161"}}],"props":{"height":"240","scenecolor":"#dddddd","width":"510"}};}
 		]);
 		return SetDirPropUI;
+	})(Dialog)
+
+
+	//class laya.editor.ui.res.SetMultiResPropUI extends laya.ui.Dialog
+	var SetMultiResPropUI=(function(_super){
+		function SetMultiResPropUI(){
+			this.nameLbl=null;
+			this.packType=null;
+			SetMultiResPropUI.__super.call(this);
+		}
+
+		__class(SetMultiResPropUI,'laya.editor.ui.res.SetMultiResPropUI',_super);
+		var __proto=SetMultiResPropUI.prototype;
+		__proto.createChildren=function(){
+			laya.ui.Component.prototype.createChildren.call(this);
+			this.createView(SetMultiResPropUI.uiView);
+		}
+
+		__static(SetMultiResPropUI,
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"510","mouseEnabled":"true","height":"240","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"468","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"资源属性设置","x":"28"}},{"type":"Label","props":{"y":"60","text":"资源名称：","width":"145","align":"right","height":"18","color":"#c5c5c5","x":"13"}},{"type":"Button","props":{"y":"171","width":"100","sizeGrid":"0,4,0,4","name":"sure","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","x":"190"}},{"type":"Label","props":{"y":"60","wordWrap":"true","text":"页面内容","width":"260","var":"nameLbl","height":"41","color":"#cccc00","x":"162"}},{"type":"Label","props":{"y":"109","text":"打包类型：","width":"145","align":"right","height":"19","color":"#c5c5c5","x":"13"}},{"type":"ComboBox","props":{"sizeGrid":"0,20,0,3","y":"105","labels":"默认,打包,不打包","width":"237","var":"packType","height":"22","skin":"comp/combo_22.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"161"}}],"props":{"height":"240","scenecolor":"#dddddd","width":"510"}};}
+		]);
+		return SetMultiResPropUI;
 	})(Dialog)
 
 
@@ -59286,7 +63145,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(SetResPropUI,
-		['uiView',function(){return this.uiView={"props":{"height":"420","scenecolor":"#dddddd","width":"520"},"type":"Dialog","child":[{"props":{"y":"0","width":"520","mouseEnabled":"true","sizeGrid":"60,10,10,10","height":"410","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"468","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"资源属性设置","x":"28"},"type":"Label"},{"props":{"y":"60","text":"资源名称：","width":"137","align":"right","height":"18","color":"#c5c5c5","x":"21"},"type":"Label"},{"props":{"y":"134","text":"默认全局属性：","width":"143","align":"right","height":"18","color":"#c5c5c5","x":"14"},"type":"Label"},{"props":{"y":"166","wordWrap":"true","text":"示例(回车换行)\\ncolor=#00ff00\\nsize=14\\ntext=test","width":"100","height":"115","color":"#c5c5c5","multiline":"true","x":"62"},"type":"Label"},{"props":{"skin":"comp/button.png","name":"sure","width":"100","sizeGrid":"0,4,0,4","y":"363","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","x":"162"},"type":"Button"},{"props":{"y":"60","text":"页面内容","width":"260","height":"20","var":"nameLbl","color":"#cccc00","x":"162"},"type":"Label"},{"props":{"skin":"comp/input_32.png","color":"#c5c5c5","multiline":"true","x":"162","padding":"5,5,5,5","margin":"2,2,2,2","y":"133","width":"250","sizeGrid":"3,3,3,3","height":"150","var":"propsTxt","vScrollBarSkin":"comp/vscroll.png"},"type":"TextArea"},{"props":{"y":"93","text":"组件类型：","width":"142","align":"right","height":"18","color":"#c5c5c5","x":"16"},"type":"Label"},{"props":{"skin":"comp/combo_32.png","var":"typeDrop","labels":"Button,CheckBox,Clip,ComboBox,HScrollBar,HSlider,Image,Label,LinkButton,List,ProgressBar,Radio,RadioGroup,Tab,TextArea,TextInput,VScrollBar,VSlider,Tree","width":"150","sizeGrid":"0,20,0,3","height":"32","y":"88","scrollBarSkin":"comp/vscroll.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"162"},"type":"ComboBox"},{"props":{"y":"292","wordWrap":"true","text":"提示：使用组件时，会自动应用上面设置默认属性。此属性为全局属性，","width":"312","height":"38","color":"#00cc00","x":"160"},"type":"Label"},{"props":{"skin":"comp/btn.png","var":"setSizeGridBtn","width":"81","sizeGrid":"0,4,0,4","y":"90","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"设置九宫","x":"330"},"type":"Button"},{"props":{"y":"333","text":"打包类型：","width":"64","height":"19","color":"#c5c5c5","x":"162"},"type":"Label"},{"props":{"skin":"comp/combo_22.png","var":"packType","labels":"默认,打包,不打包","width":"59","sizeGrid":"0,20,0,3","height":"22","y":"329","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"221"},"type":"ComboBox"},{"props":{"y":"333","text":"图片类型：","width":"72","align":"right","height":"19","color":"#c5c5c5","x":"283"},"type":"Label"},{"props":{"skin":"comp/combo_22.png","var":"picType","labels":"默认,Repeat","width":"59","sizeGrid":"0,20,0,3","height":"22","y":"329","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"352"},"type":"ComboBox"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"520","mouseEnabled":"true","height":"410","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"468","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","color":"#c5c5c5","fontSize":"14","text":"资源属性设置","x":"28"}},{"type":"Label","props":{"y":"60","text":"资源名称：","width":"137","align":"right","height":"18","color":"#c5c5c5","x":"21"}},{"type":"Label","props":{"y":"134","text":"默认全局属性：","width":"143","align":"right","height":"18","color":"#c5c5c5","x":"14"}},{"type":"Label","props":{"y":"166","wordWrap":"true","text":"示例(回车换行)\\ncolor=#00ff00\\nsize=14\\ntext=test","width":"100","height":"115","color":"#c5c5c5","multiline":"true","x":"62"}},{"type":"Button","props":{"y":"363","width":"100","sizeGrid":"0,4,0,4","name":"sure","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","x":"162"}},{"type":"Label","props":{"y":"60","text":"页面内容","width":"260","var":"nameLbl","height":"20","color":"#cccc00","x":"162"}},{"type":"TextArea","props":{"var":"propsTxt","sizeGrid":"3,3,3,3","color":"#c5c5c5","multiline":"true","vScrollBarSkin":"comp/vscroll.png","margin":"2,2,2,2","y":"133","skin":"comp/input_32.png","width":"250","x":"162","padding":"5,5,5,5","height":"150"}},{"type":"Label","props":{"y":"93","text":"组件类型：","width":"142","align":"right","height":"18","color":"#c5c5c5","x":"16"}},{"type":"ComboBox","props":{"height":"32","y":"88","labels":"Button,CheckBox,Clip,ComboBox,HScrollBar,HSlider,Image,Label,LinkButton,List,ProgressBar,Radio,RadioGroup,Tab,TextArea,TextInput,VScrollBar,VSlider,Tree","width":"150","var":"typeDrop","sizeGrid":"0,20,0,3","scrollBarSkin":"comp/vscroll.png","skin":"comp/combo_32.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"162"}},{"type":"Label","props":{"y":"292","wordWrap":"true","text":"提示：使用组件时，会自动应用上面设置默认属性。此属性为全局属性，","width":"312","height":"38","color":"#00cc00","x":"160"}},{"type":"Button","props":{"y":"90","width":"81","var":"setSizeGridBtn","sizeGrid":"0,4,0,4","skin":"comp/btn.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"设置九宫","x":"330"}},{"type":"Label","props":{"y":"333","text":"打包类型：","width":"64","height":"19","color":"#c5c5c5","x":"162"}},{"type":"ComboBox","props":{"sizeGrid":"0,20,0,3","y":"329","labels":"默认,打包,不打包","width":"59","var":"packType","height":"22","skin":"comp/combo_22.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"221"}},{"type":"Label","props":{"y":"333","text":"图片类型：","width":"72","align":"right","height":"19","color":"#c5c5c5","x":"283"}},{"type":"ComboBox","props":{"sizeGrid":"0,20,0,3","y":"329","labels":"默认,Repeat","width":"59","var":"picType","height":"22","skin":"comp/combo_22.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"352"}}],"props":{"height":"420","scenecolor":"#dddddd","width":"520"}};}
 		]);
 		return SetResPropUI;
 	})(Dialog)
@@ -59316,7 +63175,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(SetSizeGridUI,
-		['uiView',function(){return this.uiView={"props":{"height":"420","scenecolor":"#dddddd","width":"520"},"type":"Dialog","child":[{"props":{"y":"0","width":"520","sizeGrid":"60,10,10,10","height":"420","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"468","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"14","color":"#c5c5c5","fontSize":"14","text":"九宫格设置","x":"23"},"type":"Label"},{"props":{"align":"right","y":"335","color":"#c5c5c5","text":"上：","x":"47"},"type":"Label"},{"props":{"y":"331","var":"upTxt","disabled":"true","width":"72","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"76"},"type":"TextInput"},{"props":{"align":"right","y":"335","color":"#c5c5c5","text":"右：","x":"156"},"type":"Label"},{"props":{"y":"331","var":"rightTxt","disabled":"true","width":"72","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"185"},"type":"TextInput"},{"props":{"y":"335","text":"下：","width":"33","align":"right","height":"18","color":"#c5c5c5","x":"264"},"type":"Label"},{"props":{"y":"331","var":"downTxt","disabled":"true","width":"72","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"298"},"type":"TextInput"},{"props":{"align":"right","y":"335","color":"#c5c5c5","text":"左：","x":"385"},"type":"Label"},{"props":{"y":"332","var":"leftTxt","disabled":"true","width":"72","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"414"},"type":"TextInput"},{"props":{"y":"103","width":"485","sizeGrid":"4,4,4,4","height":"215","skin":"view/bg_panel.png","x":"14"},"type":"Image"},{"props":{"y":"54","color":"#c5c5c5","text":"资源名称：","x":"21"},"type":"Label"},{"props":{"skin":"comp/button.png","name":"sure","width":"100","sizeGrid":"0,4,0,4","y":"366","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","x":"205"},"type":"Button"},{"props":{"y":"54","text":"页面内容","width":"260","height":"20","var":"nameLbl","color":"#cccc00","x":"89"},"type":"Label"},{"props":{"y":"45","visible":"false","color":"#c5c5c5","text":"组件类型：","x":"223"},"type":"Label"},{"props":{"skin":"comp/combo_24.png","var":"typeDrop","labels":"Button,CheckBox,Clip,ComboBox,HScrollBar,HSlider,Image,Label,LinkButton,List,ProgressBar,Radio,RadioGroup,Tab,TextArea,TextInput,VScrollBar,VSlider,Tree","width":"127","sizeGrid":"0,20,0,3","height":"24","y":"47","scrollBarSkin":"comp/vscroll.png","visible":"false","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"366"},"type":"ComboBox"},{"props":{"y":"46","visible":"false","text":"页面内容","width":"64","height":"20","var":"typeTxt","color":"#cccc00","x":"290"},"type":"Label"},{"props":{"y":"78","text":"提示：拖动红线调整数值，右键按下可整体拖动","width":"473","height":"20","var":"desTxt","color":"#c5c5c5","x":"19"},"type":"Label"},{"props":{"y":"107","var":"demoRec","width":"233","sizeGrid":"5,5,5,5","height":"205","skin":"view/bg_content.png","x":"18"},"type":"Image"},{"props":{"y":"107","var":"opRec","width":"235","sizeGrid":"5,5,5,5","height":"205","skin":"view/bg_content.png","x":"259"},"type":"Image"},{"props":{"y":"105","text":"预览","width":"64","height":"20","visible":"true","color":"#c5c5c5","x":"24"},"type":"Label"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"520","height":"420","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"468","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"14","color":"#c5c5c5","fontSize":"14","text":"九宫格设置","x":"23"}},{"type":"Label","props":{"align":"right","y":"335","color":"#c5c5c5","text":"上：","x":"47"}},{"type":"TextInput","props":{"height":"24","y":"331","color":"#c5c5c5","disabled":"true","width":"72","var":"upTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"76"}},{"type":"Label","props":{"align":"right","y":"335","color":"#c5c5c5","text":"右：","x":"156"}},{"type":"TextInput","props":{"height":"24","y":"331","color":"#c5c5c5","disabled":"true","width":"72","var":"rightTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"185"}},{"type":"Label","props":{"y":"335","text":"下：","width":"33","align":"right","height":"18","color":"#c5c5c5","x":"264"}},{"type":"TextInput","props":{"height":"24","y":"331","color":"#c5c5c5","disabled":"true","width":"72","var":"downTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"298"}},{"type":"Label","props":{"align":"right","y":"335","color":"#c5c5c5","text":"左：","x":"385"}},{"type":"TextInput","props":{"height":"24","y":"332","color":"#c5c5c5","disabled":"true","width":"72","var":"leftTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"414"}},{"type":"Image","props":{"sizeGrid":"4,4,4,4","y":"103","width":"485","height":"215","skin":"view/bg_panel.png","x":"14"}},{"type":"Label","props":{"y":"54","color":"#c5c5c5","text":"资源名称：","x":"21"}},{"type":"Button","props":{"y":"366","width":"100","sizeGrid":"0,4,0,4","name":"sure","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","label":"确定","x":"205"}},{"type":"Label","props":{"y":"54","text":"页面内容","width":"260","var":"nameLbl","height":"20","color":"#cccc00","x":"89"}},{"type":"Label","props":{"y":"45","visible":"false","color":"#c5c5c5","text":"组件类型：","x":"223"}},{"type":"ComboBox","props":{"height":"24","y":"47","visible":"false","labels":"Button,CheckBox,Clip,ComboBox,HScrollBar,HSlider,Image,Label,LinkButton,List,ProgressBar,Radio,RadioGroup,Tab,TextArea,TextInput,VScrollBar,VSlider,Tree","width":"127","var":"typeDrop","sizeGrid":"0,20,0,3","scrollBarSkin":"comp/vscroll.png","skin":"comp/combo_24.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"366"}},{"type":"Label","props":{"y":"46","text":"页面内容","width":"64","var":"typeTxt","height":"20","visible":"false","color":"#cccc00","x":"290"}},{"type":"Label","props":{"y":"78","text":"提示：拖动红线调整数值，右键按下可整体拖动","width":"473","var":"desTxt","height":"20","color":"#c5c5c5","x":"19"}},{"type":"Image","props":{"sizeGrid":"5,5,5,5","y":"107","width":"233","var":"demoRec","height":"205","skin":"view/bg_content.png","x":"18"}},{"type":"Image","props":{"sizeGrid":"5,5,5,5","y":"107","width":"235","var":"opRec","height":"205","skin":"view/bg_content.png","x":"259"}},{"type":"Label","props":{"y":"105","text":"预览","width":"64","height":"20","visible":"true","color":"#c5c5c5","x":"24"}}],"props":{"height":"420","scenecolor":"#dddddd","width":"520"}};}
 		]);
 		return SetSizeGridUI;
 	})(Dialog)
@@ -59340,7 +63199,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(AddTemplateUI,
-		['uiView',function(){return this.uiView={"props":{"height":"220","scenecolor":"#dddddd","width":"470"},"type":"Dialog","child":[{"props":{"y":"0","width":"470","sizeGrid":"60,10,10,10","height":"220","skin":"view/bg_dialog.png","x":"0"},"type":"Image"},{"props":{"scaleX":"0.5","skin":"view/btn_close.png","name":"close","top":"18","scaleY":"0.5","right":"18"},"type":"Button"},{"props":{"y":"8","name":"drag","width":"418","height":"38","skin":"comp/blank.png","x":"9"},"type":"Image"},{"props":{"y":"18","text":"转换成模板","width":"119","height":"18","var":"title","color":"#c5c5c5","fontSize":"14","x":"28"},"type":"Label"},{"props":{"y":"74","text":"目录：","width":"164","align":"right","height":"18","color":"#c5c5c5","x":"18"},"type":"Label"},{"props":{"y":"108","text":"页面名称：","width":"159","align":"right","height":"18","color":"#c5c5c5","x":"23"},"type":"Label"},{"props":{"skin":"comp/combo_24.png","labelColors":"#dddddd","labels":"自定义模板,常用模板","width":"140","selectedIndex":"0","sizeGrid":"0,20,0,3","height":"24","y":"72","scrollBarSkin":"comp/vscroll.png","var":"typeDrop","x":"191"},"type":"ComboBox"},{"props":{"y":"107","var":"nameTxt","width":"140","sizeGrid":"0,3,0,3","height":"24","skin":"comp/input_24.png","color":"#c5c5c5","x":"191"},"type":"TextInput"},{"props":{"var":"sureBtn","y":"159","label":"新增","sizeGrid":"0,4,0,4","height":"30","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","name":"sure","width":"100","x":"190"},"type":"Button"}]};}
+		['uiView',function(){return this.uiView={"type":"Dialog","child":[{"type":"Image","props":{"sizeGrid":"60,10,10,10","y":"0","width":"470","height":"220","skin":"view/bg_dialog.png","x":"0"}},{"type":"Button","props":{"scaleX":"0.5","name":"close","scaleY":"0.5","top":"18","skin":"view/btn_close.png","right":"18"}},{"type":"Image","props":{"y":"8","width":"418","height":"38","name":"drag","skin":"comp/blank.png","x":"9"}},{"type":"Label","props":{"y":"18","text":"转换成模板","width":"119","var":"title","height":"18","color":"#c5c5c5","fontSize":"14","x":"28"}},{"type":"Label","props":{"y":"74","text":"目录：","width":"164","align":"right","height":"18","color":"#c5c5c5","x":"18"}},{"type":"Label","props":{"y":"108","text":"页面名称：","width":"159","align":"right","height":"18","color":"#c5c5c5","x":"23"}},{"type":"ComboBox","props":{"height":"24","y":"72","labels":"自定义模板,常用模板","selectedIndex":"0","var":"typeDrop","sizeGrid":"0,20,0,3","scrollBarSkin":"comp/vscroll.png","skin":"comp/combo_24.png","labelColors":"#dddddd","width":"140","x":"191"}},{"type":"TextInput","props":{"height":"24","y":"107","color":"#c5c5c5","width":"140","var":"nameTxt","sizeGrid":"0,3,0,3","skin":"comp/input_24.png","x":"191"}},{"type":"Button","props":{"sizeGrid":"0,4,0,4","y":"159","label":"新增","var":"sureBtn","height":"30","name":"sure","skin":"comp/button.png","labelColors":"#efefef,#ffffff,#c5c5c5,#c5c5c5","width":"100","x":"190"}}],"props":{"height":"220","scenecolor":"#dddddd","width":"470"}};}
 		]);
 		return AddTemplateUI;
 	})(Dialog)
@@ -59613,10 +63472,47 @@ var Laya=window.Laya=(function(window,document){
 			this.addChild(this._slideBtn);
 			this._tf.on("focus",this,this._$7_mOnFocus);
 			this._tf.on("mousewheel",this,this.mOnMouseWheel);
+			this._slideBtn.on("mouseover",this,this.onSlideMouseOver);
+			this._slideBtn.on("mouseout",this,this.onSlideMouseOut);
+			this.on("keydown",this,this.onKeyDown);
 		}
 
 		__class(NumberInput,'laya.editor.core.components.NumberInput',_super);
 		var __proto=NumberInput.prototype;
+		__proto.onKeyDown=function(e){
+			var preV=NaN;
+			preV=parseFloat(this.text);
+			switch(e.keyCode){
+				case 38:
+					if (!this.text||this.text.length<1){
+						this.event("Get_Value",this);
+						return;
+					}
+					this.text=(preV+1)+"";
+					this.event("enter",this);
+					break ;
+				case 40:
+					if (!this.text||this.text.length<1){
+						this.event("Get_Value",this);
+						return;
+					}
+					this.text=(preV-1)+"";
+					this.event("enter",this);
+					break ;
+				}
+		}
+
+		__proto.onSlideMouseOver=function(){
+			NumberInput.lastIsOver=true;
+			CursorManager.setType("n-resize");
+		}
+
+		__proto.onSlideMouseOut=function(){
+			NumberInput.lastIsOver=false;
+			if(NumberInput.hasOneChanging)return;
+			CursorManager.setType("default");
+		}
+
 		__proto.mOnMouseWheel=function(e){
 			console.log("mouseWheel:",e);
 		}
@@ -59628,17 +63524,27 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__proto.slideMouseDown=function(e){
-			if (!this.text||this.text.length<1)return;
+			if (!this.text||this.text.length<1){
+				this.event("Get_Value",this);
+				Laya.timer.once(100,this,this.beginMoveChange,[e&&e.shiftKey]);
+				return;
+			}
+			this.beginMoveChange(e&&e.shiftKey);
+		}
+
+		__proto.beginMoveChange=function(shift){
+			(shift===void 0)&& (shift=false);
 			this._preValue=parseFloat(this.text);
 			this._preX=Laya.stage.mouseY;
 			this.clearSlideEvents();
-			if(e&&e.shiftKey){
+			if(shift){
 				this._moveRate=2;
 				}else{
 				this._moveRate=0.5;
 			}
 			Laya.timer.loop(100,this,this.updateValue);
 			Laya.stage.on("mouseup",this,this.stageMouseUp);
+			NumberInput.hasOneChanging=true;
 			this._isChanging=true;
 		}
 
@@ -59649,8 +63555,11 @@ var Laya=window.Laya=(function(window,document){
 
 		__proto.stageMouseUp=function(e){
 			this.clearSlideEvents();
-			this.event("enter",this);
+			this.event("enter",[this,true]);
 			this._isChanging=false;
+			NumberInput.hasOneChanging=false;
+			if(!NumberInput.lastIsOver)
+				CursorManager.setType("default");
 		}
 
 		__proto.clearSlideEvents=function(){
@@ -59668,6 +63577,9 @@ var Laya=window.Laya=(function(window,document){
 			_super.prototype._$set_width.call(this,value-12);
 		});
 
+		NumberInput.Get_Value="Get_Value";
+		NumberInput.hasOneChanging=false;
+		NumberInput.lastIsOver=false;
 		return NumberInput;
 	})(EditorTextInput)
 
@@ -59909,7 +63821,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(BasicPanelUI,
-		['uiView',function(){return this.uiView={"props":{"hitTestPrior":"true","height":"300","title":"元件","scenecolor":"#dddddd","width":"200"},"type":"DragView","child":[{"props":{"y":"48","right":"0","width":"200","left":"0","sizeGrid":"4,4,4,4","height":"300","skin":"view/bg_panel.png","top":"0","bottom":"0","x":"415"},"type":"Image"},{"props":{"hitTestPrior":"true","y":"552","scrollBarSkin":"comp/vscroll.png","bottom":"29","width":"196","left":"2","height":"136","var":"resTree","top":"2","right":"2","x":"173"},"type":"TreeEx","child":[{"props":{"name":"render","right":"0","left":"0"},"type":"Box","child":[{"props":{"y":"0","name":"selectBox","left":"9","height":"25","skin":"comp/clip_selectBox.png","clipY":"2","right":"0","x":"13"},"type":"Clip"},{"props":{"name":"icon","skin":"comp/folder.png","width":"16","height":"16","y":"4","x":"14"},"type":"Image"},{"props":{"padding":"4,0,0,0","y":"2","text":"label","width":"150","left":"38","height":"22","name":"label","color":"#d8d8d8","right":"0","x":"33"},"type":"Label"},{"props":{"skin":"comp/clip_tree.png","name":"arrow","width":"11","height":"12","y":"6","clipY":"2","x":"0"},"type":"Clip"}]}]},{"props":{"y":"271","right":"0","width":"198","left":"0","height":"28","var":"opBox","bottom":"0","x":"1"},"type":"Box","child":[{"props":{"skin":"view/bg_panel_bar.png","bottom":"0","width":"191","left":"0","top":"0","right":"0","sizeGrid":"0,4,0,4"},"type":"Image"},{"props":{"scaleX":"0.5","y":"3","name":"openDirBtn","x":"3","toolTip":"打开所在目录","skin":"view/login2.png","scaleY":"0.5","stateNum":"3"},"type":"Button"},{"props":{"scaleX":"0.5","y":"4","name":"refreshBtn","x":"26","toolTip":"刷新资源树","skin":"view/refresh2.png","scaleY":"0.5","stateNum":"3"},"type":"Button"}]}]};}
+		['uiView',function(){return this.uiView={"type":"DragView","child":[{"type":"Image","props":{"sizeGrid":"4,4,4,4","y":"48","right":"0","width":"200","left":"0","height":"300","top":"0","skin":"view/bg_panel.png","bottom":"0","x":"415"}},{"type":"TreeEx","child":[{"type":"Box","child":[{"type":"Clip","props":{"name":"selectBox","clipY":"2","left":"9","height":"25","y":"0","skin":"comp/clip_selectBox.png","right":"0","x":"13"}},{"type":"Image","props":{"name":"icon","width":"16","height":"16","y":"4","skin":"comp/folder.png","x":"14"}},{"type":"Label","props":{"padding":"4,0,0,0","y":"2","text":"label","width":"150","left":"38","height":"22","name":"label","color":"#d8d8d8","right":"0","x":"33"}},{"type":"Clip","props":{"name":"arrow","clipY":"2","width":"11","height":"12","y":"6","skin":"comp/clip_tree.png","x":"0"}}],"props":{"name":"render","right":"0","left":"0"}}],"props":{"y":"552","bottom":"29","width":"196","left":"2","var":"resTree","height":"136","scrollBarSkin":"comp/vscroll.png","top":"2","right":"2","hitTestPrior":"true","x":"173"}},{"type":"Box","child":[{"type":"Image","props":{"bottom":"0","width":"191","left":"0","sizeGrid":"0,4,0,4","top":"0","skin":"view/bg_panel_bar.png","right":"0"}},{"type":"Button","props":{"scaleX":"0.5","y":"3","name":"openDirBtn","scaleY":"0.5","toolTip":"打开所在目录","stateNum":"3","skin":"view/login2.png","x":"3"}},{"type":"Button","props":{"scaleX":"0.5","y":"4","name":"refreshBtn","scaleY":"0.5","toolTip":"刷新资源树","stateNum":"3","skin":"view/refresh2.png","x":"26"}}],"props":{"y":"271","right":"0","width":"198","left":"0","var":"opBox","height":"28","bottom":"0","x":"1"}}],"props":{"title":"元件","height":"300","scenecolor":"#dddddd","hitTestPrior":"true","width":"200"}};}
 		]);
 		return BasicPanelUI;
 	})(DragView)
@@ -59933,7 +63845,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(DisplayTreePanelUI,
-		['uiView',function(){return this.uiView={"props":{"hitTestPrior":"true","height":"400","title":"层级","scenecolor":"#dddddd","width":"200"},"type":"DragView","child":[{"props":{"y":"10","right":"0","width":"200","left":"0","sizeGrid":"4,4,4,4","height":"300","skin":"view/bg_panel.png","top":"0","bottom":"0","x":"10"},"type":"Image"},{"props":{"y":"291","right":"0","left":"0","height":"28","var":"opBox","bottom":"0","x":"25"},"type":"Box","child":[{"props":{"skin":"view/bg_panel_bar.png","bottom":"0","width":"191","left":"0","top":"0","right":"0","sizeGrid":"0,4,0,4"},"type":"Image"},{"props":{"padding":"0,10,0,18","y":"4","var":"fliterTxt","width":"115","left":"80","sizeGrid":"0,3,0,3","toolTip":"输入关键词过滤","skin":"comp/input_filter.png","color":"#dddddd","right":"5","x":"80"},"type":"TextInput"},{"props":{"scaleX":"0.5","y":"4","name":"refreshBtn","x":"3","toolTip":"刷新层级列表","skin":"view/refresh2.png","scaleY":"0.5","stateNum":"3"},"type":"Button"},{"props":{"scaleX":"0.5","y":"9","name":"ifShowAll","toolTip":"全部隐藏","skin":"view/clip_hide.png","scaleY":"0.5","clipY":"2","x":"31"},"type":"Clip"},{"props":{"height":"24","y":"3","name":"ifLockAll","width":"24","toolTip":"全部锁定","skin":"view/clip_lock.png","clipY":"2","x":"55"},"type":"Clip"},{"props":{"scaleX":"0.5","y":"4","scaleY":"0.5","index":"1","skin":"view/search.png","clipY":"2","x":"82"},"type":"Clip"},{"props":{"scaleX":"0.5","var":"clearSearchBtn","skin":"view/btn_close1.png","y":"10","scaleY":"0.5","right":"5","x":"181"},"type":"Button"}]},{"props":{"y":"45","var":"displayTree","bottom":"30","left":"2","top":"10","scrollBarSkin":"comp/vscroll.png","right":"2","x":"15"},"type":"TreeEx","child":[{"props":{"height":"26","name":"render","right":"0","left":"0"},"type":"Box","child":[{"props":{"y":"0","name":"selectBox","width":"184","left":"9","height":"26","skin":"comp/clip_selectBox.png","clipY":"2","right":"0","x":"12"},"type":"Clip"},{"props":{"padding":"4,0,0,0","y":"3","text":"label","width":"108","left":"38","height":"18","name":"label","color":"#d8d8d8","right":"50","x":"38"},"type":"Label"},{"props":{"skin":"comp/clip_tree.png","name":"arrow","width":"11","height":"12","y":"6","clipY":"2","x":"0"},"type":"Clip"},{"props":{"skin":"view/clip_hide1.png","name":"ifShow","width":"22","mouseEnabled":"true","height":"26","y":"0","clipY":"2","right":"22","clipX":"1"},"type":"Clip"},{"props":{"y":"0","name":"ifLock","width":"22","x":"160","mouseEnabled":"true","height":"26","skin":"view/clip_lock1.png","clipY":"2","right":"0","clipX":"1"},"type":"Clip"},{"props":{"y":"5","name":"icon","width":"16","height":"16","skin":"comp/folder.png","x":"14"},"type":"Image"}]}]}]};}
+		['uiView',function(){return this.uiView={"type":"DragView","child":[{"type":"Image","props":{"sizeGrid":"4,4,4,4","y":"10","right":"0","width":"200","left":"0","height":"300","top":"0","skin":"view/bg_panel.png","bottom":"0","x":"10"}},{"type":"Box","child":[{"type":"Image","props":{"bottom":"0","width":"191","left":"0","sizeGrid":"0,4,0,4","top":"0","skin":"view/bg_panel_bar.png","right":"0"}},{"type":"TextInput","props":{"toolTip":"输入关键词过滤","padding":"0,10,0,20","y":"4","color":"#dddddd","width":"115","left":"80","var":"fliterTxt","sizeGrid":"0,3,0,3","skin":"comp/input_filter.png","right":"5","x":"80"}},{"type":"Button","props":{"scaleX":"0.5","y":"4","name":"refreshBtn","scaleY":"0.5","toolTip":"刷新层级列表","stateNum":"3","skin":"view/refresh2.png","x":"3"}},{"type":"Clip","props":{"scaleX":"0.5","y":"9","scaleY":"0.5","clipY":"2","toolTip":"全部隐藏","name":"ifShowAll","skin":"view/clip_hide.png","x":"31"}},{"type":"Clip","props":{"y":"3","clipY":"2","width":"24","toolTip":"全部锁定","height":"24","name":"ifLockAll","skin":"view/clip_lock.png","x":"55"}},{"type":"Clip","props":{"scaleX":"0.5","y":"5","scaleY":"0.5","clipY":"2","skin":"view/search.png","index":"1","x":"79"}},{"type":"Button","props":{"scaleX":"0.5","y":"10","scaleY":"0.5","var":"clearSearchBtn","skin":"view/btn_close1.png","right":"5","x":"181"}}],"props":{"y":"291","right":"0","left":"0","var":"opBox","height":"28","bottom":"0","x":"25"}},{"type":"TreeEx","child":[{"type":"Box","child":[{"type":"Clip","props":{"name":"selectBox","clipY":"2","width":"184","left":"9","height":"26","y":"0","skin":"comp/clip_selectBox.png","right":"0","x":"12"}},{"type":"Label","props":{"padding":"4,0,0,0","y":"3","text":"label","width":"108","left":"38","height":"18","name":"label","color":"#d8d8d8","right":"50","x":"38"}},{"type":"Clip","props":{"name":"arrow","clipY":"2","width":"11","height":"12","y":"6","skin":"comp/clip_tree.png","x":"0"}},{"type":"Clip","props":{"y":"0","clipY":"2","width":"22","mouseEnabled":"true","clipX":"1","height":"26","name":"ifShow","skin":"view/clip_hide1.png","right":"22"}},{"type":"Clip","props":{"y":"0","clipY":"2","width":"22","mouseEnabled":"true","clipX":"1","height":"26","name":"ifLock","skin":"view/clip_lock1.png","right":"0","x":"160"}},{"type":"Image","props":{"y":"5","width":"16","height":"16","name":"icon","skin":"comp/folder.png","x":"14"}}],"props":{"height":"26","name":"render","right":"0","left":"0"}}],"props":{"y":"45","scrollBarSkin":"comp/vscroll.png","bottom":"30","left":"2","var":"displayTree","top":"10","right":"2","x":"15"}}],"props":{"title":"层级","height":"400","scenecolor":"#dddddd","hitTestPrior":"true","width":"200"}};}
 		]);
 		return DisplayTreePanelUI;
 	})(DragView)
@@ -59963,7 +63875,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(FramePropUI,
-		['uiView',function(){return this.uiView={"props":{"height":"300","title":"帧属性","scenecolor":"#dddddd","width":"200"},"type":"DragView","child":[{"props":{"y":"0","right":"0","width":"200","left":"0","sizeGrid":"4,4,4,4","height":"300","skin":"view/bg_panel.png","top":"0","bottom":"0","x":"0"},"type":"Image"},{"props":{"y":"145","text":"缓动类型","align":"right","var":"tweenTip","color":"#c5c5c5","x":"13"},"type":"Label"},{"props":{"y":"15","color":"#c5c5c5","text":"动效名称","x":"12"},"type":"Label"},{"props":{"y":"141","labels":"自定义模板,常用模板","sizeGrid":"0,20,0,3","scrollBarSkin":"comp/vscroll.png","x":"70","skin":"comp/combo_22.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","width":"124","selectedIndex":"0","height":"22","var":"tweenSelect","right":"5","left":"70"},"type":"ComboBox"},{"props":{"height":"22","y":"11","var":"nameTxt","width":"109","left":"70","restrict":"0-9A-Za-z_","sizeGrid":"0,3,0,3","skin":"comp/input_22.png","color":"#c5c5c5","right":"5","x":"83"},"type":"TextInput"},{"props":{"y":"66","text":"关键帧值","width":"58","height":"18","var":"keyTxt","color":"#c5c5c5","x":"12"},"type":"Label"},{"props":{"y":"63","var":"valueTxt","width":"109","left":"70","sizeGrid":"0,3,0,3","height":"22","skin":"comp/input_22.png","color":"#c5c5c5","right":"5","x":"70"},"type":"TextInput"},{"props":{"skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":"是否缓动","y":"120","var":"hasTween","x":"15"},"type":"CheckBox"},{"props":{"y":"41","text":"目标对象","width":"58","height":"18","var":"targetTxt","color":"#c5c5c5","x":"12"},"type":"Label"},{"props":{"y":"37","var":"targetIDTxt","width":"109","left":"70","sizeGrid":"0,3,0,3","height":"22","skin":"comp/input_22.png","color":"#c5c5c5","right":"5","x":"70"},"type":"TextInput"},{"props":{"y":"91","text":"标签label","width":"58","height":"18","var":"labelTipTxt","color":"#c5c5c5","x":"12"},"type":"Label"},{"props":{"y":"89","var":"labelTxt","width":"109","left":"70","sizeGrid":"0,3,0,3","height":"22","skin":"comp/input_22.png","color":"#c5c5c5","right":"5","x":"68"},"type":"TextInput"}]};}
+		['uiView',function(){return this.uiView={"type":"DragView","child":[{"type":"Image","props":{"sizeGrid":"4,4,4,4","y":"0","right":"0","width":"200","left":"0","height":"300","top":"0","skin":"view/bg_panel.png","bottom":"0","x":"0"}},{"type":"Label","props":{"var":"tweenTip","y":"145","text":"缓动类型","align":"right","color":"#c5c5c5","x":"13"}},{"type":"Label","props":{"y":"15","color":"#c5c5c5","text":"动效名称","x":"12"}},{"type":"ComboBox","props":{"scrollBarSkin":"comp/vscroll.png","labels":"自定义模板,常用模板","right":"5","sizeGrid":"0,20,0,3","skin":"comp/combo_22.png","x":"70","y":"141","selectedIndex":"0","left":"70","var":"tweenSelect","height":"22","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","width":"124"}},{"type":"TextInput","props":{"restrict":"0-9A-Za-z_","height":"22","y":"11","color":"#c5c5c5","width":"109","left":"70","var":"nameTxt","sizeGrid":"0,3,0,3","skin":"comp/input_22.png","right":"5","x":"83"}},{"type":"Label","props":{"y":"66","text":"关键帧值","width":"58","var":"keyTxt","height":"18","color":"#c5c5c5","x":"12"}},{"type":"TextInput","props":{"height":"22","y":"63","color":"#c5c5c5","width":"109","left":"70","var":"valueTxt","sizeGrid":"0,3,0,3","skin":"comp/input_22.png","right":"5","x":"70"}},{"type":"CheckBox","props":{"y":"120","label":"是否缓动","var":"hasTween","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"15"}},{"type":"Label","props":{"y":"41","text":"目标对象","width":"58","var":"targetTxt","height":"18","color":"#c5c5c5","x":"12"}},{"type":"TextInput","props":{"height":"22","y":"37","color":"#c5c5c5","width":"109","left":"70","var":"targetIDTxt","sizeGrid":"0,3,0,3","skin":"comp/input_22.png","right":"5","x":"70"}},{"type":"Label","props":{"y":"91","text":"标签label","width":"58","var":"labelTipTxt","height":"18","color":"#c5c5c5","x":"12"}},{"type":"TextInput","props":{"height":"22","y":"89","color":"#c5c5c5","width":"109","left":"70","var":"labelTxt","sizeGrid":"0,3,0,3","skin":"comp/input_22.png","right":"5","x":"68"}}],"props":{"height":"300","scenecolor":"#dddddd","title":"帧属性","width":"200"}};}
 		]);
 		return FramePropUI;
 	})(DragView)
@@ -59987,7 +63899,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(PagePanelUI,
-		['uiView',function(){return this.uiView={"props":{"hitTestPrior":"true","height":"300","title":"项目","scenecolor":"#dddddd","width":"200"},"type":"DragView","child":[{"props":{"y":"0","right":"0","width":"200","left":"0","sizeGrid":"4,4,4,4","height":"300","skin":"view/bg_panel.png","top":"0","bottom":"0","x":"0"},"type":"Image"},{"props":{"y":"22","scrollBarSkin":"comp/vscroll.png","bottom":"29","width":"190","left":"2","height":"260","var":"pageTree","top":"5","right":"2","x":"306"},"type":"TreeEx","child":[{"props":{"name":"render","right":"0","left":"0"},"type":"Box","child":[{"props":{"y":"0","name":"selectBox","left":"9","height":"24","skin":"comp/clip_selectBox.png","clipY":"2","right":"0","x":"13"},"type":"Clip"},{"props":{"name":"icon","skin":"comp/folder.png","width":"16","height":"16","y":"3","x":"15"},"type":"Image"},{"props":{"padding":"4,0,0,0","y":"1","text":"label","width":"150","left":"38","height":"22","name":"label","color":"#d8d8d8","right":"0","x":"33"},"type":"Label"},{"props":{"skin":"comp/clip_tree.png","name":"arrow","width":"11","height":"12","y":"5","clipY":"2","x":"0"},"type":"Clip"}]}]},{"props":{"y":"271","right":"0","width":"198","left":"0","height":"28","var":"opBox","bottom":"0","x":"1"},"type":"Box","child":[{"props":{"skin":"view/bg_panel_bar.png","bottom":"0","width":"191","left":"0","top":"0","right":"0","sizeGrid":"0,4,0,4"},"type":"Image"},{"props":{"padding":"0,10,0,18","y":"4","var":"fliterTxt","width":"148","left":"80","sizeGrid":"0,3,0,3","toolTip":"输入关键词过滤","skin":"comp/input_filter.png","color":"#dddddd","right":"5","x":"80"},"type":"TextInput"},{"props":{"scaleX":"0.5","y":"3","name":"openDirBtn","x":"3","toolTip":"打开所在目录","skin":"view/login2.png","scaleY":"0.5","stateNum":"3"},"type":"Button"},{"props":{"scaleX":"0.5","y":"3","name":"setPropBtn","x":"29","toolTip":"设置默认属性","skin":"view/settings2.png","scaleY":"0.5","stateNum":"3"},"type":"Button"},{"props":{"scaleX":"0.5","y":"4","name":"refreshBtn","x":"55","toolTip":"刷新页面列表","skin":"view/refresh2.png","scaleY":"0.5","stateNum":"3"},"type":"Button"},{"props":{"scaleX":"0.5","y":"4","scaleY":"0.5","index":"1","skin":"view/search.png","clipY":"2","x":"79"},"type":"Clip"},{"props":{"scaleX":"0.5","var":"clearSearchBtn","skin":"view/btn_close1.png","y":"10","scaleY":"0.5","right":"5","x":"180"},"type":"Button"}]}]};}
+		['uiView',function(){return this.uiView={"type":"DragView","child":[{"type":"Image","props":{"sizeGrid":"4,4,4,4","y":"0","right":"0","width":"200","left":"0","height":"300","top":"0","skin":"view/bg_panel.png","bottom":"0","x":"0"}},{"type":"TreeEx","child":[{"type":"Box","child":[{"type":"Clip","props":{"name":"selectBox","clipY":"2","left":"9","height":"24","y":"0","skin":"comp/clip_selectBox.png","right":"0","x":"13"}},{"type":"Image","props":{"name":"icon","width":"16","height":"16","y":"3","skin":"comp/folder.png","x":"15"}},{"type":"Label","props":{"padding":"4,0,0,0","y":"1","text":"label","width":"150","left":"38","height":"22","name":"label","color":"#d8d8d8","right":"0","x":"33"}},{"type":"Clip","props":{"name":"arrow","clipY":"2","width":"11","height":"12","y":"5","skin":"comp/clip_tree.png","x":"0"}}],"props":{"name":"render","right":"0","left":"0"}}],"props":{"y":"22","bottom":"29","width":"190","left":"2","var":"pageTree","height":"260","scrollBarSkin":"comp/vscroll.png","top":"5","right":"2","x":"306"}},{"type":"Box","child":[{"type":"Image","props":{"bottom":"0","width":"191","left":"0","sizeGrid":"0,4,0,4","top":"0","skin":"view/bg_panel_bar.png","right":"0"}},{"type":"TextInput","props":{"toolTip":"输入关键词过滤","padding":"0,10,0,20","y":"4","color":"#dddddd","width":"148","left":"80","var":"fliterTxt","sizeGrid":"0,3,0,3","skin":"comp/input_filter.png","right":"5","x":"80"}},{"type":"Button","props":{"scaleX":"0.5","stateNum":"3","name":"openDirBtn","scaleY":"0.5","toolTip":"打开所在目录","y":"3","skin":"view/login2.png","x":"3"}},{"type":"Button","props":{"scaleX":"0.5","y":"3","name":"setPropBtn","scaleY":"0.5","toolTip":"设置默认属性","stateNum":"3","skin":"view/settings2.png","x":"29"}},{"type":"Button","props":{"scaleX":"0.5","y":"4","name":"refreshBtn","scaleY":"0.5","toolTip":"刷新页面列表","stateNum":"3","skin":"view/refresh2.png","x":"55"}},{"type":"Clip","props":{"scaleX":"0.5","y":"4","scaleY":"0.5","clipY":"2","skin":"view/search.png","index":"1","x":"79"}},{"type":"Button","props":{"scaleX":"0.5","y":"10","scaleY":"0.5","var":"clearSearchBtn","skin":"view/btn_close1.png","right":"5","x":"180"}}],"props":{"y":"271","right":"0","width":"198","left":"0","var":"opBox","height":"28","bottom":"0","x":"1"}}],"props":{"height":"300","hitTestPrior":"true","scenecolor":"#dddddd","title":"项目","width":"200"}};}
 		]);
 		return PagePanelUI;
 	})(DragView)
@@ -60009,7 +63921,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(PropPanelUI,
-		['uiView',function(){return this.uiView={"props":{"hitTestPrior":"true","minWidth":"200","title":"属性","scenecolor":"#dddddd","mouseEnabled":"true"},"type":"DragView","child":[{"props":{"y":"0","bottom":"0","width":"200","left":"0","sizeGrid":"4,4,4,4","height":"300","skin":"view/bg_panel.png","top":"0","right":"0","x":"0"},"type":"Image"},{"props":{"y":"10","skin":"comp/image.png","var":"typeIcon","x":"7"},"type":"Image"},{"props":{"var":"typeLbl","text":"label","y":"10","color":"#ffff00","fontSize":"14","bold":"true","x":"34"},"type":"Label"}]};}
+		['uiView',function(){return this.uiView={"type":"DragView","child":[{"type":"Image","props":{"sizeGrid":"4,4,4,4","y":"0","bottom":"0","width":"200","left":"0","height":"300","top":"0","skin":"view/bg_panel.png","right":"0","x":"0"}},{"type":"Image","props":{"var":"typeIcon","y":"10","skin":"comp/image.png","x":"7"}},{"type":"Label","props":{"y":"10","text":"label","var":"typeLbl","color":"#ffff00","fontSize":"14","bold":"true","x":"34"}}],"props":{"minWidth":"200","hitTestPrior":"true","scenecolor":"#dddddd","title":"属性","mouseEnabled":"true"}};}
 		]);
 		return PropPanelUI;
 	})(DragView)
@@ -60035,7 +63947,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(ResPanelUI,
-		['uiView',function(){return this.uiView={"props":{"hitTestPrior":"true","height":"300","title":"资源","scenecolor":"#dddddd","width":"200"},"type":"DragView","child":[{"props":{"y":"48","right":"0","width":"200","left":"0","sizeGrid":"4,4,4,4","height":"300","skin":"view/bg_panel.png","top":"0","bottom":"0","x":"415"},"type":"Image"},{"props":{"hitTestPrior":"true","y":"552","scrollBarSkin":"comp/vscroll.png","bottom":"29","width":"196","left":"2","height":"136","var":"resTree","top":"112","right":"2","x":"173"},"type":"TreeEx","child":[{"props":{"name":"render","right":"0","left":"0"},"type":"Box","child":[{"props":{"y":"0","name":"selectBox","left":"9","height":"25","skin":"comp/clip_selectBox.png","clipY":"2","right":"0","x":"13"},"type":"Clip"},{"props":{"name":"icon","skin":"comp/folder.png","width":"16","height":"16","y":"4","x":"14"},"type":"Image"},{"props":{"padding":"4,0,0,0","y":"2","text":"label","width":"150","left":"38","height":"22","name":"label","color":"#d8d8d8","right":"0","x":"33"},"type":"Label"},{"props":{"skin":"comp/clip_tree.png","name":"arrow","width":"11","height":"12","y":"6","clipY":"2","x":"0"},"type":"Clip"}]}]},{"props":{"y":"3","width":"198","left":"1","height":"100","var":"resViewer","right":"1","x":"222"},"type":"Image"},{"props":{"y":"106","left":"0","height":"1","skin":"comp/line.png","right":"0","x":"2"},"type":"Image"},{"props":{"y":"271","right":"0","width":"198","left":"0","height":"28","var":"opBox","bottom":"0","x":"1"},"type":"Box","child":[{"props":{"skin":"view/bg_panel_bar.png","bottom":"0","width":"191","left":"0","top":"0","right":"0","sizeGrid":"0,4,0,4"},"type":"Image"},{"props":{"padding":"0,10,0,18","y":"4","var":"fliterTxt","width":"148","left":"80","sizeGrid":"0,3,0,3","toolTip":"输入关键词过滤","skin":"comp/input_filter.png","color":"#dddddd","right":"5","x":"80"},"type":"TextInput"},{"props":{"scaleX":"0.5","y":"3","name":"openDirBtn","x":"3","toolTip":"打开所在目录","skin":"view/login2.png","scaleY":"0.5","stateNum":"3"},"type":"Button"},{"props":{"scaleX":"0.5","y":"3","name":"setPropBtn","x":"29","toolTip":"设置默认属性","skin":"view/settings2.png","scaleY":"0.5","stateNum":"3"},"type":"Button"},{"props":{"scaleX":"0.5","y":"4","name":"refreshBtn","x":"55","toolTip":"刷新资源树","skin":"view/refresh2.png","scaleY":"0.5","stateNum":"3"},"type":"Button"},{"props":{"scaleX":"0.5","y":"4","scaleY":"0.5","index":"1","skin":"view/search.png","clipY":"2","x":"79"},"type":"Clip"},{"props":{"scaleX":"0.5","var":"clearSearchBtn","skin":"view/btn_close1.png","y":"10","scaleY":"0.5","right":"5","x":"182"},"type":"Button"}]},{"props":{"padding":"4,0,0,0","y":"82","var":"sizeTxt","text":"512*512","width":"162","align":"left","height":"19","name":"label","color":"#d8d8d8","x":"6"},"type":"Label"}]};}
+		['uiView',function(){return this.uiView={"type":"DragView","child":[{"type":"Image","props":{"sizeGrid":"4,4,4,4","y":"48","right":"0","width":"200","left":"0","height":"300","top":"0","skin":"view/bg_panel.png","bottom":"0","x":"415"}},{"type":"TreeEx","child":[{"type":"Box","child":[{"type":"Clip","props":{"name":"selectBox","clipY":"2","left":"9","height":"25","y":"0","skin":"comp/clip_selectBox.png","right":"0","x":"13"}},{"type":"Image","props":{"name":"icon","width":"16","height":"16","y":"4","skin":"comp/folder.png","x":"14"}},{"type":"Label","props":{"padding":"4,0,0,0","y":"2","text":"label","width":"150","left":"38","height":"22","name":"label","color":"#d8d8d8","right":"0","x":"33"}},{"type":"Clip","props":{"name":"arrow","clipY":"2","width":"11","height":"12","y":"6","skin":"comp/clip_tree.png","x":"0"}}],"props":{"name":"render","right":"0","left":"0"}}],"props":{"y":"552","hitTestPrior":"true","bottom":"29","width":"196","left":"2","var":"resTree","height":"136","scrollBarSkin":"comp/vscroll.png","top":"112","right":"2","x":"173"}},{"type":"Image","props":{"y":"3","width":"198","left":"1","var":"resViewer","height":"100","right":"1","x":"222"}},{"type":"Image","props":{"y":"106","left":"0","height":"1","skin":"comp/line.png","right":"0","x":"2"}},{"type":"Box","child":[{"type":"Image","props":{"bottom":"0","width":"191","left":"0","sizeGrid":"0,4,0,4","top":"0","skin":"view/bg_panel_bar.png","right":"0"}},{"type":"TextInput","props":{"toolTip":"输入关键词过滤","padding":"0,10,0,20","y":"4","color":"#dddddd","width":"148","left":"80","var":"fliterTxt","sizeGrid":"0,3,0,3","skin":"comp/input_filter.png","right":"5","x":"80"}},{"type":"Button","props":{"scaleX":"0.5","y":"3","name":"openDirBtn","scaleY":"0.5","toolTip":"打开所在目录","stateNum":"3","skin":"view/login2.png","x":"3"}},{"type":"Button","props":{"scaleX":"0.5","y":"3","name":"setPropBtn","scaleY":"0.5","toolTip":"设置默认属性","stateNum":"3","skin":"view/settings2.png","x":"29"}},{"type":"Button","props":{"scaleX":"0.5","y":"4","name":"refreshBtn","scaleY":"0.5","toolTip":"刷新资源树","stateNum":"3","skin":"view/refresh2.png","x":"55"}},{"type":"Clip","props":{"scaleX":"0.5","y":"4","scaleY":"0.5","clipY":"2","skin":"view/search.png","index":"1","x":"79"}},{"type":"Button","props":{"scaleX":"0.5","y":"10","scaleY":"0.5","var":"clearSearchBtn","skin":"view/btn_close1.png","right":"5","x":"182"}}],"props":{"y":"271","right":"0","width":"198","left":"0","var":"opBox","height":"28","bottom":"0","x":"1"}},{"type":"Label","props":{"padding":"4,0,0,0","y":"82","var":"sizeTxt","text":"512*512","width":"162","align":"left","height":"19","name":"label","color":"#d8d8d8","x":"6"}}],"props":{"height":"300","hitTestPrior":"true","scenecolor":"#dddddd","title":"资源","width":"200"}};}
 		]);
 		return ResPanelUI;
 	})(DragView)
@@ -60057,7 +63969,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(CompPanelUI,
-		['uiView',function(){return this.uiView={"props":{"height":"400","title":"模板","scenecolor":"#dddddd","width":"600"},"type":"DragView","child":[{"props":{"y":"20","var":"bg","bottom":"0","left":"0","sizeGrid":"4,4,4,4","height":"31","skin":"view/bg_panel.png","top":"0","right":"0","x":"20"},"type":"Image"},{"props":{"x":"0","var":"groupBox","bottom":"2","left":"0","y":"0","top":"2","right":"0","mouseEnabled":"true"},"type":"Box","child":[{"props":{"skin":"comp/button.png","labelColors":"#dddddd,#dddddd,#dddddd","label":"label","sizeGrid":"0,4,0,4"},"type":"Button"}]}]};}
+		['uiView',function(){return this.uiView={"type":"DragView","child":[{"type":"Image","props":{"sizeGrid":"4,4,4,4","y":"20","bottom":"0","left":"0","var":"bg","height":"31","top":"0","skin":"view/bg_panel.png","right":"0","x":"20"}},{"type":"Box","child":[{"type":"Button","props":{"sizeGrid":"0,4,0,4","skin":"comp/button.png","labelColors":"#dddddd,#dddddd,#dddddd","label":"label"}}],"props":{"x":"0","y":"0","bottom":"2","mouseEnabled":"true","var":"groupBox","top":"2","right":"0","left":"0"}}],"props":{"height":"400","scenecolor":"#dddddd","title":"模板","width":"600"}};}
 		]);
 		return CompPanelUI;
 	})(DragView)
@@ -60075,6 +63987,7 @@ var Laya=window.Laya=(function(window,document){
 			this.editMode=null;
 			this.cloneBtn=null;
 			this.frameRateTxt=null;
+			this.loadedtip=null;
 			this.action=null;
 			this.frameTxt=null;
 			this.timelineSizeControl=null;
@@ -60094,7 +64007,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(TimeLinePanelUI,
-		['uiView',function(){return this.uiView={"props":{"title":"时间轴","hitTestPrior":"true","bottom":"0","width":"600","left":"0","minWidth":"400","height":"300","right":"0","scenecolor":"#dddddd"},"type":"DragView","child":[{"props":{"y":"0","right":"0","width":"200","left":"0","sizeGrid":"4,4,4,4","height":"300","skin":"view/bg_panel.png","top":"0","bottom":"0","x":"0"},"type":"Image"},{"props":{"runtime":"laya.editor.view.timeline.TimeGrid","y":"35","var":"timeLine","x":"203"},"type":"TimeGrid"},{"props":{"y":"282","var":"mHScroll","right":"5","width":"177","height":"13","skin":"comp/hscroll.png","bottom":"5","x":"443"},"type":"HScrollBar"},{"props":{"y":"15","var":"mVScroll","right":"-2","width":"13","height":"264","skin":"comp/vscroll.png","top":"30","bottom":"20","x":"582"},"type":"VScrollBar"},{"props":{"y":"3","x":"7"},"type":"Box","child":[{"props":{"y":"4","color":"#c5c5c5","text":"动效：","x":"94"},"type":"Label"},{"props":{"skin":"comp/combo_22.png","scrollBarSkin":"comp/vscroll.png","labels":"自定义模板,常用模板","width":"97","selectedIndex":"0","sizeGrid":"0,20,0,3","height":"22","var":"aniSelect","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"129"},"type":"ComboBox"},{"props":{"scaleX":"0.5","var":"addBtn","skin":"play/btn_add.png","name":"sure","scaleY":"0.5","y":"1","x":"233"},"type":"Button"},{"props":{"scaleX":"0.5","var":"removeBtn","skin":"play/btn_del.png","name":"sure","scaleY":"0.5","y":"1","x":"283"},"type":"Button"},{"props":{"y":"4","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","var":"editMode","label":" 动画编辑模式"},"type":"CheckBox"},{"props":{"scaleX":"0.5","y":"1","scaleY":"0.5","skin":"play/btn_clone.png","var":"cloneBtn","x":"258"},"type":"Button"}]},{"props":{"y":"26","width":"587","left":"5","height":"1","skin":"comp/line.png","right":"5","x":"5"},"type":"Image"},{"props":{"x":"6","mouseEnabled":"true","y":"275","bottom":"3","left":"5"},"type":"Box","child":[{"props":{"y":"3","wordWrap":"true","text":"帧率：","width":"49","align":"right","height":"26'","color":"#c5c5c5","x":"-4"},"type":"Label"},{"props":{"skin":"comp/input_22.png","text":"24","mouseEnabled":"true","color":"#c5c5c5","x":"44","y":"0","disabled":"true","width":"26","sizeGrid":"0,3,0,3","restrict":"0-9","height":"22","var":"frameRateTxt"},"type":"TextInput"},{"props":{"y":"3","wordWrap":"true","text":"加载后：","width":"58","align":"right","height":"26","color":"#c5c5c5","x":"60"},"type":"Label"},{"props":{"skin":"comp/combo_22.png","var":"action","labels":"不播放,播放一次,循环播放","width":"76","selectedIndex":"0","sizeGrid":"0,20,0,3","height":"22","y":"0","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","x":"123"},"type":"ComboBox"},{"props":{"y":"3","text":"帧：","width":"41","align":"right","height":"18","color":"#c5c5c5","x":"201"},"type":"Label"},{"props":{"skin":"comp/input_22.png","y":"0","text":"0","width":"26","mouseEnabled":"true","restrict":"0-9","height":"22","var":"frameTxt","color":"#c5c5c5","sizeGrid":"0,3,0,3","x":"242"},"type":"TextInput"}]},{"props":{"value":"12","skin":"comp/hslider.png","x":"370","bottom":"8","tick":"2","y":"293","max":"20","width":"62","min":"6","height":"6","var":"timelineSizeControl","right":"190"},"type":"HSlider"},{"props":{"scaleX":"0.5","y":"33","scaleY":"0.5","skin":"play/btn_replay.png","var":"circlePlay","x":"133"},"type":"CheckBox"},{"props":{"var":"playControlBar","name":"playControl","y":"29","runtime":"laya.editor.view.timeline.PlayControl","x":"3"},"type":"PlayControl"},{"props":{"skin":"view/bg_panel.png","mouseEnabled":"true","top":"28","bottom":"2","x":"1","y":"28","width":"600","sizeGrid":"4,4,4,4","height":"270","var":"opMask","right":"2","left":"2"},"type":"Image"}]};}
+		['uiView',function(){return this.uiView={"type":"DragView","child":[{"type":"Image","props":{"sizeGrid":"4,4,4,4","y":"0","right":"0","width":"200","left":"0","height":"300","top":"0","skin":"view/bg_panel.png","bottom":"0","x":"0"}},{"type":"TimeGrid","props":{"var":"timeLine","runtime":"laya.editor.view.timeline.TimeGrid","y":"35","x":"203"}},{"type":"HScrollBar","props":{"y":"282","right":"5","width":"177","var":"mHScroll","height":"13","skin":"comp/hscroll.png","bottom":"5","x":"443"}},{"type":"VScrollBar","props":{"y":"15","right":"-2","width":"13","var":"mVScroll","height":"264","top":"30","skin":"comp/vscroll.png","bottom":"20","x":"582"}},{"type":"Box","child":[{"type":"Label","props":{"y":"4","color":"#c5c5c5","text":"动效：","x":"94"}},{"type":"ComboBox","props":{"sizeGrid":"0,20,0,3","scrollBarSkin":"comp/vscroll.png","labels":"自定义模板,常用模板","selectedIndex":"0","var":"aniSelect","height":"22","skin":"comp/combo_22.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","width":"97","x":"129"}},{"type":"Button","props":{"toolTip":"添加","scaleX":"0.5","name":"sure","scaleY":"0.5","var":"addBtn","y":"1","skin":"play/btn_add.png","x":"233"}},{"type":"Button","props":{"toolTip":"删除","scaleX":"0.5","name":"sure","scaleY":"0.5","var":"removeBtn","y":"1","skin":"play/btn_del.png","x":"283"}},{"type":"CheckBox","props":{"var":"editMode","y":"4","skin":"comp/checkbox.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","label":" 动画编辑模式"}},{"type":"Button","props":{"toolTip":"复制","scaleX":"0.5","y":"1","scaleY":"0.5","var":"cloneBtn","skin":"play/btn_clone.png","x":"258"}}],"props":{"y":"3","x":"7"}},{"type":"Image","props":{"y":"26","width":"587","left":"5","height":"1","skin":"comp/line.png","right":"5","x":"5"}},{"type":"HBox","child":[{"type":"Label","props":{"y":"4","wordWrap":"false","text":"帧率：","align":"right","height":"20","color":"#c5c5c5"}},{"type":"TextInput","props":{"restrict":"0-9","sizeGrid":"0,3,0,3","color":"#c5c5c5","text":"24","width":"26","mouseEnabled":"true","var":"frameRateTxt","height":"22","skin":"comp/input_22.png","disabled":"true","x":"48"}},{"type":"Label","props":{"var":"loadedtip","y":"4","wordWrap":"false","text":"加载后：","align":"right","height":"20","color":"#c5c5c5","x":"140"}},{"type":"ComboBox","props":{"sizeGrid":"0,20,0,3","y":"-2","labels":"不播放,播放一次,循环播放","width":"76","var":"action","height":"24","skin":"comp/combo_22.png","labelColors":"#c5c5c5,#c5c5c5,#c5c5c5,#c5c5c5","selectedIndex":"0","x":"197"}},{"type":"Label","props":{"y":"4","wordWrap":"false","text":"帧：","align":"right","height":"20","color":"#c5c5c5","x":"76"}},{"type":"TextInput","props":{"restrict":"0-9","sizeGrid":"0,3,0,3","color":"#c5c5c5","text":"0","width":"26","mouseEnabled":"true","var":"frameTxt","height":"22","skin":"comp/input_22.png","x":"102"}}],"props":{"y":"276","mouseEnabled":"true","left":"5","space":"5","bottom":"0","x":"2"}},{"type":"HSlider","props":{"value":"12","x":"370","skin":"comp/hslider.png","bottom":"8","tick":"2","y":"293","max":"20","width":"62","min":"6","var":"timelineSizeControl","height":"6","right":"190"}},{"type":"CheckBox","props":{"toolTip":"循环","scaleX":"0.5","y":"33","scaleY":"0.5","var":"circlePlay","skin":"play/btn_replay.png","x":"133"}},{"type":"PlayControl","props":{"var":"playControlBar","name":"playControl","y":"29","runtime":"laya.editor.view.timeline.PlayControl","x":"3"}},{"type":"Image","props":{"mouseEnabled":"true","sizeGrid":"4,4,4,4","top":"28","skin":"view/bg_panel.png","bottom":"2","x":"1","y":"28","width":"600","left":"2","var":"opMask","height":"270","right":"2"}}],"props":{"minWidth":"400","hitTestPrior":"true","scenecolor":"#dddddd","title":"时间轴","width":"600","left":"0","height":"300","bottom":"0","right":"0"}};}
 		]);
 		return TimeLinePanelUI;
 	})(DragView)
@@ -60115,7 +64028,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__static(UIPanelUI,
-		['uiView',function(){return this.uiView={"props":{"hitTestPrior":"true","title":"UI","scenecolor":"#dddddd"},"type":"DragView","child":[{"props":{"y":"0","width":"164","left":"0","sizeGrid":"0,3,0,3","height":"25","skin":"view/bg_panel_layoutrec.png","right":"0","x":"0"},"type":"Image"},{"props":{"y":"0","skin":"comp/tab.png","labelColors":"#aaaaaa,#aaaaaa,#aaaaaa","var":"tab","x":"0"},"type":"Tab"}]};}
+		['uiView',function(){return this.uiView={"type":"DragView","child":[{"type":"Image","props":{"sizeGrid":"0,3,0,3","y":"0","width":"164","left":"0","height":"25","skin":"view/bg_panel_layoutrec.png","right":"0","x":"0"}},{"type":"Tab","props":{"var":"tab","y":"0","skin":"comp/tab.png","labelColors":"#aaaaaa,#aaaaaa,#aaaaaa","x":"0"}}],"props":{"hitTestPrior":"true","scenecolor":"#dddddd","title":"UI"}};}
 		]);
 		return UIPanelUI;
 	})(DragView)
@@ -60179,6 +64092,7 @@ var Laya=window.Laya=(function(window,document){
 			this.preHeight=0;
 			this._curUI=null;
 			this.tTabTxt=null;
+			this.tTabHelpUrl=null;
 			this.relativeO={};
 			this._disMode=2;
 			LayoutRec.__super.call(this);
@@ -60189,15 +64103,40 @@ var Laya=window.Laya=(function(window,document){
 			this._backHeight=this.back.height;
 			this.on("Draging_Hit",this,this._$7_onMouseOver);
 			this.on("mouseover",this,this.onMouseOverThis);
+			this.on("mouseout",this,this.onMouseOutThis);
 			this.updateUIState();
 			CanvasSprite.setSpriteCanvasRender(this);
 			this.on("added",this,this._$7_onAdded);
 			Notice$1.listen("SHOW_LayoutTab_By_Name",this,this.showTabByName);
+			this.tipIcon.on("mousedown",this,this.onTipClick);
+			this.tipIcon.toolTip=Sys.lang("点击打开帮助文档");
 		}
 
 		__class(LayoutRec,'laya.editor.view.LayoutRec',_super);
 		var __proto=LayoutRec.prototype;
-		// visible=false;
+		__proto.onTipClick=function(){
+			if(!this._curUI)return;
+			var className;
+			className=ClassTool.getClassName(this._curUI);
+			var tUrl;
+			tUrl=LayoutRec.PanelTips[className];
+			if(tUrl){
+				HelpTipView.endHelpTip();
+				Browser.window.open(tUrl);
+			}
+		}
+
+		__proto.getCurTipUrl=function(){
+			if(!this._curUI)return null;
+			var className;
+			className=ClassTool.getClassName(this._curUI);
+			var tUrl;
+			tUrl=LayoutRec.PanelTips[className];
+			return tUrl;
+		}
+
+		__proto.onMouseOutThis=function(){}
+		// HelpTipView.hideTip();
 		__proto._$7_onAdded=function(){
 			if(this.parent==LayerManager.stage){
 				CanvasSprite.setSpriteCanvasIndex(this,102);
@@ -60209,6 +64148,12 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__proto.onMouseOverThis=function(E){
+			if(1||this.getCurTipUrl()){
+				if(LayoutRec.preTipIcon)LayoutRec.preTipIcon.visible=false;
+				LayoutRec.preTipIcon=this.tipIcon;
+				this.tipIcon.visible=true;
+				HelpTipView.showHelpTipTo(this.tipIcon);
+			}
 			if (this.parent==LayerManager.stage){
 				DisResizer$1.setUp(this,true);
 			}
@@ -60318,6 +64263,7 @@ var Laya=window.Laya=(function(window,document){
 				this._curUI=(this.tab.selection).ui;
 				this.addChildAt(this._curUI,0);
 				this.tTabTxt=this._curUI["title"];
+				this.tTabHelpUrl=this._curUI["helpUrl"];
 				if((this._curUI instanceof laya.editor.view.UIPanel )){
 					this.cacheAsBitmap=false;
 					(this.tab.selection).cacheAsBitmap=false;
@@ -60473,6 +64419,21 @@ var Laya=window.Laya=(function(window,document){
 		LayoutRec.Min=1;
 		LayoutRec.Normal=2;
 		LayoutRec.Max=3;
+		LayoutRec.preTipIcon=null
+		__static(LayoutRec,
+		['PanelTips',function(){return this.PanelTips={
+				"PagePanel":"http://ldc.layabox.com/doc/?nav=ch-as-2-1-4",
+				"BasicPanel":"http://ldc.layabox.com/doc/?nav=ch-as-2-1-12",
+				"ResPanel":"http://ldc.layabox.com/doc/?nav=ch-as-2-1-5",
+				"CompPanel":"http://ldc.layabox.com/doc/?nav=ch-as-2-1-7",
+				"DisplayTreePanel":"http://ldc.layabox.com/doc/?nav=ch-as-2-1-11",
+				"TimeLinePanel":"http://ldc.layabox.com/doc/?nav=ch-as-2-2-2",
+				"FramePropPanel":"http://ldc.layabox.com/doc/?nav=ch-as-2-2-2",
+				"UIPanel":"http://ldc.layabox.com/doc/?nav=ch-as-2-1-8",
+				"PropPanel":"http://ldc.layabox.com/doc/?nav=ch-as-2-1-9"
+		};}
+
+		]);
 		return LayoutRec;
 	})(LayoutRecUI)
 
@@ -60836,13 +64797,146 @@ var Laya=window.Laya=(function(window,document){
 	*@author ww
 	*@version 1.0
 	*
+	*@created 2017-5-15 上午10:48:09
+	*/
+	//class laya.editor.view.other.HelpTipView extends laya.editor.ui.other.HelpTipUI
+	var HelpTipView=(function(_super){
+		function HelpTipView(){
+			HelpTipView.__super.call(this);
+			this.tipTxt.text=Sys.lang("点击这里查看帮助");
+			this.closeBtn.on("click",this,HelpTipView.endHelpTip);
+		}
+
+		__class(HelpTipView,'laya.editor.view.other.HelpTipView',_super);
+		__getset(1,HelpTipView,'I',function(){
+			if(!HelpTipView._I)HelpTipView._I=new HelpTipView();
+			return HelpTipView._I;
+		},laya.editor.ui.other.HelpTipUI._$SET_I);
+
+		HelpTipView.endHelpTip=function(){
+			HelpTipView.isFirst=false;
+			HelpTipView.hideTip();
+		}
+
+		HelpTipView.showHelpTipTo=function(tar){
+			if(!HelpTipView.isFirst)return;
+			if(!tar.parent)return;
+			Laya._currentStage.addChild(HelpTipView.I);
+			tar.localToGlobal(HelpTipView._point.setTo(0,0));
+			HelpTipView.I.pos(HelpTipView._point.x-HelpTipView.I.width*HelpTipView.I.scaleX+40,HelpTipView._point.y-HelpTipView.I.height*HelpTipView.I.scaleY+3);
+			tar.repaint();
+		}
+
+		HelpTipView.hideTip=function(){
+			HelpTipView.I.removeSelf();
+		}
+
+		HelpTipView._I=null
+		HelpTipView.isFirst=false;
+		__static(HelpTipView,
+		['_point',function(){return this._point=new Point();}
+		]);
+		return HelpTipView;
+	})(HelpTipUI)
+
+
+	/**
+	*
+	*@author ww
+	*@version 1.0
+	*
+	*@created 2017-5-15 下午3:25:10
+	*/
+	//class laya.editor.view.other.ResTypeSettingView extends laya.editor.ui.other.ResTypeSettingViewUI
+	var ResTypeSettingView=(function(_super){
+		function ResTypeSettingView(){
+			ResTypeSettingView.__super.call(this);
+			this.typeList.renderHandler=Handler.create(this,this.itemRender,null,false);
+			this.okBtn.on("click",this,this.onOkBtn);
+		}
+
+		__class(ResTypeSettingView,'laya.editor.view.other.ResTypeSettingView',_super);
+		var __proto=ResTypeSettingView.prototype;
+		__proto.onOkBtn=function(){
+			var datas;
+			datas=this.typeList.array;
+			if(!datas)return;
+			var i=0,len=0;
+			len=datas.length;
+			var typeDic;
+			typeDic={};
+			var type;
+			var res;
+			var tData;
+			for(i=0;i<len;i++){
+				tData=datas[i];
+				res=tData.res;
+				if(res){
+					if(res!=UIConfigManager.getCompResStr(tData.type))
+						typeDic[tData.type]=res;
+				}
+			}
+			IDESettingResTypeManager.typeDic=typeDic;
+			IDESettingResTypeManager.updateTypeDic();
+			IDESettingResTypeManager.saveConfig();
+			ResPanel.instance.refreshProp();
+			Notice$1.notify("FRESH_CurView");
+			Notice$1.notify("CLOSE_IDESETTING");
+		}
+
+		__proto.reset=function(){
+			var names;
+			names=BasicPanel.getUIItems();
+			var items;
+			items=[];
+			names.sort(MathUtil.sortSmallFirst);
+			var i=0,len=0;
+			len=names.length;
+			var tItem;
+			for(i=0;i<len;i++){
+				tItem={};
+				tItem.type=names[i];
+				tItem.res=IDESettingResTypeManager.getTypeRes(names[i]);
+				if(!tItem.res){
+					tItem.res=UIConfigManager.getCompResStr(names[i]);
+				}
+				items.push(tItem);
+			}
+			this.typeList.array=items;
+		}
+
+		__proto.itemRender=function(cell,index){
+			var item=cell.dataSource;
+			var label;
+			label=cell.getChildByName("nameTxt");
+			var input;
+			input=cell.getChildByName("inputTxt");
+			label.text=item.type;
+			input.text=item.res?item.res:"";
+			input.on("blur",this,this.onInputChange,[input,item]);
+			input.on("enter",this,this.onInputChange,[input,item]);
+		}
+
+		__proto.onInputChange=function(input,data){
+			data.res=input.text;
+		}
+
+		return ResTypeSettingView;
+	})(ResTypeSettingViewUI)
+
+
+	/**
+	*
+	*@author ww
+	*@version 1.0
+	*
 	*@created 2015-12-15 上午10:50:52
 	*/
 	//class laya.editor.view.page.AddAnimation extends laya.editor.ui.page.AddGraphicAniUI
 	var AddAnimation=(function(_super){
 		function AddAnimation(){
 			AddAnimation.__super.call(this);
-			this.typeDrop.labels="GraphicAnimation"+","+"MoveEffectAnimation";
+			this.typeDrop.labels="GraphicAnimation"+","+"EffectAnimation";
 			this.nameTxt.restrict=StyleConsts$1.fileNameRestrict;
 			this.widthTxt.restrict="0-9";
 			this.heightTxt.restrict="0-9";
@@ -60889,7 +64983,7 @@ var Laya=window.Laya=(function(window,document){
 
 		AddAnimation._instance=null
 		AddAnimation.GraphicAnimation="GraphicAnimation";
-		AddAnimation.MoveEffectAnimation="MoveEffectAnimation";
+		AddAnimation.MoveEffectAnimation="EffectAnimation";
 		__static(AddAnimation,
 		['ConfigO',function(){return this.ConfigO={
 				"sign":"AddAnimation",
@@ -60899,65 +64993,6 @@ var Laya=window.Laya=(function(window,document){
 		]);
 		return AddAnimation;
 	})(AddGraphicAniUI)
-
-
-	/**添加页面
-	*@author yung
-	*/
-	//class laya.editor.view.page.AddPage extends laya.editor.ui.page.AddPageUI
-	var AddPage=(function(_super){
-		function AddPage(){
-			AddPage.__super.call(this);
-			this.nameTxt.restrict=StyleConsts$1.fileNameRestrict;
-			this.widthTxt.restrict="0-9";
-			this.heightTxt.restrict="0-9";
-			this.selectBtn.on("click",this,this.onSelectBtnClick);
-		}
-
-		__class(AddPage,'laya.editor.view.page.AddPage',_super);
-		var __proto=AddPage.prototype;
-		__proto.onSelectBtnClick=function(e){
-			DialogTools.showOpenFile(Sys.lang("请选择视图参考图片"),Utils.bind(this.onSelected,this),DialogTools.imgFilterO);
-		}
-
-		__proto.onSelected=function(files){
-			if (files && files[0])this.imgTxt.text=files[0];
-		}
-
-		__proto.reset=function(){
-			this.typeDrop.labels=ProjectSetting.getPageTypeLabel();
-			this.typeDrop.selectedIndex=0;
-			this.bgColorPicker.selectedColor="#F00000";
-			this.bgColorPicker.selectedColor="#000000";
-			this.nameTxt.text="";
-			this.imgTxt.text="";
-			this.widthTxt.text="600";
-			this.heightTxt.text="400";
-			IDEConfigsManager.I.insertDefaultValue(this,AddPage.ConfigO);
-			this.widthCheck.selected=false;
-			this.heightCheck.selected=false;
-		}
-
-		__proto.check=function(){
-			if (!this.nameTxt.text){
-				Alert.show(Sys.lang("页面名称不能为空"));
-				return false;
-			}
-			Notice$1.notify("ADDPage",[this.typeDrop.selectedLabel,this.nameTxt.text,this.imgTxt.text,LayaBuilder.mParseInt(this.widthTxt.text),LayaBuilder.mParseInt(this.heightTxt.text),this.bgColorPicker.selectedColor,this.widthCheck.selected,this.heightCheck.selected]);
-			Notice$1.notify("Focus_design");
-			IDEConfigsManager.I.saveDefaultValue(this,AddPage.ConfigO);
-			return true;
-		}
-
-		__static(AddPage,
-		['ConfigO',function(){return this.ConfigO={
-				"sign":"AddPage",
-				"vars":["widthTxt","heightTxt"]
-		};}
-
-		]);
-		return AddPage;
-	})(AddPageUI)
 
 
 	/**UI视图
@@ -60976,15 +65011,27 @@ var Laya=window.Laya=(function(window,document){
 			this.isUserChanged=false;
 			this._gridPoints=[new Point(),new Point()];
 			this.preXmlStr=null;
+			this.preReferrence=null;
 			UIViewer.__super.call(this);
 			this._ruleH=new RuleGrid();
 			this._ruleV=new RuleGrid();
 			this._ruleRangeLayer=new Sprite();
+			this._referenceLayer=new ReferenceLineLayer();
 			this.initPanel();
+			this.myResize();
+			this.on("resize",this,this.myResize);
 		}
 
 		__class(UIViewer,'laya.editor.view.UIViewer',_super);
 		var __proto=UIViewer.prototype;
+		__proto.myResize=function(){
+			if(this.width<480){
+				this.typeBtn.visible=this.scaleInfo.visible=false;
+				}else{
+				this.typeBtn.visible=this.scaleInfo.visible=true;
+			}
+		}
+
 		__proto.initPanel=function(){
 			if(UIViewer.EnableXMLEditor){
 				this.iFrameCodeView=new XMLEditorSprite();
@@ -61014,6 +65061,10 @@ var Laya=window.Laya=(function(window,document){
 			this._ruleV.x=this.ruleSideLen;
 			this._ruleRangeLayer.mouseEnabled=false;
 			this.addChild(this._ruleRangeLayer);
+			this._referenceLayer._ruleH=this._ruleH;
+			this._referenceLayer._ruleV=this._ruleV;
+			this.addChild(this._referenceLayer);
+			this._design.referenceLayer=this._referenceLayer;
 			this.onResize(null);
 			this.on("display",this,this.addListens);
 			this.on("undisplay",this,this.removeListens);
@@ -61022,6 +65073,17 @@ var Laya=window.Laya=(function(window,document){
 			this.addChild(this.typeBtn);
 			this.codeView.wordWrap=true;
 			Notice$1.listen("RULE_SHOW_CHANGE",this,this.freshRule,null,true);
+			this._ruleH.on("Add_ReferenceLine",this,this.onAddReferenceLine,[this._ruleV]);
+			this._ruleV.on("Add_ReferenceLine",this,this.onAddReferenceLine,[this._ruleH]);
+			this._referenceLayer.on("Lines_Changed",this,this.onReferenceLineChange);
+		}
+
+		__proto.onReferenceLineChange=function(){
+			this._design.changeReferenceLine(this._referenceLayer.lineList);
+		}
+
+		__proto.onAddReferenceLine=function(rule){
+			this._referenceLayer.addLineAndStartDrag(rule.type,rule.getMouseValue());
 		}
 
 		__proto.createDesign=function(){
@@ -61160,8 +65222,11 @@ var Laya=window.Laya=(function(window,document){
 			if(!SystemSetting.ifShowRuleGrid){
 				this._ruleH.clearMe();
 				this._ruleV.clearMe();
+				this._referenceLayer.clearMe();
+				this._referenceLayer.visible=false;
 				return;
 			}
+			this._referenceLayer.visible=true;
 			this._ruleV.height=this.height-40;
 			this._gridPoints[0].setTo(this._ruleH.x,this._ruleV.y);
 			this._gridPoints[1].setTo(this.width+this._ruleH.x,this._ruleV.height+this._ruleV.y);
@@ -61173,13 +65238,15 @@ var Laya=window.Laya=(function(window,document){
 				tPoint=this._design.globalToLocal(tPoint);
 			}
 			this._ruleH.width=this.width;
-			var ruleWidth=50;
+			var ruleWidth=30;
 			this._ruleH.setBounds(new Rectangle(0,0,this._ruleH.width,ruleWidth));
 			this._ruleH.renderMe(this.width,this._gridPoints[0].x,this._gridPoints[1].x);
 			this._ruleV.setBounds(new Rectangle(0,0,ruleWidth,this._ruleV.height));
 			this._ruleV.cacheAsBitmap=false;
 			this._ruleV.renderMe(this._ruleV.height,this._gridPoints[0].y,this._gridPoints[1].y);
 			this._ruleV.cacheAsBitmap=true;
+			this._referenceLayer.lineList=this._design.getReferenceLines()||[];
+			this._referenceLayer.renderMe(this.width,this.height-35);
 		}
 
 		/**根据页面地址加载页面*/
@@ -61334,10 +65401,11 @@ var Laya=window.Laya=(function(window,document){
 		/**切换设计和代码视图*/
 		__proto.onTabSelect=function(index){
 			this.viewStack.selectedIndex=index;
-			this._ruleH.visible=this._ruleV.visible=index==0;
+			this._referenceLayer.visible=this._ruleH.visible=this._ruleV.visible=index==0;
 			var backData;
 			if (index==1){
 				var xmlStr;
+				this.preReferrence=this._design.xml.referenceLines;
 				xmlStr=DesignInfo.uiObjToXml(this._design.xml).toXMLString();
 				var selecteID=0;
 				if(this._design.selectedCompXml){
@@ -61365,6 +65433,7 @@ var Laya=window.Laya=(function(window,document){
 				if(this.preXmlStr&&this.preXmlStr!=changeCode){
 					try{
 						backData=DesignInfo.xmlStrToUIObj(changeCode);
+						backData.referenceLines=this.preReferrence;
 						this._design.changeXml(backData);
 						}catch(e){
 						Alert.show(Sys.lang("文本格式有错误！修改未生效"));
@@ -61410,6 +65479,7 @@ var Laya=window.Laya=(function(window,document){
 			return this._design.scaleX;
 			},function(value){
 			value=Math.round(value *100)/ 100;
+			if(value<0.05)value=0.05;
 			if (this._design.scaleX !=value){
 				var center=this.localToGlobal(new Point(this.width *0.5,this.height *0.5));
 				var tCenter=new Point();
@@ -61430,79 +65500,63 @@ var Laya=window.Laya=(function(window,document){
 	})(UIViewerUI)
 
 
-	/**
-	*...
-	*@author ww
-	*/
-	//class laya.editor.view.page.AddParticle extends laya.editor.ui.page.AddParticleUI
-	var AddParticle=(function(_super){
-		function AddParticle(){
-			AddParticle.__super.call(this);
-			this.nameTxt.restrict=StyleConsts$1.fileNameRestrict;
-			this.typeDrop.labels=PageExportType.ParticleTypeList.join(",");
-			this.typeDrop.selectedIndex=0;
-			this.on("doubleclick",this,this.onDoubleClick);
-		}
-
-		__class(AddParticle,'laya.editor.view.page.AddParticle',_super);
-		var __proto=AddParticle.prototype;
-		__proto.onDoubleClick=function(){
-			this.typeDrop.labels="重力模式,半径模式,粒子3D,PolyEmitter";
-		}
-
-		__proto.reset=function(){
-			this.nameTxt.text="";
-		}
-
-		__proto.check=function(){
-			if (!this.nameTxt.text){
-				Alert.show(Sys.lang("粒子名称不能为空"));
-				return false;
-			}
-			Notice$1.notify("AddParticle",[this.typeDrop.selectedLabel,this.nameTxt.text]);
-			Notice$1.notify("Focus_design");
-			return true;
-		}
-
-		return AddParticle;
-	})(AddParticleUI)
-
-
-	/**
-	*...
+	/**添加页面
 	*@author yung
 	*/
-	//class laya.editor.view.page.AddScript extends laya.editor.ui.page.AddScriptUI
-	var AddScript=(function(_super){
-		function AddScript(){
-			AddScript.__super.call(this);
+	//class laya.editor.view.page.AddPage extends laya.editor.ui.page.AddPageUI
+	var AddPage=(function(_super){
+		function AddPage(){
+			AddPage.__super.call(this);
 			this.nameTxt.restrict=StyleConsts$1.fileNameRestrict;
-			this.classTxt.restrict=StyleConsts$1.fileNameRestrict+".";
+			this.widthTxt.restrict="0-9";
+			this.heightTxt.restrict="0-9";
+			this.selectBtn.on("click",this,this.onSelectBtnClick);
 		}
 
-		__class(AddScript,'laya.editor.view.page.AddScript',_super);
-		var __proto=AddScript.prototype;
+		__class(AddPage,'laya.editor.view.page.AddPage',_super);
+		var __proto=AddPage.prototype;
+		__proto.onSelectBtnClick=function(e){
+			DialogTools.showOpenFile(Sys.lang("请选择视图参考图片"),Utils.bind(this.onSelected,this),DialogTools.imgFilterO);
+		}
+
+		__proto.onSelected=function(files){
+			if (files && files[0])this.imgTxt.text=FileManager.adptToCommonUrl(files[0]);
+		}
+
 		__proto.reset=function(){
+			this.typeDrop.labels=ProjectSetting.getPageTypeLabel();
+			this.typeDrop.selectedIndex=0;
+			this.bgColorPicker.selectedColor="#F00000";
+			this.bgColorPicker.selectedColor="#000000";
 			this.nameTxt.text="";
-			this.classTxt.text="";
+			this.imgTxt.text="";
+			this.widthTxt.text="600";
+			this.heightTxt.text="400";
+			IDEConfigsManager.I.insertDefaultValue(this,AddPage.ConfigO);
+			this.widthCheck.selected=false;
+			this.heightCheck.selected=false;
 		}
 
 		__proto.check=function(){
 			if (!this.nameTxt.text){
-				Alert.show(Sys.lang("脚本名称不能为空"));
+				Alert.show(Sys.lang("页面名称不能为空"));
 				return false;
 			}
-			if (!this.classTxt.text){
-				Alert.show(Sys.lang("运行时类名不能为空"));
-				return false;
-			}
-			Notice$1.notify("addScript",[this.typeDrop.selectedIndex,this.nameTxt.text,this.classTxt.text]);
+			Notice$1.notify("ADDPage",[this.typeDrop.selectedLabel,this.nameTxt.text,this.imgTxt.text,LayaBuilder.mParseInt(this.widthTxt.text),LayaBuilder.mParseInt(this.heightTxt.text),this.bgColorPicker.selectedColor,this.widthCheck.selected,this.heightCheck.selected]);
 			Notice$1.notify("Focus_design");
+			IDEConfigsManager.I.saveDefaultValue(this,AddPage.ConfigO);
 			return true;
 		}
 
-		return AddScript;
-	})(AddScriptUI)
+		__static(AddPage,
+		['ConfigO',function(){return this.ConfigO={
+				"sign":"AddPage",
+				"vars":["widthTxt","heightTxt"]
+		};}
+
+		]);
+		return AddPage;
+	})(AddPageUI)
 
 
 	//class laya.editor.core.Design extends laya.editor.core.UIView
@@ -61527,11 +65581,13 @@ var Laya=window.Laya=(function(window,document){
 			this.pageType=null;
 			this.animationNodeMenu=null;
 			this._menu=null;
+			this.referenceLayer=null;
 			this.isRightClick=false;
 			this.uiXmlRestored=null;
 			this._isAnimationMode=false;
 			this._count=0;
 			this._MouseTar=null;
+			this._alignLine=null;
 			this.isFirstReFresh=true;
 			this._treeData=null;
 			this._createComp=null;
@@ -61545,6 +65601,7 @@ var Laya=window.Laya=(function(window,document){
 			this._dragBoxLayer=new DragBoxManager();
 			this._selectLineLayer=new Sprite();
 			this.rightMouseDownPos=new Point();
+			this._dPosInfo=new Point();
 			this.parseInt=LayaBuilder.mParseInt;
 			this.graphics.drawRect(0,0,100,100,null,"#ff0000");
 			this.addChildAt(this._bgLayer,0);
@@ -61571,6 +65628,7 @@ var Laya=window.Laya=(function(window,document){
 			this.addChild(this._selectLineLayer);
 			this.on("keydown",this,this.onKeyDown);
 			this.on("mousedown",this,this.onMouseDown);
+			this.on("mouseup",this,this.onMouseClick);
 			this.on("doubleclick",this,this.onDoubleClick);
 			this.mouseThrough=true;
 			this.on("display",this,this.addListens);
@@ -61579,7 +65637,7 @@ var Laya=window.Laya=(function(window,document){
 			this.on("rightmouseup",this,this.onRightMouseUp);
 			this.animationNodeMenu=ContextMenu$1.createMenu("创建关键帧");
 			this.animationNodeMenu.on("select",this,this.onEmunSelect);
-			this._menu=ContextMenu$1.createMenuByArray2(["复制","粘贴","删除","","转换为容器","打散容器","","Sprite节点","2D",ObjectTools.setValueArr([],TypeManager.Res2D),"Graphics",ObjectTools.setValueArr([],TypeManager.GraphicRes),"UI组件",ObjectTools.setValueArr([],TypeManager.UIRes)]);
+			this._menu=ContextMenu$1.createMenuByArray2(["复制","剪切","粘贴","删除","","转换为容器","转换类型","打散容器","","创建Sprite节点","创建2D",ObjectTools.setValueArr([],TypeManager.Res2D),"创建Graphics",ObjectTools.setValueArr([],TypeManager.GraphicRes),"创建UI组件",ObjectTools.setValueArr([],TypeManager.UIRes)]);
 			this._menu.on("select",this,this.onEmunSelect);
 		}
 
@@ -61606,6 +65664,9 @@ var Laya=window.Laya=(function(window,document){
 				case "打散容器":
 					ShortcutManager.exeKey(85,true,false);
 					break ;
+				case "转换类型":
+					ShortcutManager.exeKey(84,true,false);
+					break ;
 				case "删除":
 					Notice$1.notify("DELETE_SELECTED");
 					break ;
@@ -61627,7 +65688,11 @@ var Laya=window.Laya=(function(window,document){
 					Laya.stage.focus=this;
 					ShortcutManager.exeKey(67,true,false);
 					break ;
-				case "Sprite节点":
+				case "剪切":
+					Laya.stage.focus=this;
+					ShortcutManager.exeKey(88,true,false);
+					break ;
+				case "创建Sprite节点":
 					Notice$1.notify("AddNode",["Sprite",0,0,target.compId]);
 					break ;
 				}
@@ -61665,6 +65730,7 @@ var Laya=window.Laya=(function(window,document){
 		__proto.addListens=function(){
 			Notice$1.listen("Prop_Changed",this,this.propChangedNotice,null,true);
 			Notice$1.listen("Prop_change",this,this.changeProps,null,true);
+			Notice$1.listen("PROP_FORCESET",this,this.forceSetProps,null,true);
 			Notice$1.listen("Prop_changeing",this,this.changeingProps,null,true);
 			Notice$1.listen("Display_selected",this,this.selectCompChainHandler,null,true);
 			Notice$1.listen("Display_multiSelected",this,this.mutiSelectComps,null,true);
@@ -61683,8 +65749,11 @@ var Laya=window.Laya=(function(window,document){
 		__proto.removeListens=function(){
 			Notice$1.cancel("Prop_Changed",this,this.propChangedNotice);
 			Notice$1.cancel("Prop_change",this,this.changeProps);
+			Notice$1.cancel("PROP_FORCESET",this,this.forceSetProps);
+			Notice$1.cancel("Prop_changeing",this,this.changeingProps);
 			Notice$1.cancel("Display_selected",this,this.selectCompChainHandler);
 			Notice$1.cancel("Display_multiSelected",this,this.mutiSelectComps);
+			Notice$1.cancel("ClearDesignSelect",this,this.clearSelect);
 			Notice$1.cancel("display_value_changes",this,this.displayValueChangeHandler);
 			Notice$1.cancel("Display_tree_change",this,this.displayTreeChangeHandler);
 			Notice$1.cancel("IDEKey_Event",this,this.onKeyDown);
@@ -61788,6 +65857,8 @@ var Laya=window.Laya=(function(window,document){
 			pos.setTo(tarNode.x,tarNode.y);
 			pos=preParent.localToGlobal(pos);
 			pos=newParentNode.globalToLocal(pos);
+			pos.x=Math.round(pos.x);
+			pos.y=Math.round(pos.y);
 			tar.props.x=pos.x;
 			tar.props.y=pos.y;
 		}
@@ -61910,7 +65981,8 @@ var Laya=window.Laya=(function(window,document){
 			this.changeProps(proName,pro,targetID,false);
 		}
 
-		__proto.checkVarOk=function(proName,pro){
+		__proto.checkVarOk=function(proName,pro,alertIfNotOK){
+			(alertIfNotOK===void 0)&& (alertIfNotOK=true);
 			if(proName!="var")return true;
 			var data;
 			data=this._xml;
@@ -61919,12 +65991,38 @@ var Laya=window.Laya=(function(window,document){
 			return Design.parseVarByObj(data,varsO);
 		}
 
+		/**
+		*是否var已经存在
+		*@param varKey
+		*@return
+		*
+		*/
+		__proto.isVarExist=function(varKey){
+			var data;
+			data=this._xml;
+			var varsO;
+			varsO={};
+			varsO[varKey]=true;
+			return Design.parseVarByObj(data,varsO);
+		}
+
+		__proto.forceSetProps=function(propName,targetID){
+			(targetID===void 0)&& (targetID=-1);
+			var comp;
+			comp=this.getCompById(targetID);
+			if(comp){
+				if(isNaN(comp[propName])){
+					this.changeProps(propName,0,targetID,true,true);
+					}else{
+					this.changeProps(propName,comp[propName],targetID,true,true);
+				}
+			}
+		}
+
 		__proto.changeProps=function(proName,pro,targetID,cache,ifRefreshComp){
 			(targetID===void 0)&& (targetID=-1);
 			(cache===void 0)&& (cache=true);
 			(ifRefreshComp===void 0)&& (ifRefreshComp=true);
-			if(!this.checkVarOk(proName,pro)){
-			}
 			if(this._selectedComps&&this._selectedComps.length>1){
 				this.changeMixItemProps(proName,pro,targetID,cache);
 				return;
@@ -61940,6 +66038,12 @@ var Laya=window.Laya=(function(window,document){
 				selected=this.selectedCompXml?this.selectedCompXml:this._xml;
 			}
 			if(!selected)return;
+			if(!this.checkVarOk(proName,pro)){
+				if(proName=="var"){
+					delete selected.props["var"];
+					pro="";
+				}
+			};
 			var propNames;
 			propNames=[proName];
 			var preComp;
@@ -61952,6 +66056,18 @@ var Laya=window.Laya=(function(window,document){
 				prePValue=preComp.pivotX;
 				DPValue=preComp.pivotX-newPValue;
 				preComp.x-=DPValue;
+				preComp.x=Math.floor(preComp.x);
+				selected.props.x=preComp.x;
+				propNames.push("x");
+			};
+			var newPV=NaN;
+			if(proName=="anchorX"){
+				newPValue=LayaBuilder.mParserFloat(pro);
+				prePValue=preComp.pivotX;
+				newPV=preComp.width*newPValue;
+				DPValue=preComp.pivotX-newPV;
+				preComp.x-=DPValue;
+				preComp.x=Math.floor(preComp.x);
 				selected.props.x=preComp.x;
 				propNames.push("x");
 			}
@@ -61959,12 +66075,33 @@ var Laya=window.Laya=(function(window,document){
 				prePValue=preComp.pivotY;
 				DPValue=preComp.pivotY-newPValue;
 				preComp.y-=DPValue;
+				preComp.y=Math.floor(preComp.y);
+				selected.props.y=preComp.y;
+				propNames.push("y");
+			}
+			if(proName=="anchorY"){
+				newPValue=LayaBuilder.mParserFloat(pro);
+				prePValue=preComp.pivotY;
+				newPV=preComp.height*newPValue;
+				DPValue=preComp.pivotY-newPV;
+				preComp.y-=DPValue;
+				preComp.y=Math.floor(preComp.y);
 				selected.props.y=preComp.y;
 				propNames.push("y");
 			}
 			if(pro===""){
 				delete selected.props[proName];
 				hasDelete=true;
+				if(proName=="right"||proName=="left"){
+					if(!selected.props["right"]&&!selected.props["left"]){
+						selected.props["x"]=preComp.x;
+					}
+				}
+				if(proName=="top"||proName=="bottom"){
+					if(!selected.props["top"]&&!selected.props["bottom"]){
+						selected.props["y"]=preComp.y;
+					}
+				}
 				}else{
 				ObjectTools.setObjValue(selected.props,proName,pro);
 			};
@@ -61973,7 +66110,7 @@ var Laya=window.Laya=(function(window,document){
 			var conflictKey;
 			var i=0,len=0;
 			var dKey;
-			if(selected!=this._xml){
+			if(selected!=this._xml&&pro!==""){
 				len=Design.conflictGroups.length;
 				var tGroup;
 				var gId;
@@ -62007,7 +66144,7 @@ var Laya=window.Laya=(function(window,document){
 			if(ifRefreshComp){
 				this.refreshComp(this.getCompById(selected.compId),proName,pro,hasDelete);
 			}
-			this.nodeChanged(selected,propNames);
+			this.nodeChanged(selected,propNames,propNames.length==1);
 			if(cache)
 				this.changeXml(this._xml,false);
 			if(proName=="name"||proName=="var"){
@@ -62149,6 +66286,7 @@ var Laya=window.Laya=(function(window,document){
 
 		/**处理鼠标按下*/
 		__proto.onMouseDown=function(e){
+			Design._isClickOK=false;
 			if(Design.isCtrlAdding){
 				this.pasetCompUnderMouse();
 				return;
@@ -62158,12 +66296,13 @@ var Laya=window.Laya=(function(window,document){
 				return;
 			}
 			this._MouseTar=this.selectedBox;
-			this.callLater(this.onMouseDownWork,[e]);
 			this.stage.focus=this;
+			this.onMouseDownWork(e);
 		}
 
-		/**单击选择和取消*/
-		__proto.onMouseDownWork=function(e){
+		__proto.onMouseClick=function(e){
+			if(!Design._isClickOK)return;
+			Design._isClickOK=false;
 			if(ColorPickerItem.showed)return;
 			var comp=this.getCompSelectedAtCurrBox;
 			if (comp !=null && (comp).comXml){
@@ -62180,15 +66319,28 @@ var Laya=window.Laya=(function(window,document){
 						this.selectComp(comp);
 					}
 				}
+			}
+		}
+
+		/**单击选择和取消*/
+		__proto.onMouseDownWork=function(e){
+			if(ColorPickerItem.showed)return;
+			if(this.isSelectedCompsUnderMouse()){
 				if(this._selectedComps&&this._selectedComps.length==1){
 					if(this._selectedComps[0]["disableDragMove"]){
 						return;
 					}
 				}
+				Design._isClickOK=true;
 				this.readyToMove();
-				}else {
-				this.clearSelect();
-				this.readyToDragSelect();
+				}else{
+				var comp=this.getCompSelectedAtCurrBox;
+				if (comp !=null && (comp).comXml){
+					Design._isClickOK=true;
+					}else{
+					this.clearSelect();
+					this.readyToDragSelect();
+				}
 			}
 		}
 
@@ -62230,6 +66382,7 @@ var Laya=window.Laya=(function(window,document){
 				var my=(this._MouseTar.mouseY-this._currMouse.y);
 				if (this._isMove==false && (Math.abs(mx)> 2 || Math.abs(my)> 2)){
 					this._isMove=true;
+					Design._isClickOK=false;
 				}
 				if (this._isMove){
 					this._currMouse.x+=mx;
@@ -62238,6 +66391,15 @@ var Laya=window.Laya=(function(window,document){
 						var comp=this._selectedComps[i];
 						comp.x=Math.round(comp.x+mx);
 						comp.y=Math.round(comp.y+my);
+						if(IDEVars.enableAutoAlign&&i==0){
+							this.updateAutoAlignHandler(comp);
+							comp.x+=this._dPosInfo.x;
+							comp.y+=this._dPosInfo.y;
+							this._currMouse.x+=this._dPosInfo.x;
+							this._currMouse.y+=this._dPosInfo.y;
+							mx+=this._dPosInfo.x;
+							my+=this._dPosInfo.y;
+						};
 						var info=(comp).comXml.props;
 						this.updateNodePosInfo(info,comp);
 						this._dragBoxLayer.refreshDrag(comp);
@@ -62248,15 +66410,154 @@ var Laya=window.Laya=(function(window,document){
 			}
 		}
 
+		__proto.getAlignLines=function(tar){
+			var rst;
+			rst=Design._tempAlignLines;
+			Design.clearAlignLines();
+			rst.length=0;
+			var tParent;
+			tParent=tar.parent;
+			if(!tParent)return rst;
+			rst.push(AlignTool.getAlignLine("x",0));
+			rst.push(AlignTool.getAlignLine("x",tParent.width));
+			rst.push(AlignTool.getAlignLine("y",0));
+			rst.push(AlignTool.getAlignLine("y",tParent.height));
+			if(this.referenceLayer&&this.referenceLayer.visible){
+				this.referenceLayer.getLocalReferencePoints(tParent,rst);
+			}
+			return rst;
+		}
+
+		/**
+		*处理自动对齐
+		*@param tar
+		*@return
+		*
+		*/
+		__proto.updateAutoAlignHandler=function(tar){
+			this._dPosInfo.setTo(0,0);
+			if(!tar)return this._dPosInfo;
+			var tParent;
+			tParent=tar.parent;
+			var i=0,len=0;
+			len=tParent.numChildren;
+			var tItem;
+			var tMinX;
+			var tMinY;
+			var tAlignInfo;
+			for(i=0;i<len;i++){
+				tItem=tParent.getChildAt(i);
+				if(!tItem.comXml)continue ;
+				if(this._selectedComps.indexOf(tItem)>=0)continue ;
+				tAlignInfo=AlignTool.getMinType(tar,tItem,true,Pool.getItemByClass("MinAlignInfo",MinAlignInfo));
+				if(!tMinX||tMinX.minAbs>tAlignInfo.minAbs){
+					if(tMinX){
+						Pool.recover("MinAlignInfo",tMinX);
+					}
+					tMinX=tAlignInfo;
+					}else{
+					Pool.recover("MinAlignInfo",tAlignInfo);
+				}
+				tAlignInfo=AlignTool.getMinType(tar,tItem,false,Pool.getItemByClass("MinAlignInfo",MinAlignInfo));
+				if(!tMinY||tMinY.minAbs>tAlignInfo.minAbs){
+					if(tMinY){
+						Pool.recover("MinAlignInfo",tMinY);
+					}
+					tMinY=tAlignInfo;
+					}else{
+					Pool.recover("MinAlignInfo",tAlignInfo);
+				}
+			};
+			var alignLines;
+			alignLines=this.getAlignLines(tar);
+			len=alignLines.length;
+			var tAlignLine;
+			for(i=0;i<len;i++){
+				tAlignLine=alignLines[i];
+				if(tAlignLine.type=="x"){
+					tAlignInfo=AlignTool.getMinType(tar,tAlignLine,true,Pool.getItemByClass("MinAlignInfo",MinAlignInfo),true);
+					if(!tMinX||tMinX.minAbs>tAlignInfo.minAbs){
+						if(tMinX){
+							Pool.recover("MinAlignInfo",tMinX);
+						}
+						tMinX=tAlignInfo;
+						}else{
+						Pool.recover("MinAlignInfo",tAlignInfo);
+					}
+				}
+				if(tAlignLine.type=="y"){
+					tAlignInfo=AlignTool.getMinType(tar,tAlignLine,false,Pool.getItemByClass("MinAlignInfo",MinAlignInfo),true);
+					if(!tMinY||tMinY.minAbs>tAlignInfo.minAbs){
+						if(tMinY){
+							Pool.recover("MinAlignInfo",tMinY);
+						}
+						tMinY=tAlignInfo;
+						}else{
+						Pool.recover("MinAlignInfo",tAlignInfo);
+					}
+				}
+			}
+			if(!this._alignLine){
+				this._alignLine=new Sprite();
+				this._alignLine.zOrder=9999;
+			}
+			this._alignLine.graphics.clear();
+			var min=NaN;
+			var max=NaN;
+			this._alignLine.removeSelf();
+			this._dPosInfo.setTo(0,0);
+			if(tMinX&&tMinX.minAbs<8){
+				if((tMinX.tar instanceof laya.display.Sprite )){
+					min=Math.min(tar.y,tMinX.tar.y);
+					max=Math.max(tar.y+tar.height,tMinX.tar.y+tMinX.tar.height);
+					this._alignLine.graphics.drawLine(tMinX.tValue,min,tMinX.tValue,max,StyleConsts$1.AutoAlignLineColor);
+					tParent.addChild(this._alignLine);
+				}
+				this._dPosInfo.x=tMinX.minD;
+			}
+			if(tMinY&&tMinY.minAbs<8){
+				if((tMinY.tar instanceof laya.display.Sprite )){
+					min=Math.min(tar.x,tMinY.tar.x);
+					max=Math.max(tar.x+tar.width,tMinY.tar.x+tMinY.tar.width);
+					this._alignLine.graphics.drawLine(min,tMinY.tValue,max,tMinY.tValue,StyleConsts$1.AutoAlignLineColor);
+					tParent.addChild(this._alignLine);
+				}
+				this._dPosInfo.y=tMinY.minD;
+			}
+			if(tMinX){
+				Pool.recover("MinAlignInfo",tMinX);
+			}
+			if(tMinY){
+				Pool.recover("MinAlignInfo",tMinY);
+			}
+			return this._dPosInfo;
+		}
+
+		/**
+		*清除自动对齐调试线
+		*
+		*/
+		__proto.clearAutoAlign=function(){
+			if(this._alignLine){
+				this._alignLine.removeSelf();
+			}
+		}
+
+		/**
+		*更新节点坐标相关的信息，处理属性冲突
+		*@param info
+		*@param comp
+		*
+		*/
 		__proto.updateNodePosInfo=function(info,comp){
 			if(info.hasOwnProperty("left")){
-				info.left=comp.x;
+				comp.left=info.left=comp.x;
 				delete info.x;
 				}else{
 				info.x=comp.x;
 			}
 			if(info.hasOwnProperty("top")){
-				info.top=comp.y;
+				comp.top=info.top=comp.y;
 				delete info.y;
 				}else{
 				info.y=comp.y;
@@ -62265,11 +66566,11 @@ var Laya=window.Laya=(function(window,document){
 			tParent=comp.parent;
 			if(!tParent)return;
 			if(info.hasOwnProperty("right")){
-				info.right=tParent.width-comp.x-comp.width;
+				comp.right=info.right=tParent.width-comp.x-comp.width+comp.pivotX*comp.scaleX;
 				delete info.x;
 			}
 			if(info.hasOwnProperty("bottom")){
-				info.bottom=tParent.height-comp.y-comp.height;
+				comp.bottom=info.bottom=tParent.height-comp.y-comp.height+comp.pivotY*comp.scaleY;
 				delete info.y;
 			}
 			if(info.hasOwnProperty("centerY")){
@@ -62297,6 +66598,15 @@ var Laya=window.Laya=(function(window,document){
 			tComp=this._selectedComps[0];
 			this.calculateSelecteRange();
 			this.showRuleRange(tComp.parent);
+		}
+
+		__proto.getReferenceLines=function(){
+			return this._xml.referenceLines;
+		}
+
+		__proto.changeReferenceLine=function(lines){
+			this._xml.referenceLines=lines;
+			this.changeXml(this._xml,false);
 		}
 
 		__proto.calculateSelecteRange=function(){
@@ -62362,6 +66672,7 @@ var Laya=window.Laya=(function(window,document){
 
 		/**处理鼠标点开*/
 		__proto.onStageMouseUp=function(e){
+			this.clearAutoAlign();
 			this.stage.off("mousemove",this,this.onStageMouseMove);
 			this.stage.off("mouseup",this,this.onStageMouseUp);
 			if (this._isDragSelect){
@@ -62454,9 +66765,16 @@ var Laya=window.Laya=(function(window,document){
 			this.animation=new AnimationDataWorker();
 			this.animation.design=this;
 			this.animation.animations=this._xml.animations;
+			var changed=false;
+			if(this.animation.animations){
+				changed=AnimationDataWorker.removeWrongValueAniMationData(this.animation.animations);
+			}
 			this.animation.compMap=this._compMap;
 			if(!this.animation.animations)this.animation.animations=[];
 			delete this._xml.animations;
+			if(changed){
+				this.hasChange=true;
+			}
 		}
 
 		__proto.recoverFromData=function(uixml,animations){
@@ -62877,7 +67195,7 @@ var Laya=window.Laya=(function(window,document){
 				}else{
 				return;
 			}
-			this.selectCompChainHandler(this._xml.selectedBox);
+			this.selectCompChainHandler(this._xml.selectedBox,true);
 			this.playBoxEffect(true);
 		}
 
@@ -62922,6 +67240,27 @@ var Laya=window.Laya=(function(window,document){
 			return;
 			var point=(this._selectedBox.parent).localToGlobal(new Point(this._selectedBox.x+this._selectedBox.width *0.5,this._selectedBox.y+this._selectedBox.height *0.5));
 			UIPanel.instance.currViewer.playBoxEffect(point.x,point.y,isBack);
+		}
+
+		__proto.isSelectedCompsUnderMouse=function(){
+			if(!this._selectedComps||this._selectedComps.length<1)return false;
+			if(!this._selectedBox)return false;
+			var compRect=new Rectangle();
+			var mousePos;
+			mousePos=this._selectedBox.getMousePoint();
+			Design.smousePos.setTo(mousePos.x,mousePos.y);
+			mousePos=Design.smousePos;
+			for (var i=this._selectedComps.length-1;i>=0;i--){
+				var display=this._selectedComps[i];
+				if ((display).comXml){
+					compRect.setTo(display.x,display.y,display.width,display.height);
+					compRect.copyFrom(display.getBounds());
+					if (compRect.contains(mousePos.x,mousePos.y)){
+						return true;
+					}
+				}
+			}
+			return false;
 		}
 
 		/**移动组件*/
@@ -63041,6 +67380,9 @@ var Laya=window.Laya=(function(window,document){
 					info.splice(info.indexOf(compX),1);
 					comp.parent.removeChild(comp);
 					deletedIds.push(compX.compId);
+					if(this.uiXmlRestored){
+						TreeData.removeNodeFromNodeTree(this.uiXmlRestored,compX.compId);
+					}
 					if(this.animation&&this.animation.animations){
 						AnimationDataWorker.removeNodeFromAnimationData(this.animation.animations,compX.compId);
 					}
@@ -63238,6 +67580,7 @@ var Laya=window.Laya=(function(window,document){
 				preProp=compData.props;
 				compData.props={};
 			}
+			this._xml.selectedBox=parentId;
 			this.changeXml(this._xml);
 			var compId=compData.compId;
 			if(this.getCompById(compId)){
@@ -63251,7 +67594,6 @@ var Laya=window.Laya=(function(window,document){
 			Design.beginCtrlAdd();
 		}
 
-		// }
 		__proto.addCompHandler=function(node,parentId){}
 		__proto.getAddDataByDragEvent=function(e){
 			if(this.isGraphicAnimation){
@@ -63328,7 +67670,6 @@ var Laya=window.Laya=(function(window,document){
 			return nData;
 		}
 
-		// }
 		__proto.addTemplate=function(tempPath,x,y,parentId){
 			(x===void 0)&& (x=-1);
 			(y===void 0)&& (y=-1);
@@ -63436,6 +67777,29 @@ var Laya=window.Laya=(function(window,document){
 
 		/**根据层进行排序*/
 		__proto.sortXmlByLayer=function(box){}
+		__proto.changeCompType=function(type){
+			if(this.isAnimationMode||this.isGraphicAnimation){
+				Alert.show(Sys.lang("动画编辑模式中，该功能不可用。"));
+				return;
+			}
+			if (type && this._selectedComps.length > 0){
+				var comps=this.getIDedSelectedXmls();
+				for (var i=comps.length-1;i >-1;i--){
+					var info=comps[i].xml;
+					var tCompId=0;
+					var tComp;
+					if(!info)continue ;
+					tCompId=info.compId;
+					tComp=this.getCompOById(tCompId);
+					if(tComp){
+						tComp.type=type;
+					}
+				}
+				this.clearSelect();
+				this.changeXml(this._xml);
+			}
+		}
+
 		/**将所选组件打包到容器内*/
 		__proto.boxComp=function(type){
 			if(this.isAnimationMode||this.isGraphicAnimation){
@@ -63764,6 +68128,10 @@ var Laya=window.Laya=(function(window,document){
 			}
 		}
 
+		__proto.makeVarOK=function(compO){
+			delete compO.props["var"];
+		}
+
 		/**粘贴组件*/
 		__proto.pasteComp=function(copyTemp,samePoint){
 			if(this.isAnimationMode){
@@ -63781,6 +68149,7 @@ var Laya=window.Laya=(function(window,document){
 				var newXml=Utils$1.clone(temp);
 				ids.push(this._autoId);
 				newXml.compId=this._autoId++;
+				this.makeVarOK(newXml);
 				parent.child.push(newXml);
 			}
 			this.changeXml(this._xml);
@@ -63832,6 +68201,7 @@ var Laya=window.Laya=(function(window,document){
 				var newXml=Utils$1.clone(temp);
 				ids.push(this._autoId);
 				newXml.compId=this._autoId++;
+				this.makeVarOK(newXml);
 				parent.child.push(newXml);
 			}
 			this.changeXml(this._xml);
@@ -63843,7 +68213,10 @@ var Laya=window.Laya=(function(window,document){
 			}
 		}
 
-		__proto.nodeChanged=function(node,props){}
+		__proto.nodeChanged=function(node,props,forceChange){
+			(forceChange===void 0)&& (forceChange=false);
+		}
+
 		/**更改同层先后顺序*/
 		__proto.sortComp1=function(up){
 			(up===void 0)&& (up=true);
@@ -63987,7 +68360,8 @@ var Laya=window.Laya=(function(window,document){
 			};
 			var isCtrlKey=false;
 			isCtrlKey=KeyManager.I.isCommandKeyDown||e.ctrlKey;
-			if (isCtrlKey && e.altKey && e.keyCode==86){
+			if (isCtrlKey && e.shiftKey && e.keyCode==84){
+				this.setAllCompSizeInfo();
 				}else if (isCtrlKey && e.keyCode==38){
 				this.sortComp(true);
 				}else if (isCtrlKey && e.keyCode==40){
@@ -64023,6 +68397,39 @@ var Laya=window.Laya=(function(window,document){
 					}
 				}
 				}else if(e.shiftKey &&isCtrlKey && e.keyCode==82){
+			}
+		}
+
+		__proto.setAllCompSizeInfo=function(){
+			if(!this._xml)return;
+			this._setCompSizeInfo(this._xml,false);
+			this.changeXml(this._xml,true);
+		}
+
+		__proto._setCompSizeInfo=function(compO,me){
+			(me===void 0)&& (me=true);
+			if(!compO)return;
+			var tCompID=0;
+			tCompID=compO.compId;
+			var tCompSp;
+			tCompSp=this.getCompById(tCompID,false);
+			if(me&&tCompSp&&compO.props){
+				var tPropO;
+				tPropO=compO.props;
+				if(!("width" in tPropO)){
+					tPropO["width"]=tCompSp.width;
+				}
+				if(!("height" in tPropO)){
+					tPropO["height"]=tCompSp.height;
+				}
+			};
+			var childs;
+			childs=compO.child;
+			if(!childs)return;
+			var i=0,len=0;
+			len=childs.length;
+			for(i=0;i<len;i++){
+				this._setCompSizeInfo(childs[i]);
 			}
 		}
 
@@ -64171,6 +68578,7 @@ var Laya=window.Laya=(function(window,document){
 			this.createView(this._xml);
 			this.animation.treeData=this._treeData;
 			this.callLater(this.freshDatasLater);
+			Notice$1.notify("RULE_SHOW_CHANGE");
 		});
 
 		/**当前选择的容器*/
@@ -64267,12 +68675,14 @@ var Laya=window.Laya=(function(window,document){
 			return this.getSelectedXmls(false);
 		});
 
-		Design.parseVarByObj=function(obj,varsO){
+		Design.parseVarByObj=function(obj,varsO,alertIfNotOK){
+			(alertIfNotOK===void 0)&& (alertIfNotOK=true);
 			if(obj.props["var"]){
 				var tVar;
 				tVar=obj.props["var"];
 				if(varsO[tVar]){
-					Alert.show(Sys.lang("存在重复的值为{0}的var属性",tVar));
+					if(alertIfNotOK)
+						Alert.show(Sys.lang("存在重复的值为{0}的var属性",tVar));
 					return false;
 				}
 				varsO[tVar]=true;
@@ -64285,6 +68695,17 @@ var Laya=window.Laya=(function(window,document){
 				}
 			}
 			return true;
+		}
+
+		Design.clearAlignLines=function(){
+			var rst;
+			rst=Design._tempAlignLines;
+			var i=0,len=0;
+			len=rst.length;
+			for(i=0;i<len;i++){
+				Pool.recover("TempAlignLine",rst[i]);
+			}
+			rst.length=0;
 		}
 
 		Design.removeRenders=function(sprite){
@@ -64327,16 +68748,17 @@ var Laya=window.Laya=(function(window,document){
 				Laya.stage.on("keyup",null,Design.onStageKeyUp);
 				if(!Design.clip){
 					Design.clip=new Clip(SkinDefines.ResDragIcon,1,3);
+					Design.clip.scale(0.5,0.5);
 					Design.clip.index=2;
 				}
-				Laya.stageBox.addChild(Design.clip);
+				Laya._currentStage.addChild(Design.clip);
 				Laya.stage.off("mousemove",null,this.onStageMouseMove);
 				Laya.stage.on("mousemove",null,this.onStageMouseMove);
 			}
 		}
 
 		Design.onStageMouseMove=function(){
-			Design.clip.pos(Laya.stageBox.mouseX,Laya.stageBox.mouseY);
+			Design.clip.pos(Laya._currentStage.mouseX,Laya._currentStage.mouseY);
 		}
 
 		Design.onStageKeyUp=function(){
@@ -64348,6 +68770,9 @@ var Laya=window.Laya=(function(window,document){
 
 		Design.MAX_HISTORY=500;
 		Design.designID=1;
+		Design._isClickOK=false;
+		Design._tempAlignLines=[];
+		Design.AlignLen=8;
 		Design.isCtrlAdding=false;
 		Design.clip=null
 		Design.boxC=null
@@ -64420,6 +68845,81 @@ var Laya=window.Laya=(function(window,document){
 		]);
 		return Design;
 	})(UIView)
+
+
+	/**
+	*...
+	*@author ww
+	*/
+	//class laya.editor.view.page.AddParticle extends laya.editor.ui.page.AddParticleUI
+	var AddParticle=(function(_super){
+		function AddParticle(){
+			AddParticle.__super.call(this);
+			this.nameTxt.restrict=StyleConsts$1.fileNameRestrict;
+			this.typeDrop.labels=PageExportType.ParticleTypeList.join(",");
+			this.typeDrop.selectedIndex=0;
+			this.on("doubleclick",this,this.onDoubleClick);
+		}
+
+		__class(AddParticle,'laya.editor.view.page.AddParticle',_super);
+		var __proto=AddParticle.prototype;
+		__proto.onDoubleClick=function(){
+			this.typeDrop.labels="重力模式,半径模式,粒子3D,PolyEmitter";
+		}
+
+		__proto.reset=function(){
+			this.nameTxt.text="";
+		}
+
+		__proto.check=function(){
+			if (!this.nameTxt.text){
+				Alert.show(Sys.lang("粒子名称不能为空"));
+				return false;
+			}
+			Notice$1.notify("AddParticle",[this.typeDrop.selectedLabel,this.nameTxt.text]);
+			Notice$1.notify("Focus_design");
+			return true;
+		}
+
+		return AddParticle;
+	})(AddParticleUI)
+
+
+	/**
+	*...
+	*@author yung
+	*/
+	//class laya.editor.view.page.AddScript extends laya.editor.ui.page.AddScriptUI
+	var AddScript=(function(_super){
+		function AddScript(){
+			AddScript.__super.call(this);
+			this.nameTxt.restrict=StyleConsts$1.fileNameRestrict;
+			this.classTxt.restrict=StyleConsts$1.fileNameRestrict+".";
+		}
+
+		__class(AddScript,'laya.editor.view.page.AddScript',_super);
+		var __proto=AddScript.prototype;
+		__proto.reset=function(){
+			this.nameTxt.text="";
+			this.classTxt.text="";
+		}
+
+		__proto.check=function(){
+			if (!this.nameTxt.text){
+				Alert.show(Sys.lang("脚本名称不能为空"));
+				return false;
+			}
+			if (!this.classTxt.text){
+				Alert.show(Sys.lang("运行时类名不能为空"));
+				return false;
+			}
+			Notice$1.notify("addScript",[this.typeDrop.selectedIndex,this.nameTxt.text,this.classTxt.text]);
+			Notice$1.notify("Focus_design");
+			return true;
+		}
+
+		return AddScript;
+	})(AddScriptUI)
 
 
 	/**属性组
@@ -64576,41 +69076,62 @@ var Laya=window.Laya=(function(window,document){
 			var nickName;
 			var items;
 			items=[];
+			var labelWidth=NaN;
+			labelWidth=66;
+			if(len>2){
+				labelWidth=30;
+			}
+			if(Sys.mParseInt(groupData["labelWidth"])){
+				labelWidth=Sys.mParseInt(groupData["labelWidth"]);
+			}
 			for(i=0;i<len;i++){
 				var prop=props[i].p||props[i];
+				var tLabelWidth=NaN;
+				tLabelWidth=Sys.mParseInt(prop["labelWidth"]);
+				tLabelWidth=tLabelWidth?tLabelWidth:labelWidth;
 				nickName=prop.nickname || prop.name;
-				items.push(this.createPropUI(prop.name,nickName,prop.type,prop.tips,tY,prop.option,prop,66));
+				var showLabel=false;
+				showLabel=!(prop.noLabel=="true");
+				items.push(this.createPropUI(prop.name,nickName,prop.type,prop.tips,tY,prop.option,prop,tLabelWidth,showLabel));
 			}
 			tgLayout=LayoutFuns.getSameWidthLayout(items,5);
 			this._items.push(tgLayout);
 		}
 
 		/**创建属性设置面板*/
-		__proto.createPropUI=function(name,nickName,type,tips,y,option,data,labelWidth){
+		__proto.createPropUI=function(name,nickName,type,tips,y,option,data,labelWidth,showLabel){
 			(labelWidth===void 0)&& (labelWidth=105);
+			(showLabel===void 0)&& (showLabel=true);
 			this._props.push(data);
-			var label=new Label();
-			label.text=nickName;
-			label.pos(this.x1,y+4);
-			label.color=StyleConsts$1.ItemTxtColor;
-			label.width=labelWidth;
-			label.height=20;
-			label.toolTip=nickName+"\n"+Sys.lang(tips);
-			label.textField.overflow=Text.HIDDEN;
 			this._nameList.push(name);
-			if (this.isSpecial){
-				label.width=60;
-				}else{
-			}
-			this.x2=label.width;
-			this.groupBox.addChild(label);
 			var tItems;
 			tItems=[];
-			tItems.push(label);
+			var label;
+			if(showLabel){
+				label=new Label();
+				label.text=nickName;
+				label.pos(this.x1,y+4);
+				label.color=StyleConsts$1.ItemTxtColor;
+				label.width=labelWidth;
+				label.height=20;
+				label.toolTip=nickName+"\n"+Sys.lang(tips);
+				label.textField.overflow=Text.HIDDEN;
+				if (this.isSpecial){
+					label.width=60;
+					}else{
+				}
+				this.x2=label.width;
+				this.groupBox.addChild(label);
+				tItems.push(label);
+				}else{
+				this.x2=this.x1;
+			}
 			if(PropGroup.typeTrans[type]){
 				type=PropGroup.typeTrans[type];
 			}
 			this.nameTypeO[name]=type;
+			if(type=="label"){
+			}else
 			if(type=="editoption"){
 				var dropInput=new InputSelect();
 				dropInput.skin="comp/combo_22.png";
@@ -64644,6 +69165,20 @@ var Laya=window.Laya=(function(window,document){
 				drop.y=y;
 				drop.on("change",this,this.onDropChange);
 				this.groupBox.addChild(drop);
+			}else
+			if (type=="check"){
+				var check=new CheckBox();
+				check.skin="comp/checkbox.png";
+				check.name=name;
+				check.selected=false;
+				check.left=this.x2;
+				check.right=this.rightD;
+				check.labelColors="#8a8a8a, #ffffff, #efefef";
+				check.label=nickName;
+				tItems.push(check);
+				check.y=y;
+				check.on("change",this,this.onCheckChange,[check]);
+				this.groupBox.addChild(check);
 				}else if (type=="color"){
 				var picker;
 				picker=new ColorPickerItem();
@@ -64683,13 +69218,15 @@ var Laya=window.Laya=(function(window,document){
 				slider.setSlider(parseFloat(data.min),parseFloat(data.max),0.5*(parseFloat(data.min)+parseFloat(data.max)));
 				this.groupBox.addChild(slider);
 				slider.on("changed",this,this.onSliderChange,[slider]);
-				this.groupBox.addChild(label);
+				if(label)
+					this.groupBox.addChild(label);
 				tItems.push(slider);
 				}else {
 				var input;
 				if (type=="number"||type=="Number"){
 					input=new NumberInput();
 					input.on("changing",this,this.onInputChanging);
+					input.on("Get_Value",this,this.onGetCurValue);
 					}else{
 					input=new EditorTextInput();
 				}
@@ -64924,12 +69461,24 @@ var Laya=window.Laya=(function(window,document){
 			this.setCompProp(drop.name,drop.selectedLabel);
 		}
 
+		__proto.onCheckChange=function(check){
+			this.setCompProp(check.name,check.selected);
+		}
+
+		__proto.onGetCurValue=function(input){
+			if(this.node){
+				Notice$1.notify("PROP_FORCESET",[input.name,this.node.compId]);
+			}
+		}
+
+		// debugger;
 		__proto.onInputChanging=function(input){
 			this.setCompProp(input.name,input.text,true);
 		}
 
-		__proto.onInput=function(input){
-			this.setCompProp(input.name,input.text);
+		__proto.onInput=function(input,forceSetValue){
+			(forceSetValue===void 0)&& (forceSetValue=false);
+			this.setCompProp(input.name,input.text,false,forceSetValue);
 		}
 
 		/**处理输入框回车*/
@@ -64954,8 +69503,9 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**设置组件属性*/
-		__proto.setCompProp=function(key,value,isChanging){
+		__proto.setCompProp=function(key,value,isChanging,forceSetValue){
 			(isChanging===void 0)&& (isChanging=false);
+			(forceSetValue===void 0)&& (forceSetValue=false);
 			if (!this._isSettingValue){
 				var flag=false;
 				var oldValue=String(this._data[key]);
@@ -64969,7 +69519,7 @@ var Laya=window.Laya=(function(window,document){
 						flag=true;
 					}
 				}
-				if (flag){
+				if (flag||forceSetValue){
 					this.event("change",[]);
 					PropPanel.instance.valueChange(key,value,isChanging,this.nameTypeO[key],this.name!="appendProps");
 				}
@@ -65016,6 +69566,8 @@ var Laya=window.Laya=(function(window,document){
 					(target).value=parseFloat(value);
 					}else if ((target instanceof laya.editor.comonents.ColorPickerItem )){
 					(target).setColor(value);
+					}else if((target instanceof laya.ui.CheckBox )){
+					(target).selected=value;
 				}
 			}
 			this._isSettingValue=false;
@@ -65397,6 +69949,7 @@ var Laya=window.Laya=(function(window,document){
 	var TimeGrid=(function(_super){
 		function TimeGrid(){
 			this.SideDistance=3;
+			this._copyFrames=null;
 			this._holder=null;
 			this.preMouseX=0;
 			this.preCursourX=0;
@@ -65425,6 +69978,7 @@ var Laya=window.Laya=(function(window,document){
 			this.keyIndexDic={};
 			this.layerDataList=null;
 			this.frameDic={};
+			this.lineDY=0.5;
 			this._selectLineLayer=new Sprite();
 			TimeGrid.__super.call(this);
 			this.bgPic.visible=false;
@@ -65486,9 +70040,32 @@ var Laya=window.Laya=(function(window,document){
 			if (e.keyCode==46||e.keyCode==8){
 				this.removeSelectFrames();
 			}
+			if(e.keyCode==75){
+				this.makeKeyFrame();
+			}
+			if(e.keyCode==86&&KeyManager.I.isCommandKeyDown){
+				this.pasteFrames();
+			}
+			if(e.keyCode==67&&KeyManager.I.isCommandKeyDown){
+				this.copyFrames();
+			}
 		}
 
 		//e.stopPropagation();
+		__proto.makeKeyFrame=function(){
+			console.log("makeKeyFrame");
+			if(this._holder.parent){
+				this.removeHolder();
+				if(!this.tempFrameData.isDirectory){
+					TimeFrame.selecteData=TimeLinePanel.instance.aniData.makeKeyFrame(this.tempFrameData.target,this.tempFrameData.key,this.selectFrame);
+					TimeLinePanel.instance.reFresh();
+					}else{
+					TimeFrame.selecteData=TimeLinePanel.instance.aniData.makeKeyFrame(this.tempFrameData.target,"x",this.selectFrame);
+					TimeLinePanel.instance.reFresh();
+				}
+			}
+		}
+
 		__proto.onDragDrop=function(e){
 			if(!IDEVars.isGraphicAnimationMode){
 				MessageManager.instance.show(Sys.lang("动画文件编辑才支持该功能"));
@@ -65515,13 +70092,17 @@ var Laya=window.Laya=(function(window,document){
 						}else{
 						Laya.timer.once(100,this,this.addFilesLater,[e]);
 					}
+					}else{
+					this.selectFrame=0;
+					Notice$1.notify("AddNode",[TypeManager.GraphicPic,0,0,-1,true]);
+					Laya.timer.once(100,this,this.addFilesLater,[e]);
 				}
 			}
 		}
 
 		__proto.addFilesLater=function(e){
 			var layerItem;
-			layerItem=this.layerDataList[0];
+			layerItem=this.layerDataList[this.layerDataList.length-1];
 			if(layerItem){
 				this.addFilesByDragEvent(e,layerItem,0);
 			}
@@ -65586,6 +70167,9 @@ var Laya=window.Laya=(function(window,document){
 						}
 					}
 					break ;
+				case "复制":
+					this.copyFrames();
+					break ;
 				case "批量删除帧":
 					if(this.tSelectFrame&&this.tSelectFrame.data.type==3){
 						TimeLinePanel.instance.aniData.removeNodeFrameByNodeID(this.tSelectFrame.data.props.target,this.tSelectFrame.data.props.index);
@@ -65631,6 +70215,107 @@ var Laya=window.Laya=(function(window,document){
 				}
 		}
 
+		__proto.copyFrames=function(){
+			this._copyFrames=[];
+			var tempArr;
+			tempArr=this.getNoSameSelectFrameList();
+			if(tempArr.length<1){
+				if(this.tSelectFrame){
+					if(this.tSelectFrame!=this._holder){
+						tempArr.push(this.tSelectFrame);
+					}
+				}
+			}
+			if(tempArr.length<1){
+				MessageManager.instance.show(Sys.lang("没有可以复制的帧"));
+				return;
+			};
+			var i=0,len=0;
+			len=tempArr.length;
+			var tempO;
+			var rst;
+			rst=[];
+			var copyO;
+			copyO={};
+			var targetID=0;
+			var tIndex=0;
+			var tArr;
+			for(i=0;i<len;i++){
+				tempO=tempArr[i].data;
+				targetID=tempO.props.target;
+				tIndex=TimeLinePanel.instance.aniData.getNodeIndex(targetID);
+				if(!copyO[tIndex])copyO[tIndex]=[];
+				tArr=copyO[tIndex];
+				if(tempO.type==3){
+					ObjectTools.concatArr(tArr,TimeLinePanel.instance.aniData.getNodeKeyFramesByNodeID(tempO.props.target,tempO.props.index));
+					}else if(tempO.type==1){
+					tArr.push(tempO.props);
+				}
+			};
+			var indexKey;
+			var minIndex=0;
+			minIndex=-1;
+			var minNodeIndex=-1;
+			var maxNodeIndex=-1;
+			for(indexKey in copyO){
+				tArr=copyO[indexKey];
+				len=tArr.length;
+				tIndex=parseInt(indexKey);
+				if(minNodeIndex<0||tIndex<minNodeIndex){
+					minNodeIndex=tIndex;
+				}
+				if(maxNodeIndex<0||tIndex>maxNodeIndex){
+					maxNodeIndex=tIndex;
+				}
+				for(i=0;i<len;i++){
+					tIndex=parseInt(tArr[i].index);
+					if(minIndex<0||tIndex<minIndex){
+						minIndex=tIndex;
+					}
+				}
+			}
+			copyO=ObjectTools.copyObjFast(copyO);
+			rst=[];
+			for(indexKey in copyO){
+				tArr=copyO[indexKey];
+				tIndex=parseInt(indexKey);
+				rst[tIndex-minNodeIndex]=tArr;
+				len=tArr.length;
+				for(i=0;i<len;i++){
+					tArr[i].index=parseInt(tArr[i].index)-minIndex;
+				}
+			}
+			this._copyFrames=rst;
+			MessageManager.instance.show(Sys.lang("复制帧成功"));
+		}
+
+		__proto.pasteFrames=function(){
+			if(!this._copyFrames||this._copyFrames.length<0)return;
+			if(this.tSelectFrame){
+				var tar=0;
+				tar=this.tSelectFrame.data.props.target;
+				var tarFrame=0;
+				tarFrame=this.selectFrame;
+				var tIndex=0;
+				tIndex=TimeLinePanel.instance.aniData.getNodeIndex(tar);
+				var i=0,len=0;
+				len=this._copyFrames.length;
+				for(i=0;i<len;i++){
+					this.addFramesToTar(this._copyFrames[i],TimeLinePanel.instance.aniData.getNodeIDByIndex(i+tIndex),tarFrame);
+				}
+				TimeLinePanel.instance.reFresh();
+			}
+		}
+
+		__proto.addFramesToTar=function(frames,tar,offSet){
+			if(tar<0)return;
+			var i=0,len=0;
+			len=frames.length;
+			for(i=0;i<len;i++){
+				TimeLinePanel.instance.aniData.addKeyFrameOToNode(tar,frames[i],offSet);
+			}
+		}
+
 		__proto.removeSelectFrames=function(){
 			var tarData;
 			var layerItem;
@@ -65656,6 +70341,7 @@ var Laya=window.Laya=(function(window,document){
 				}else{
 				if(this.tSelectFrame){
 					tWorkFrame=this.tSelectFrame;
+					if(!tWorkFrame.data)return;
 					if(tWorkFrame.data.type==3){
 						tPropsO=tWorkFrame.data.props;
 						TimeLinePanel.instance.aniData.removeNodeFrameByNodeID(tPropsO.target,tPropsO.index);
@@ -65834,6 +70520,11 @@ var Laya=window.Laya=(function(window,document){
 						}
 					}
 				}
+				if(tType=="NOTMOUSE"){
+					if(this.tSelectFrame)this.tSelectFrame.isSelect=false;
+					this.tSelectFrame=tFrame;
+					tFrame.isSelect=true;
+				}
 				FramePropPanel.instance.setFrameData(tFrame.data);
 				}else{
 				this.clearSelectFrames();
@@ -65979,6 +70670,22 @@ var Laya=window.Laya=(function(window,document){
 			Laya.stage.off("rightmouseup",this,this.rightMouseUp);
 		}
 
+		__proto.getNoSameSelectFrameList=function(){
+			var rst;
+			rst=[];
+			if(this.selectFrames.length<1)return rst;
+			var i=0,len=0;
+			var tFrame;
+			len=this.selectFrames.length;
+			for(i=0;i<len;i++){
+				tFrame=this.selectFrames[i];
+				if(!this.hasParentInList(tFrame,this.selectFrames)){
+					rst.push(tFrame);
+				}
+			}
+			return rst;
+		}
+
 		__proto.multiFrameDragEnd=function(frames){
 			if(frames.length<1)return;
 			var i=0,len=0;
@@ -66088,6 +70795,7 @@ var Laya=window.Laya=(function(window,document){
 			layer=this.getLayerByY(frame.y);
 			this.selectFrame=this.getFrameByX(frame.x);
 			frame.x=this.getXByFrame(this.selectFrame);
+			if(!frame.data)return;
 			if(frame.data.frame==this.selectFrame)return;
 			if(frame.data.frame==0){
 				var newFrameData;
@@ -66283,7 +70991,7 @@ var Laya=window.Laya=(function(window,document){
 				frameO=frameList[i];
 				tData=TimeFrameData.create(frameO.index,frameO,frameType);
 				if(preIndex>=0){
-					g.drawLine(this.getXByFrame(preIndex),tY+15,this.getXByFrame(frameO.index),tY+15,"#cbcbcb");
+					g.drawLine(this.getXByFrame(preIndex),tY+13,this.getXByFrame(frameO.index),tY+13,"#cbcbcb");
 				}
 				if(tData.props.tween){
 					preIndex=tData.frame;
@@ -66332,10 +71040,10 @@ var Laya=window.Laya=(function(window,document){
 			var top;
 			for(i=startI;tX<maxX;i++){
 				if(i%this.bigLine==0){
-					g.drawLine(tX,mY,tX,mY-10,"#009999",1);
+					g.drawLine(tX,mY+this.lineDY,tX,mY-10+this.lineDY,"#009999",1);
 					g.fillText(i+"",tX,2,null,StyleConsts$1.TimelineTitleTxtColor,"center");
 					}else{
-					g.drawLine(tX,mY,tX,mY-5,"#006666",1);
+					g.drawLine(tX,mY+this.lineDY,tX,mY-5+this.lineDY,"#006666",1);
 				}
 				if(this.keyIndexDic&&this.keyIndexDic[i]){
 					top=this.getATopFrame();
@@ -66466,7 +71174,7 @@ var Laya=window.Laya=(function(window,document){
 
 		TimeGrid.NOTMOUSE="NOTMOUSE";
 		TimeGrid.frameWidth=12;
-		TimeGrid.frameHeight=30;
+		TimeGrid.frameHeight=29;
 		TimeGrid.titleHeight=30;
 		__static(TimeGrid,
 		['framePos',function(){return this.framePos=new Point();}
@@ -66606,7 +71314,7 @@ var Laya=window.Laya=(function(window,document){
 				var numY=this._isVertical ? this.repeatY :this.repeatX;
 				var lineCount=Math.ceil(length / numX);
 				if (this.totalPage > 1){
-					this._scrollBar.scrollSize=this._cellSize;
+					this._scrollBar.scrollSize=1;
 					this._scrollBar.thumbPercent=numY / lineCount;
 					this._scrollBar.setScroll(0,(lineCount-numY+1),Math.ceil(this._startIndex / numX));
 					this._scrollBar.target=this._content;
@@ -66904,8 +71612,11 @@ var Laya=window.Laya=(function(window,document){
 			this._selectItems.length=0;
 			var i=0,len=0;
 			len=this._selectIndexs.length;
+			var tItem;
 			for(i=0;i<len;i++){
-				this._selectItems.push(this.getItem(this._selectIndexs[i]));
+				tItem=this.getItem(this._selectIndexs[i]);
+				if(tItem)
+					this._selectItems.push(tItem);
 			}
 			return this._selectItems;
 		});
@@ -66978,7 +71689,11 @@ var Laya=window.Laya=(function(window,document){
 	//class laya.ide.ui.TreeEx extends laya.ide.ui.NodeTree
 	var TreeEx=(function(_super){
 		function TreeEx(){
+			this._isDragUpdate=false;
 			TreeEx.__super.call(this);
+			this.enableDragingAuto();
+			this.on("mouseout",this,this.stopDragUpdate);
+			this.on("mouseup",this,this.stopDragUpdate);
 		}
 
 		__class(TreeEx,'laya.ide.ui.TreeEx',_super);
@@ -66988,6 +71703,45 @@ var Laya=window.Laya=(function(window,document){
 			this._list.renderHandler=Handler.create(this,this.renderItem,null,false);
 			this._list.repeatX=1;
 			this._list.on("change",this,this.onListChange);
+		}
+
+		__proto.enableDragingAuto=function(){
+			this.on("Draging_Hit",this,this.onDragHit);
+		}
+
+		__proto.onDragHit=function(){
+			if (!DragManager.isDraging)return;
+			if (DragManager.getDragType()=="LayoutRec" || DragManager.getDragType()=="LayoutTab")return;
+			var mouseY=NaN;
+			mouseY=this.mouseY;
+			if(!this.scrollBar)return;
+			this.startDragUpdate();
+		}
+
+		__proto.stopDragUpdate=function(){
+			this._isDragUpdate=false;
+			Laya.timer.clear(this,this._dragUpdateLoop);
+		}
+
+		__proto.startDragUpdate=function(){
+			if(this._isDragUpdate)return;
+			this._isDragUpdate=true;
+			Laya.timer.loop(50,this,this._dragUpdateLoop);
+		}
+
+		__proto._dragUpdateLoop=function(){
+			if(!this.scrollBar)return;
+			var mouseY=NaN;
+			mouseY=this.mouseY;
+			if(mouseY<20){
+				this.scrollBar.value-=10;
+				return;
+			}
+			if(mouseY>this.height-20){
+				this.scrollBar.value+=10;
+				return;
+			}
+			this.stopDragUpdate();
 		}
 
 		/**
@@ -67027,6 +71781,42 @@ var Laya=window.Laya=(function(window,document){
 		__getset(0,__proto,'mList',function(){
 			return this._list;
 		});
+
+		TreeEx.onItemCellMouseOver=function(index,cell,tree){
+			FocusManager.clearFocus();
+			if (tree.mList.isIDSelected(index)){
+				return;
+			}
+			if (!DragManager.isDraging)return;
+			var dataO;
+			dataO=cell.dataSource;
+			if(dataO.isDirectory){
+				FocusManager.showFocus(cell,1,true);
+				}else{
+				var type=RelativePos.getDisMouseRelativePos(cell,0.2);
+				var target=cell;
+				switch (type){
+					case "up":
+					case "down":
+						FocusManager.showBorder(target,type,true,null,1);
+						break ;
+					case "center":
+					case "left":
+					case "right":
+						FocusManager.showBorder(target,"down",true,null,1);
+						break ;
+					};
+				var parentIndex=0;
+				parentIndex=tree.getParentIndex(dataO);
+				if(parentIndex>0){
+					var parentCell;
+					parentCell=tree.list.getCell(parentIndex);
+					if(parentCell){
+						FocusManager.showFocus(parentCell,1,false);
+					}
+				}
+			}
+		}
 
 		return TreeEx;
 	})(NodeTree$1)
@@ -67193,7 +71983,11 @@ var Laya=window.Laya=(function(window,document){
 			return Confirm._instance ? Confirm._instance :Confirm._instance=new Confirm();
 		},laya.editor.ui.comp.ConfirmUI._$SET_instance);
 
-		Confirm.show=function(msg,title,handler,args){
+		Confirm.show=function(msg,title,handler,args,okName,cancelName){
+			if(!okName)okName=Sys.lang("确定");
+			if(!cancelName)cancelName=Sys.lang("取消");
+			Confirm.instance.okBtn.label=okName;
+			Confirm.instance.cancelBtn.label=cancelName;
 			Confirm.instance.start(msg,title,handler,args);
 		}
 
@@ -67270,6 +72064,47 @@ var Laya=window.Laya=(function(window,document){
 		BoxComp._instance=null
 		return BoxComp;
 	})(BoxCompUI)
+
+
+	/**
+	*
+	*@author ww
+	*@version 1.0
+	*
+	*@created 2017-7-3 上午10:38:23
+	*/
+	//class laya.editor.view.other.ChangeCompType extends laya.editor.ui.other.ChangeCompTypeUI
+	var ChangeCompType=(function(_super){
+		function ChangeCompType(){ChangeCompType.__super.call(this);;
+		};
+
+		__class(ChangeCompType,'laya.editor.view.other.ChangeCompType',_super);
+		var __proto=ChangeCompType.prototype;
+		__proto.start=function(type){
+			this.popup();
+			this.typeDrop.labels=UIConfigManager.getCompNames().join(",");
+			this.typeDrop.selectedIndex=0;
+		}
+
+		__proto.close=function(type){
+			laya.ui.Dialog.prototype.close.call(this,type);
+			if (type=="sure"){
+				var boxType=this.typeDrop.selectedLabel;
+				if (Boolean(boxType)){
+					UIPanel.instance.changeCompType(boxType);
+				}
+			}
+			UIPanel.instance.focusDesign();
+			Notice$1.notify("Focus_design");
+		}
+
+		__getset(1,ChangeCompType,'instance',function(){
+			return ChangeCompType._instance ? ChangeCompType._instance :ChangeCompType._instance=new ChangeCompType();
+		},laya.editor.ui.other.ChangeCompTypeUI._$SET_instance);
+
+		ChangeCompType._instance=null
+		return ChangeCompType;
+	})(ChangeCompTypeUI)
 
 
 	/**
@@ -67696,13 +72531,11 @@ var Laya=window.Laya=(function(window,document){
 
 		__class(SetIDE,'laya.editor.view.other.SetIDE',_super);
 		var __proto=SetIDE.prototype;
-		__proto.initListener=function(){
-			Notice$1.listen("OPEN_IDESETTING",this,this.start);
-		}
-
+		__proto.initListener=function(){}
 		__proto.start=function(){
 			this.showRule.selected=SystemSetting.ifShowRuleGrid;
 			this.autoSwitch.selected=SystemSetting.toCodeModeWhenPublicEnd;
+			this.frameSelect.selectedIndex=SystemSetting.IDEFrameType;
 			this.popup();
 		}
 
@@ -67711,6 +72544,8 @@ var Laya=window.Laya=(function(window,document){
 			if (type=="sure"){
 				SystemSetting.ifShowRuleGrid=this.showRule.selected;
 				SystemSetting.toCodeModeWhenPublicEnd=this.autoSwitch.selected;
+				SystemSetting.IDEFrameType=this.frameSelect.selectedIndex;
+				SetIDE.updateToSettings();
 				Notice$1.notify("RULE_SHOW_CHANGE");
 			}
 		}
@@ -67719,9 +72554,105 @@ var Laya=window.Laya=(function(window,document){
 			return SetIDE._instance ? SetIDE._instance :SetIDE._instance=new SetIDE();
 		},laya.editor.ui.other.SetIDEUI._$SET_instance);
 
+		SetIDE.updateToSettings=function(){
+			if(SystemSetting.IDEFrameType==1){
+				Laya.stage.frameRate="fast";
+				}else{
+				Laya.stage.frameRate="slow";
+			}
+		}
+
 		SetIDE._instance=null
 		return SetIDE;
 	})(SetIDEUI)
+
+
+	/**
+	*
+	*@author ww
+	*@version 1.0
+	*
+	*@created 2017-5-15 下午2:44:03
+	*/
+	//class laya.editor.view.other.SetIDENew extends laya.editor.ui.other.SetIDENewUI
+	var SetIDENew=(function(_super){
+		function SetIDENew(){
+			SetIDENew.__super.call(this);
+			this.typeTab.selectedIndex=0;
+			this.typeTab.selectHandler=Handler.create(this,this.selectedHandler,null,false);
+		}
+
+		__class(SetIDENew,'laya.editor.view.other.SetIDENew',_super);
+		var __proto=SetIDENew.prototype;
+		__proto.initListener=function(){
+			Notice$1.listen("OPEN_IDESETTING",this,this.start);
+			Notice$1.listen("CLOSE_IDESETTING",this,this.close);
+		}
+
+		__proto.selectedHandler=function(index){
+			this.views.setIndexHandler.runWith(index);
+		}
+
+		__proto.start=function(){
+			for (var i=this.views.numChildren-1;i >-1;i--){
+				var view=this.views.getChildAt(i);
+				view.reset();
+			}
+			this.popup();
+		}
+
+		__getset(1,SetIDENew,'instance',function(){
+			return SetIDENew._instance ? SetIDENew._instance :SetIDENew._instance=new SetIDENew();
+		},laya.editor.ui.other.SetIDENewUI._$SET_instance);
+
+		SetIDENew._instance=null
+		return SetIDENew;
+	})(SetIDENewUI)
+
+
+	/**
+	*
+	*@author ww
+	*@version 1.0
+	*
+	*@created 2017-5-15 下午3:16:31
+	*/
+	//class laya.editor.view.other.SetIDEView extends laya.editor.ui.other.SetIDEViewUI
+	var SetIDEView=(function(_super){
+		function SetIDEView(){
+			SetIDEView.__super.call(this);
+			this.okBtn.on("mousedown",this,this.okDown);
+		}
+
+		__class(SetIDEView,'laya.editor.view.other.SetIDEView',_super);
+		var __proto=SetIDEView.prototype;
+		__proto.reset=function(){
+			this.showRule.selected=SystemSetting.ifShowRuleGrid;
+			this.autoSwitch.selected=SystemSetting.toCodeModeWhenPublicEnd;
+			this.frameSelect.selectedIndex=SystemSetting.IDEFrameType;
+			this.autoFocus.selected=SystemSetting.autoFocsEditRect;
+		}
+
+		__proto.okDown=function(){
+			SystemSetting.ifShowRuleGrid=this.showRule.selected;
+			SystemSetting.toCodeModeWhenPublicEnd=this.autoSwitch.selected;
+			SystemSetting.autoFocsEditRect=this.autoFocus.selected;
+			SystemSetting.IDEFrameType=this.frameSelect.selectedIndex;
+			SetIDEView.updateToSettings();
+			Notice$1.notify("RULE_SHOW_CHANGE");
+			Notice$1.notify("CLOSE_IDESETTING");
+		}
+
+		SetIDEView.updateToSettings=function(){
+			if(SystemSetting.IDEFrameType==1){
+				Laya.stage.frameRate="fast";
+				}else{
+				Laya.stage.frameRate="slow";
+			}
+		}
+
+		return SetIDEView;
+	})(SetIDEViewUI)
 
 
 	/**设置项目
@@ -67771,16 +72702,18 @@ var Laya=window.Laya=(function(window,document){
 			this.uiType.selectedIndex=Math.ceil(ProjectSetting.uiType);
 			this.codeType.selectedIndex=Math.ceil(ProjectSetting.codeType);
 			this.picType.selectedIndex=Math.ceil(ProjectSetting.picType);
+			this.atlasType.selectedIndex=Math.ceil(ProjectSetting.atlasType);
 			this.uiExportPath.text=StringTool.trimSide(ProjectSetting.uiExportPath);
 			this.boxTypes.text=StringTool.trimSide(ProjectSetting.boxTypes.toString());
 			this.pageTypes.text=StringTool.trimSide(ProjectSetting.pageTypes.toString());
-			this.defaultFont.text=StringTool.trimSide(ProjectSetting.defaultFont);
+			this.defaultFont.text=StringTool.trimSide(ProjectSetting.defaultFont)||"12px Arial";
 			this.textureWidth.text=StringTool.trimSide(ProjectSetting.textureWidth.toString());
 			this.textureHeight.text=StringTool.trimSide(ProjectSetting.textureHeight.toString());
 			this.picWidth.text=StringTool.trimSide(ProjectSetting.picWidth.toString());
 			this.picHeight.text=StringTool.trimSide(ProjectSetting.picHeight.toString());
 			this.power2.selected=StringTool.trimSide(ProjectSetting.power2)=="true";
 			this.trimempty.selected=StringTool.trimSide(ProjectSetting.trimempty)=="true";
+			this.copyRes.selected=StringTool.trimSide(ProjectSetting.copyRes)=="true";
 			this.updateCodeImportToUI();
 			this.shareResPath.text=ProjectSetting.shareResPath;
 			this.langPath.text=ProjectSetting.langPath;
@@ -67802,16 +72735,21 @@ var Laya=window.Laya=(function(window,document){
 				ProjectSetting.uiType=this.uiType.selectedIndex;
 				ProjectSetting.codeType=this.codeType.selectedIndex;
 				ProjectSetting.picType=this.picType.selectedIndex;
+				ProjectSetting.atlasType=this.atlasType.selectedIndex;
 				ProjectSetting.uiExportPath=this.uiExportPath.text;
 				ProjectSetting.boxTypes=this.boxTypes.text.split(",");
 				ProjectSetting.pageTypes=StringTool.trimSide(this.pageTypes.text).split(",");
 				ProjectSetting.defaultFont=StringTool.trimSide(this.defaultFont.text);
+				if(ProjectSetting.defaultFont=="12px Arial"){
+					ProjectSetting.defaultFont="";
+				}
 				ProjectSetting.textureWidth=LayaBuilder.mParseInt(this.textureWidth.text);
 				ProjectSetting.textureHeight=LayaBuilder.mParseInt(this.textureHeight.text);
 				ProjectSetting.picWidth=LayaBuilder.mParseInt(this.picWidth.text);
 				ProjectSetting.picHeight=LayaBuilder.mParseInt(this.picHeight.text);
 				ProjectSetting.power2=this.power2.selected?"true":"false";
 				ProjectSetting.trimempty=this.trimempty.selected?"true":"false";
+				ProjectSetting.copyRes=this.copyRes.selected?"true":"false";
 				switch(Math.ceil(ProjectSetting.codeType)){
 					case 0:
 						ProjectSetting.codeImports=this.codeImports.text;
@@ -67885,6 +72823,7 @@ var Laya=window.Laya=(function(window,document){
 		},laya.editor.ui.other.SetProjectUI._$SET_instance);
 
 		SetProject._instance=null
+		SetProject.DefaultUIFont="12px Arial";
 		return SetProject;
 	})(SetProjectUI)
 
@@ -67939,12 +72878,31 @@ var Laya=window.Laya=(function(window,document){
 	//class laya.editor.view.page.AddDocument extends laya.editor.ui.page.AddDocumentUI
 	var AddDocument=(function(_super){
 		function AddDocument(){
+			this.tipDic={};
 			AddDocument.__super.call(this);
-			this.tab.selectHandler=this.views.setIndexHandler;
+			this.tipDic[0]=Sys.lang("View为普通页面视图，使用之前需要预加载资源\nDialog为对话框，在View的基础上，增加弹出效果，拖动，关闭处理等逻辑");
+			this.tipDic[1]=Sys.lang("重力模式为预设了重力参数的粒子效果\n半径模式为预设了半径参数的粒子效果\n粒子3D为3D的粒子效果");
+			this.tipDic[2]=Sys.lang("GarphicAnimation为Graphics动画，比较高性能的动画系统，可以实现丰富动画效果\nEffectAnimation为特效模板动画，创建一个模板动画后，可以把模板动画拖动到UI的某个节点上，然后节点就获得这个动画效果");
+			this.tipDic[3]=Sys.lang("扩展脚本为继承式扩展脚本描述，把此脚本拖动到UI的某个节点上，节点就会实例脚本类替换原来的类\n附加脚本为组件式扩展脚本描述，把此脚本拖动到UI的某个节点上，会把此节点作为target对象给脚本，由脚本进行控制\n区别：扩展脚本为继承脚本，比如继承Button类实现了MyButton类，扩展脚本为附加控制脚本类，此节点作为target对象给脚本，然后对target进行操作");
+			this.tipImg.mouseEnabled=true;
+			this.tab.selectHandler=Handler.create(this,this.selectedHandler,null,false);
+			this.tipIcon.toolTip=Sys.lang("点击打开帮助文档");
+			this.tipIcon.visible=true;
+			this.tipIcon.on("click",this,this.onHelpTip);
 		}
 
 		__class(AddDocument,'laya.editor.view.page.AddDocument',_super);
 		var __proto=AddDocument.prototype;
+		__proto.onHelpTip=function(){
+			HelpTipView.endHelpTip();
+			Browser.window.open("http://ldc.layabox.com/doc/?nav=ch-as-2-1-10");
+		}
+
+		__proto.selectedHandler=function(index){
+			this.tipImg.toolTip=this.tipDic[index];
+			this.views.setIndexHandler.runWith(index);
+		}
+
 		__proto.initListener=function(){
 			Notice$1.listen("OPEN_ADDPage",this,this.start);
 		}
@@ -67952,6 +72910,7 @@ var Laya=window.Laya=(function(window,document){
 		__proto.start=function(type){
 			(type===void 0)&& (type=0);
 			this.tab.selectedIndex=type;
+			this.tipImg.toolTip=this.tipDic[type];
 			for (var i=this.views.numChildren-1;i >-1;i--){
 				var view=this.views.getChildAt(i);
 				view.reset();
@@ -68119,7 +73078,7 @@ var Laya=window.Laya=(function(window,document){
 		__proto.start=function(oldName){
 			this.resLbl.text=oldName;
 			this.nameTxt.restrict=StyleConsts$1.fileNameRestrict;
-			this.nameTxt.text="";
+			this.nameTxt.text=oldName;
 			this.updateCheck.selected=true;
 			this.popup();
 			Laya.stage.focus=this.nameTxt.textField;
@@ -68214,6 +73173,7 @@ var Laya=window.Laya=(function(window,document){
 
 		__proto.onSelected=function(files){
 			if(!files||!files[0])return;
+			files[0]=FileManager.adptToCommonUrl(files[0]);
 			this.imgTxt.text=files[0];
 			Laya.loader.load(FileTools.getAbsPath(files[0]),Handler.create(this,this.picLoaded));
 		}
@@ -68276,7 +73236,7 @@ var Laya=window.Laya=(function(window,document){
 				var xml=this._viewer.design.xml;
 				var width=LayaBuilder.mParseInt(this.widthTxt.text);
 				var height=LayaBuilder.mParseInt(this.heightTxt.text);
-				var imgPath=this.imgTxt.text;
+				var imgPath=FileManager.adptToCommonUrl(this.imgTxt.text);
 				var bgColor=this.bgColorPicker.selectedColor;
 				xml.type=this.typeDrop.selectedLabel;
 				delete xml.props.width;
@@ -68469,7 +73429,7 @@ var Laya=window.Laya=(function(window,document){
 		__proto.start=function(oldName){
 			this.resLbl.text=oldName;
 			this.nameTxt.restrict=StyleConsts$1.fileNameRestrict;
-			this.nameTxt.text="";
+			this.nameTxt.text=oldName;
 			this.updateCheck.selected=true;
 			this.updateCheck.visible=false;
 			this.popup();
@@ -68545,6 +73505,67 @@ var Laya=window.Laya=(function(window,document){
 	})(SetDirPropUI)
 
 
+	/**
+	*
+	*@author ww
+	*@version 1.0
+	*
+	*@created 2017-5-3 下午3:09:32
+	*/
+	//class laya.editor.view.res.SetMultiResProp extends laya.editor.ui.res.SetMultiResPropUI
+	var SetMultiResProp=(function(_super){
+		function SetMultiResProp(){
+			this.path=null;
+			this.files=null;
+			SetMultiResProp.__super.call(this);
+		}
+
+		__class(SetMultiResProp,'laya.editor.view.res.SetMultiResProp',_super);
+		var __proto=SetMultiResProp.prototype;
+		__proto.start=function(files){
+			var shortNames;
+			shortNames=[];
+			this.files=files;
+			var i=0,len=0;
+			len=files.length;
+			for(i=0;i<len;i++){
+				shortNames.push(FileManager.getResRelativePath(files[i]));
+			}
+			this.files=shortNames;
+			this.nameLbl.text=shortNames.join(",");
+			this.nameLbl.overflow="scroll";
+			this.packType.selectedIndex=0;
+			this.popup();
+			this.mouseThrough=true;
+		}
+
+		__proto.close=function(type){
+			laya.ui.Dialog.prototype.close.call(this,type);
+			if (type=="sure"){
+				ExportManager.configChanged=true;
+				var i=0,len=0;
+				len=this.files.length;
+				for(i=0;i<len;i++){
+					this.updateAssetProp(this.files[i]);
+				}
+				ResPanel.instance.refreshProp();
+				Notice$1.notify("FRESH_CurView");
+			}
+		}
+
+		__proto.updateAssetProp=function(path){
+			ResStyleManager.updateResStyle(path,ResStyleManager.getResCompType(path),0,80,ResStyleManager.getPropArr(path).join("\n"),this.packType.selectedIndex,ResStyleManager.getResPicType(path));
+		}
+
+		__getset(1,SetMultiResProp,'instance',function(){
+			return SetMultiResProp._instance ? SetMultiResProp._instance :SetMultiResProp._instance=new SetMultiResProp();
+		},laya.editor.ui.res.SetMultiResPropUI._$SET_instance);
+
+		SetMultiResProp._instance=null
+		return SetMultiResProp;
+	})(SetMultiResPropUI)
+
+
 	/**资源属性设置
 	*@author yung
 	*/
@@ -68560,7 +73581,7 @@ var Laya=window.Laya=(function(window,document){
 		__class(SetResProp,'laya.editor.view.res.SetResProp',_super);
 		var __proto=SetResProp.prototype;
 		__proto.onSetSizeGrid=function(){
-			SetSizeGrid.instance.start(this.path,this.typeDrop.selectedLabel,this.getSizeGridStr(),this.sizeGridHandler);
+			SetSizeGrid.instance.start(this.path,this.typeDrop.selectedLabel,this.getSizeGridStr(),this.sizeGridHandler,null,this.propsTxt.text);
 		}
 
 		__proto.sizeGridBack=function(sizeGridStr){
@@ -68632,6 +73653,7 @@ var Laya=window.Laya=(function(window,document){
 			this.mPath=null;
 			this.type=null;
 			this.sData=null;
+			this.hasFill=false;
 			this.demo=null;
 			this.sizeGridPanel=null;
 			this.dataKeyList=["stateNum","clipX","clipY"];
@@ -68674,15 +73696,21 @@ var Laya=window.Laya=(function(window,document){
 				if(this.txtList[i].text=="")this.txtList[i].text="0";
 				arr.push(this.txtList[i].text);
 			}
+			if(this.hasFill)arr.push(1);
 			this.updateSizeGridInfo(arr.join(","));
 		}
 
-		__proto.start=function(path,type,sizeGridStr,completeHandler,data){
+		__proto.start=function(path,type,sizeGridStr,completeHandler,data,propStr){
 			this.nameLbl.text=path;
 			this.completeHandler=completeHandler;
 			this.sData=data;
 			if(!this.sData)this.sData={};
-			var defaultO=ResStyleManager.getResPropsObj(path);
+			var defaultO;
+			if(propStr){
+				defaultO=ResStyleManager.getResPropsObjByPropStr(propStr);
+				}else{
+				defaultO=ResStyleManager.getResPropsObj(path)
+			};
 			var key;
 			for(key in defaultO){
 				if(!this.sData.hasOwnProperty(key)){
@@ -68723,6 +73751,7 @@ var Laya=window.Laya=(function(window,document){
 			for(i=0;i<len;i++){
 				this.txtList[i].text=nums[i];
 			}
+			this.hasFill=nums[4]?true:false;
 			if(this.demo){
 				this.demo["sizeGrid"]=sizeGridStr;
 			}
@@ -69059,8 +74088,18 @@ var Laya=window.Laya=(function(window,document){
 				if (this.resTree.array[index].isDirectory){
 					}else {
 					var asset=this.resTree.array[index].path;
-					var compType=ResStyleManager.getResCompType(FileManager.getResRelativePath(asset));
-					LayaBuilder.drag.doDrag(e.currentTarget,clip,{type:"res",compType:compType,asset:""},DragManager.dragOffset);
+					var compType=ResStyleManager.getResCompType(FileManager.getResRelativePath(asset),false,true);
+					if(compType=="Script"){
+						var rPath;
+						rPath=FileManager.getRelativePath(this._resPath,asset);
+						var tarPath;
+						tarPath=FileManager.getPagePath(rPath);
+						FileManager.copyFile(asset,tarPath);
+						asset=FileManager.adptToCommonUrl(tarPath);
+						}else{
+						asset="";
+					}
+					LayaBuilder.drag.doDrag(e.currentTarget,clip,{type:"res",compType:compType,asset:asset},DragManager.dragOffset);
 				}
 			};
 			var cell=this.resTree.list.getCell(index);
@@ -69116,8 +74155,12 @@ var Laya=window.Laya=(function(window,document){
 					label.color=StyleConsts$1.ItemTxtColor;
 					var fName;
 					fName=FileTools.getFileName(item.path);
-					var compType=ResStyleManager.getResCompType(FileManager.getResRelativePath(item.path),false);
-					label.text=compType;
+					var compType=ResStyleManager.getResCompType(FileManager.getResRelativePath(item.path),false,true);
+					if(compType=="Script"){
+						label.text=item.label;
+						}else{
+						label.text=compType;
+					}
 					icon.skin=UIConfigManager.getCompTreeIcon(compType);
 				}
 			}
@@ -69146,6 +74189,26 @@ var Laya=window.Laya=(function(window,document){
 		__getset(1,BasicPanel,'instance',function(){
 			return BasicPanel._instance ? BasicPanel._instance :BasicPanel._instance=new BasicPanel();
 		},laya.editor.ui.BasicPanelUI._$SET_instance);
+
+		BasicPanel.getUIItems=function(){
+			var uiPath=FileManager.getAppPath("laya/basics/");
+			uiPath=FileManager.getPath(uiPath,"UI");
+			var files;
+			files=FileManager.getFileList(uiPath);
+			var i=0,len=0;
+			var rst;
+			rst=[];
+			len=files.length;
+			var compStr;
+			var fName;
+			var compType;
+			for(i=0;i<len;i++){
+				compStr=FileManager.adptToCommonUrl(FileManager.getResRelativePath(files[i]));
+				compType=ResStyleManager.getResCompType(compStr,false,true);
+				rst.push(compType);
+			}
+			return rst;
+		}
 
 		BasicPanel.EnableBasicPanel=true;
 		BasicPanel._instance=null
@@ -69205,16 +74268,16 @@ var Laya=window.Laya=(function(window,document){
 			this.displayTree.mouseHandler=new Handler(this,this.onTreeMouse);
 			this.displayTree.renderHandler=new Handler(this,this.treeRender);
 			this.displayTree.mList.changeCellStateH=new Handler(this,this.changeCellHandler);
-			var menu=ContextMenu$1.createMenuByArray2(["复制","粘贴","删除","","转换为容器","打散容器","","Sprite节点","2D",ObjectTools.setValueArr([],TypeManager.Res2D),"Graphics",ObjectTools.setValueArr([],TypeManager.GraphicRes),"UI组件",ObjectTools.setValueArr([],TypeManager.UIRes)]);
+			var menu=ContextMenu$1.createMenuByArray2(["复制","剪切","粘贴","删除","","转换为容器","打散容器","","全部收起","全部展开","","创建Sprite节点","创建2D",ObjectTools.setValueArr([],TypeManager.Res2D),"创建Graphics",ObjectTools.setValueArr([],TypeManager.GraphicRes),"创建UI组件",ObjectTools.setValueArr([],TypeManager.UIRes)]);
 			menu.on("select",this,this.onEmunSelect);
 			this._menu=menu;
-			this._mutiMenu=ContextMenu$1.createMenuByArray2(["复制","删除","","转换为容器"]);
+			this._mutiMenu=ContextMenu$1.createMenuByArray2(["复制","剪切","删除","","转换为容器"]);
 			this._mutiMenu.on("select",this,this.onEmunSelect);
 			this._aniNodeMenu=ContextMenu$1.createMenuByArray2(["创建关键帧","","删除"]);
 			this._aniNodeMenu.on("select",this,this.onEmunSelect);
-			this._aniNodeMenuEdit=ContextMenu$1.createMenuByArray2(["复制","删除"]);
+			this._aniNodeMenuEdit=ContextMenu$1.createMenuByArray2(["复制","剪切","删除"]);
 			this._aniNodeMenuEdit.on("select",this,this.onEmunSelect);
-			this._prefabMenu=ContextMenu$1.createMenuByArray2(["复制","粘贴","删除","","切断预设","定位预设","","转换为容器","","Sprite节点","2D",ObjectTools.setValueArr([],TypeManager.Res2D),"Graphics",ObjectTools.setValueArr([],TypeManager.GraphicRes),"UI组件",ObjectTools.setValueArr([],TypeManager.UIRes)]);
+			this._prefabMenu=ContextMenu$1.createMenuByArray2(["复制","剪切","粘贴","删除","","切断预设","定位预设","","转换为容器","","创建Sprite节点","创建2D",ObjectTools.setValueArr([],TypeManager.Res2D),"创建Graphics",ObjectTools.setValueArr([],TypeManager.GraphicRes),"创建UI组件",ObjectTools.setValueArr([],TypeManager.UIRes)]);
 			this._prefabMenu.on("select",this,this.onEmunSelect);
 			this.on("click",this,this.onClick);
 			this.fliterTxt.on("input",this,this.onFliterTxtChange);
@@ -69236,7 +74299,7 @@ var Laya=window.Laya=(function(window,document){
 		/**页面快捷键*/
 		__proto.onTreeKeyDown=function(e){
 			if (!this._treeData)return;
-			if(KeyManager.isABC(e.keyCode)){
+			if(KeyManager.isABC(e.keyCode)&&!KeyManager.I.isCommandKeyDown){
 				if(!e.ctrlKey){
 					ListEx.dealAbcKey(e.keyCode,this.displayTree.list);
 					this.noticeSelected();
@@ -69244,6 +74307,7 @@ var Laya=window.Laya=(function(window,document){
 			}
 			switch (e.keyCode){
 				case 46:
+				case 8:
 					Notice$1.notify("DELETE_SELECTED");
 					break ;
 				case 37:
@@ -69404,6 +74468,12 @@ var Laya=window.Laya=(function(window,document){
 					if(this.displayTree.selectedItem)
 						Notice$1.notify("RECORD_KEYFRAME",[target.compId]);
 					break ;
+				case "全部收起":
+					this.closeAllNode();
+					break ;
+				case "全部展开":
+					this.openAllNode();
+					break ;
 				case "转换为容器":
 					ShortcutManager.exeKey(66,true,false);
 					break ;
@@ -69429,7 +74499,10 @@ var Laya=window.Laya=(function(window,document){
 				case "复制":
 					ShortcutManager.exeKey(67,true,false);
 					break ;
-				case "Sprite节点":
+				case "剪切":
+					ShortcutManager.exeKey(88,true,false);
+					break ;
+				case "创建Sprite节点":
 					Notice$1.notify("AddNode",["Sprite",0,0,target.compId]);
 					break ;
 				}
@@ -69552,6 +74625,30 @@ var Laya=window.Laya=(function(window,document){
 			this.openParent(data);
 			this.displayTree.refreshList();
 			this.displayTree.mList.selectedIndex=this.getIndexByDis(data);
+		}
+
+		__proto.closeAllNode=function(){
+			this.changeAllNodeOpenState(false);
+		}
+
+		__proto.openAllNode=function(){
+			this.changeAllNodeOpenState(true);
+		}
+
+		__proto.changeAllNodeOpenState=function(isOpen){
+			var nodeList;
+			nodeList=this.displayTree.source;
+			if(!nodeList)return;
+			var i=0,len=0;
+			len=nodeList.length;
+			var tNode;
+			for(i=0;i<len;i++){
+				tNode=nodeList[i];
+				if(tNode.isDirectory){
+					tNode.isOpen=isOpen;
+				}
+			}
+			this.displayTree.refreshList();
 		}
 
 		__proto.selectBySelectList=function(selectList){
@@ -69772,6 +74869,12 @@ var Laya=window.Laya=(function(window,document){
 					ifLock.on("mousedown",this,this.itemAction,null);
 				}
 				icon.skin=UIConfigManager.getCompTreeIcon(item.type);
+				cell.graphics.clear();
+				var tColor;
+				tColor=NodeAtlasManager.getNodeAtlasColor(tDis);
+				if(tColor){
+					cell.graphics.drawCircle(-5,12,3,tColor);
+				}
 			}
 		}
 
@@ -70461,12 +75564,46 @@ var Laya=window.Laya=(function(window,document){
 				LayaBuilder.drag.doDrag(e.currentTarget ,clip,{type:type,sType:sType,path:path,asset:asset,compType:compType},DragManager.dragOffset);
 			}else
 			if (e.type=="mouseover"){
+				TreeEx.onItemCellMouseOver(index,cell,this.pageTree);
 				label.color=StyleConsts$1.ItemSelectColor;
 			}else
 			if (e.type=="mouseout"){
 				var item=cell.dataSource;
 				if (!item)return;
 				label.color=item.hasChild?StyleConsts$1.FolderTxtColor:StyleConsts$1.ItemTxtColor;
+			}
+		}
+
+		__proto.onItemCellMouseOver=function(cell){
+			FocusManager.clearFocus();
+			if (!DragManager.isDraging)return;
+			var dataO;
+			dataO=cell.dataSource;
+			if(dataO.isDirectory){
+				FocusManager.showFocus(cell,1,true);
+				}else{
+				var type=RelativePos.getDisMouseRelativePos(cell,0.2);
+				var target=cell;
+				switch (type){
+					case "up":
+					case "down":
+						FocusManager.showBorder(target,type,true,null,1);
+						break ;
+					case "center":
+					case "left":
+					case "right":
+						FocusManager.showBorder(target,"down",true,null,1);
+						break ;
+					};
+				var parentIndex=0;
+				parentIndex=this.pageTree.getParentIndex(dataO);
+				if(parentIndex>0){
+					var parentCell;
+					parentCell=this.pageTree.list.getCell(parentIndex);
+					if(parentCell){
+						FocusManager.showFocus(parentCell,1,false);
+					}
+				}
 			}
 		}
 
@@ -70561,7 +75698,7 @@ var Laya=window.Laya=(function(window,document){
 				rootType="View";
 				path=FileManager.getPath(this.currDirectory,name+"."+TypeManager.getExtension("graphic_animation"));
 			}
-			if(type=="MoveEffectAnimation"){
+			if(type=="EffectAnimation"){
 				rootType="View";
 				path=FileManager.getPath(this.currDirectory,name+"."+TypeManager.getExtension("MoveEffect"));
 			}
@@ -70744,7 +75881,7 @@ var Laya=window.Laya=(function(window,document){
 		__proto.checkRename=function(){
 			if (this.pageTree.selectedItem !=null){
 				var fileName=this.pageTree.selectedItem.label;
-				Notice$1.notify("OPEN_RENAME",[fileName]);
+				Notice$1.notify("OPEN_RENAME",[FileTools.getFileName(fileName)]);
 			}
 		}
 
@@ -70836,7 +75973,7 @@ var Laya=window.Laya=(function(window,document){
 		__proto.renameByDir=function(oldDir,newDir,isUpdate){
 			var arr=FileTools.getDirFiles(newDir);
 			for (var i=0,n=arr.length;i < n;i++){
-				var newChild=new File(FileManager.getPath(oldDir,arr[i]));
+				var newChild=new File(FileManager.getPath(newDir,arr[i]));
 				var oldChild=new File(FileManager.getPath(oldDir,arr[i]));
 				if (newChild.isDirectory){
 					this.renameByDir(oldChild.nativePath,newChild.nativePath,isUpdate);
@@ -71304,6 +76441,8 @@ var Laya=window.Laya=(function(window,document){
 						index=otherGroupIndex;
 					}
 					if(IDEVars.isGraphicAnimationMode||(node&&TypeManager.NoRenderTypeNodes[node.type])||TypeManager.NoRenderTypeNodes[type]){
+						}else if(node&&TypeManager.isGraphicCmdType(node.type)){
+						groups[index].push(PropPanel.graphicTypeProp);
 						}else{
 						groups[index].push(PropPanel.renderTypeProp);
 					};
@@ -71346,6 +76485,7 @@ var Laya=window.Laya=(function(window,document){
 
 		PropPanel.initStaticDatas=function(){
 			PropPanel.renderTypeProp["p"]["tips"]=Sys.lang("节点功能类型");
+			PropPanel.graphicTypeProp["p"]["tips"]=Sys.lang("节点功能类型");
 		}
 
 		PropPanel._instance=null
@@ -71359,7 +76499,16 @@ var Laya=window.Laya=(function(window,document){
 					type:"option",
 					"default":"",
 					"group":"公用",
-					option:"mask,hit,unHit,render"
+					option:"mask,render,instance"
+				}
+				};},'graphicTypeProp',function(){return this.graphicTypeProp={
+				p:{
+					name:"renderType",
+					tips:"节点功能类型",
+					type:"option",
+					"default":"",
+					"group":"公用",
+					option:"hit,unHit"
 				}
 		};}
 
@@ -71491,7 +76640,7 @@ var Laya=window.Laya=(function(window,document){
 			this._menu=menu;
 			this._menuDir=ContextMenu$1.createMenu("设置默认属性","打开所在目录","","重命名","删除");
 			this._menuDir.on("select",this,this.onEmunSelect);
-			this._mutiMenu=ContextMenu$1.createMenu("删除");
+			this._mutiMenu=ContextMenu$1.createMenu("设置默认属性","删除");
 			this._mutiMenu.on("select",this,this.onEmunSelect);
 			this.fliterTxt.on("input",this,this.onFliterTxtChange);
 			this.fliterTxt.color=StyleConsts$1.TextInputColor;
@@ -71686,10 +76835,14 @@ var Laya=window.Laya=(function(window,document){
 				var asset=this.resTree.selectedItem.path;
 				if(!ResFileManager.isResFile(asset))return;
 				var img=new Image();
-				img.once("loaded",this,this.setResSize,[img]);
-				img.skin=FileTools.getAbsPath(asset)+"?v="+Math.random();
-				this.resViewer.addChild(img);
 				img.visible=false;
+				img.once("loaded",this,this.setResSize,[img]);
+				var tImgPath;
+				tImgPath=FileTools.getAbsPath(asset);
+				var changeTime;
+				changeTime=FileTools.getMTime(tImgPath).toString();
+				img.skin=tImgPath+"?v="+changeTime;
+				this.resViewer.addChild(img);
 			}
 		}
 
@@ -71736,6 +76889,10 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__proto.checkSetResProp=function(){
+			if(this.resTree.mList.selectItems&&this.resTree.mList.selectItems.length>1){
+				SetMultiResProp.instance.start(this.getSelectFiles());
+				return;
+			}
 			if (this.resTree.selectedItem && !this.resTree.selectedItem.isDirectory){
 				if(this.resTree.selectedItem.type=="Prefab"){
 					Notice$1.notify("openPAGE",[this.resTree.selectedItem.path]);
@@ -71935,6 +77092,7 @@ var Laya=window.Laya=(function(window,document){
 			var cell=this.resTree.list.getCell(index);
 			var label=cell.getChildByName("label");
 			if (e.type=="mouseover"){
+				TreeEx.onItemCellMouseOver(index,cell,this.resTree);
 				label.color=StyleConsts$1.ItemSelectColor;
 			}else
 			if (e.type=="mouseout"){
@@ -71968,7 +77126,7 @@ var Laya=window.Laya=(function(window,document){
 
 		/**页面快捷键*/
 		__proto.onTreeKeyDown=function(e){
-			if(KeyManager.isABC(e.keyCode)){
+			if(KeyManager.isABC(e.keyCode)&&!KeyManager.I.isCommandKeyDown){
 				ListEx.dealAbcKey(e.keyCode,this.resTree.list);
 			}
 			switch(e.keyCode){
@@ -72346,6 +77504,7 @@ var Laya=window.Laya=(function(window,document){
 			this.minBarX=170;
 			this.propMenu=null;
 			this.aniData=null;
+			this.lockAniSelect=false;
 			this.tAniData=null;
 			this.aniChanged=true;
 			this.frameRate=30;
@@ -72363,13 +77522,14 @@ var Laya=window.Laya=(function(window,document){
 			this.nodeTree.left=2;
 			this.nodeTree.itemRender=TreeNodeRender;
 			this.nodeTree.mList.replaceScrollBar(this.mVScroll);
-			debugger;
 			this.nodeTree.on("rightclick",this,this.onTreeRightMouseDown);
 			this.nodeTree.renderHandler=new Handler(this,this.timeLineTreeRender);
 			this.nodeTree.mouseHandler=new Handler(this,this.onTimeLineTreeMouse);
 			this.nodeTree.array=[];
 			this.addChild(this.nodeTree);
+			this.aniSelect.visibleNum=10;
 			this.mHScroll.target=this.timeLine;
+			this.mHScroll.mouseWheelEnable=false;
 			this.mHScroll.on("change",this,this.hScrollChange);
 			this.mVScroll.on("change",this,this.vScrollChange);
 			this.dragBar=new DragBar();
@@ -72383,6 +77543,7 @@ var Laya=window.Laya=(function(window,document){
 			this.dragBar.on("dragmove",this,this.dragBarDragEnd);
 			this.nodeTree.mList.on("ListChange",this,this.listChange);
 			this.timeLine.on("TIMELINE_CLICKFRAME",this,this.clickFrame);
+			this.timeLine.on("mousewheel",this,this.onTimeGridMouseWheel);
 			this.editMode.on("change",this,this.modeChange);
 			this.addListens();
 			this.modeChange();
@@ -72395,7 +77556,7 @@ var Laya=window.Laya=(function(window,document){
 			DisTools.addTextChangeHandler(this.frameRateTxt,this,this.frameRateTxtChange);
 			this.frameTxt.mouseEnabled=true;
 			DisTools.addTextChangeHandler(this.frameTxt,this,this.frameTxtChange);
-			this.propMenu=ContextMenu$1.createMenuByArray2(["删除"]);
+			this.propMenu=ContextMenu$1.createMenuByArray2(["删除帧"]);
 			this.propMenu.on("select",this,this.onEmunSelect);
 			this.action.on("change",this,this.playActionChange);
 			this.on("keydown",this,this.onKeyDown);
@@ -72408,6 +77569,11 @@ var Laya=window.Laya=(function(window,document){
 
 		__class(TimeLinePanel,'laya.editor.view.TimeLinePanel',_super);
 		var __proto=TimeLinePanel.prototype;
+		__proto.onTimeGridMouseWheel=function(e){
+			this.mVScroll.value-=e.delta*this.mVScroll.scrollSize;
+		}
+
+		// value-=e.delta *_scrollSize;
 		__proto.cloneBtnDown=function(){
 			this.aniData.cloneAni();
 			this.dataChanged();
@@ -72443,7 +77609,11 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__proto.onMouseDown=function(e){
-			Laya.stage.focus=this;
+			if(e.target!=Laya.stage.focus){
+				if(Input["inputElement"]&&Input["inputElement"].target)
+					Input["inputElement"].target.focus=false;
+				Laya.stage.focus=e.target;
+			}
 		}
 
 		__proto.switchPlayAction=function(){
@@ -72457,6 +77627,7 @@ var Laya=window.Laya=(function(window,document){
 		__proto.onKeyDown=function(e){
 			if(!this.aniData)return;
 			if(!this.tAniData)return;
+			if(Input.isInputting)return;
 			switch(e.keyCode){
 				case 13:
 					if(Utils.parseInt(this.frameTxt.text)!=this.timeLine.selectFrame){
@@ -72485,9 +77656,9 @@ var Laya=window.Laya=(function(window,document){
 			var aniItem;
 			aniItem=target.path;
 			switch (name){
-				case "删除":
+				case "删除帧":
 					if(target.isDirectory){
-						this.aniData.removeNode(target.target);
+						this.aniData.removeNode(target.target,null,true);
 						}else{
 						this.aniData.removeNodeProp(target.target,target.key);
 					}
@@ -72537,10 +77708,16 @@ var Laya=window.Laya=(function(window,document){
 				this.aniData.design.isAnimationMode=this.editMode.selected;
 			}
 			if(this.editMode.selected){
+				this.updateTimeLineTypeVisibles();
 			}
 		}
 
-		// LayoutRecManager.showPanelByClassName("FramePropPanel");
+		__proto.updateTimeLineTypeVisibles=function(){
+			var showLoaded=false;
+			showLoaded=IDEVars.isPageView;
+			this.action.visible=this.loadedtip.visible=showLoaded;
+		}
+
 		__proto.addListens=function(){
 			Notice$1.listen("PlayControl_ToBeginPos",this,this.playControl);
 			Notice$1.listen("PLAYCONTROL_Pre",this,this.playControl);
@@ -72650,7 +77827,9 @@ var Laya=window.Laya=(function(window,document){
 			this.aniData=animationData;
 			var preSelect;
 			preSelect=this.aniData.selectLabel;
+			this.lockAniSelect=true;
 			this.aniSelect.labels=this.aniData.getAnimationSelects();
+			this.lockAniSelect=false;
 			this.aniSelect.selectedLabel=preSelect;
 			this.onAnimationModeChange();
 		}
@@ -72660,6 +77839,7 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		__proto.aniSelecteChange=function(){
+			if(this.lockAniSelect)return;
 			this.aniChanged=true;
 			this.updateAniSelect();
 		}
@@ -72808,13 +77988,13 @@ var Laya=window.Laya=(function(window,document){
 			var selectItem;
 			selectItem=this.nodeTree.mList.array[layer];
 			if(!selectItem)return;
-			this.updateSelect(selectItem.target);
+			this.updateSelect(selectItem.target,selectItem);
 		}
 
 		//Notice.notify(IDEEvent.TIMELINE_FRAME_SELECTED,[frame]);
-		__proto.updateSelect=function(target){
+		__proto.updateSelect=function(target,selectItem){
 			TimeLinePanel.fromMe=true;
-			if(this.selectItem){
+			if(selectItem){
 				Notice$1.notify("Display_selected",[target]);
 			}
 			Laya.timer.frameOnce(2,this,this.clearFromMe);
@@ -72932,7 +78112,7 @@ var Laya=window.Laya=(function(window,document){
 				if(selectItem){
 					this.timeLine.clickLayer=index;
 					this.timeLine.updateFocusFrame();
-					this.updateSelect(selectItem.target);
+					this.updateSelect(selectItem.target,selectItem);
 				}
 				}if (e.type=="mouseover"){
 				label.color=StyleConsts$1.ItemSelectColor;
@@ -73032,8 +78212,12 @@ var Laya=window.Laya=(function(window,document){
 			if(!((this._currViewer instanceof laya.editor.view.UIViewer ))){
 				return;
 			}
-			if (this._currViewer !=null && this.stage.focus !=this._currViewer.design && this._currViewer.viewStack.selectedIndex==0){}
-				}
+			if (this._currViewer !=null && this.stage.focus !=this._currViewer.design && this._currViewer.viewStack.selectedIndex==0){
+				if(SystemSetting.autoFocsEditRect)
+					this.focusDesign();
+			}
+		}
+
 		/**双击关闭页面*/
 		__proto.onTabDoubleClick=function(e){
 			if (this._currViewer){
@@ -73248,6 +78432,13 @@ var Laya=window.Laya=(function(window,document){
 		__proto.save=function(){
 			if (this._currViewer !=null){
 				this._currViewer.save();
+			}
+		}
+
+		/**修改组件类型*/
+		__proto.changeCompType=function(type){
+			if (this._currViewer !=null){
+				this._currViewer.dealAction("changeCompType",[type]);
 			}
 		}
 
@@ -73528,6 +78719,9 @@ var Laya=window.Laya=(function(window,document){
 		/**设置焦点*/
 		__proto.focusDesign=function(){
 			if (this._currViewer !=null){
+				if(this.stage.focus&&this.stage.focus["focus"]){
+					this.stage.focus["focus"]=false;
+				}
 				this.stage.focus=this._currViewer.design
 			}
 		}
@@ -73721,7 +78915,8 @@ var Laya=window.Laya=(function(window,document){
 			}
 		}
 
-		__proto.nodeChanged=function(node,props){
+		__proto.nodeChanged=function(node,props,forceChange){
+			(forceChange===void 0)&& (forceChange=false);
 			if(!node)return;
 			_super.prototype.nodeChanged.call(this,node);
 			if(!this.isAnimationMode)return;
@@ -73734,7 +78929,7 @@ var Laya=window.Laya=(function(window,document){
 				if(this.isGraphicAnimation&&!TypeManager.isGraphicAniNodeType(node.type)){
 					continue ;
 				}
-				this.animation.addNodeFrame(node,props[i],this.frame);
+				this.animation.addNodeFrame(node,props[i],this.frame,false,forceChange);
 				if(isGAniFirst){
 					if(0){
 						var tarO;
@@ -73820,7 +79015,7 @@ var Laya=window.Laya=(function(window,document){
 			newXml=cacheO.tree;
 			if(newXml){
 				if(this.uiXmlRestored){
-					this.uiXmlRestored=newXml;
+					this.uiXmlRestored=ObjectTools.copyObj(newXml);
 				}
 				this.xml=newXml;
 			}
@@ -73865,7 +79060,7 @@ var Laya=window.Laya=(function(window,document){
 	})(AnimationDesign)
 
 
-	Laya.__init([EventDispatcher,Render,Browser,PageExportType,GraphicAnimation,Timer,LoaderManager,LocalStorage,TimeLine,View,ViewHook]);
+	Laya.__init([EventDispatcher,Render,Browser,GraphicAnimation,PageExportType,Timer,LoaderManager,LocalStorage,TimeLine,View,ViewHook]);
 	new LayaAirCmdTool();
 
 })(window,document,Laya);

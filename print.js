@@ -22,11 +22,14 @@ let tr_list = [
 	["Invalid directory, missing asconfig.json | jsconfig.json | tsconfig.json.", "无效目录，缺少asconfig.json | jsconfig.json | tsconfig.json。"],
 	["Start  compile...", "开始编译……"],
 	["Compile completed.", "编译完成"],
-	["Error: No FlashDevelop or FlashBuilder project file.", "错误：不存在FlashDevelop或FlashBuilder的项目文件"],
-	["There are both FlashDevelop and FlashBuilder project file. Ignore FlashBuilder project", "同时存在FlashDevelop和FlashBuilder的项目文件。忽略FlashBuilder项目文件"],
 	["Detected", "检测到"],
 	["project", "项目"],
+	["regenerate ui files", "重新生成ui文件"],
+	["regenerate atlas", "重新生成图集"],
+	["recompile project", "重新编译项目"],
 	["Do nothing", "无需编译"],
+	["not exist.", "不存在"],
+	["Unable to retrieve ActionScript project config file(FlashBuilder | FlashDevelop). Check if ./bin/.laya/tasks.json is valid.", "无法获取ActionScript项目配置文件（FlashBuilder | FlashDevelop）。检查./bin/.laya/tasks.json是否有效"],
 	["Compress options. 'no' for no processing, 'c' for compress, 'cc' for compress and concat.", "压缩选项。留空不处理，'c'表示压缩，'cc'表示压缩并合并"],
 	["finish.", "完成"],
 	["clear will delete old UI code file.", "clear会删除旧的UI代码文件"],
@@ -82,22 +85,28 @@ function tr(content)
 
 exports.printQuotation = function(data)
 {
+	if(data instanceof Buffer)
+		data = data.toString();
 	console.log(data.gray);
 };
 
 exports.printErr = function(data)
 {
-	console.log(data.red);
+	if(data instanceof Buffer)
+		data = data.toString();
+	console.error(data.red);
 };
 
 exports.printOk = function(data)
 {
+	if(data instanceof Buffer)
+		data = data.toString();
 	console.log(data.green);
 }
 
 exports.printWarning = function(data)
 {
-	console.log(data.yellow);
+	console.warn(data.yellow);
 }
 
 exports.tr = tr;
