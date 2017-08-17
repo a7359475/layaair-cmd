@@ -47,10 +47,18 @@ class LayaProjectCompiler extends EventEmitter
         }
         else
         {
+
+            if(fs.existsSync(path.join(project_dir, "tsconfig.json")))
+            {
+            	tasks.command = tasks.command.replace(/\btsc\b/, "tsc.cmd");
+            }
+
+
             let command = tasks.command.replace("${workspaceRoot}", process.cwd());
             let args = tasks.args.map((arg) => arg = arg.replace("${workspaceRoot}", process.cwd()));
 
             let fullCommand = tasks.command;
+
             tasks.args.forEach((arg) => fullCommand += " " + arg);
             console.log(fullCommand.yellow);
 
