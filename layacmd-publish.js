@@ -12,11 +12,11 @@ const
 } = require("./print.js");
 
 program
-	.version("0.0.2")
+	.version("0.1.0")
 	.option('-o --compressOptions <options>', tr("Compress options. 'no' for no processing, 'c' for compress, 'cc' for compress and concat."), getCompressOptions)
 	.option('-n --versionName <name>', tr("version name"))
 	.option('--noCompile', tr("do not compile project"))
-	.option('--noUi', tr("do not generate ui files"))
+	.option('--noUi', tr("do not generate ui code"))
 	.option('--noAtlas', tr("do not generate atlas"))
 	.parse(process.argv);
 

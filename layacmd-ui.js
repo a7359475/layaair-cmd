@@ -10,7 +10,7 @@ const
 } = require("./print.js");
 
 program
-	.version("0.0.2")
+	.version("0.1.0")
 	.option('-c --clear', tr('clear will delete old ui code file.'))
 	.option('-a --atlas', tr('generate atlas'))
 	.option('-d --code', tr('generate ui code files'))

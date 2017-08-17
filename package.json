@@ -1,98 +1,36 @@
 {
-  "_args": [
-    [
-      {
-        "raw": "layacmd",
-        "scope": null,
-        "escapedName": "layacmd",
-        "name": "layacmd",
-        "rawSpec": "",
-        "spec": "latest",
-        "type": "tag"
-      },
-      "/media/survivor/Share/Js/layaari-ide-part"
-    ]
-  ],
-  "_from": "layacmd@latest",
-  "_id": "layacmd@2.1.15",
-  "_inCache": true,
-  "_location": "/layacmd",
-  "_nodeVersion": "6.10.3",
-  "_npmOperationalInternal": {
-    "host": "s3://npm-registry-packages",
-    "tmp": "tmp/layacmd-2.1.15.tgz_1496906615806_0.6771658058278263"
-  },
-  "_npmUser": {
-    "name": "survivor",
-    "email": "990473625@qq.com"
-  },
-  "_npmVersion": "3.10.10",
-  "_phantomChildren": {},
-  "_requested": {
-    "raw": "layacmd",
-    "scope": null,
-    "escapedName": "layacmd",
-    "name": "layacmd",
-    "rawSpec": "",
-    "spec": "latest",
-    "type": "tag"
-  },
-  "_requiredBy": [
-    "#USER",
-    "/"
-  ],
-  "_resolved": "https://registry.npmjs.org/layacmd/-/layacmd-2.1.15.tgz",
-  "_shasum": "4fdf914029687c011c89b0410fce438e0517d293",
-  "_shrinkwrap": null,
-  "_spec": "layacmd",
-  "_where": "/media/survivor/Share/Js/layaari-ide-part",
-  "author": {
-    "name": "survivor"
-  },
-  "bin": {
-    "layacmd": "./layacmd.js"
-  },
-  "bugs": {
-    "url": "https://github.com/Surviver/layacmd/issues"
+  "name": "layacmd",
+  "version": "0.1.0",
+  "description": "layaair toolkit",
+  "main": "layacmd.js",
+  "directories": {
+    "test": "test"
   },
   "dependencies": {
-    "anywhere": "^1.4.0",
     "colors": "^1.1.2",
-    "commander": "^2.9.0",
-    "iconv-lite": "^0.4.15",
-    "uglify-js": "^2.8.22",
+    "commander": "^2.11.0",
+    "fs-extra": "^4.0.1",
+    "iconv-lite": "^0.4.18",
+    "jsonc-parser": "^1.0.0",
+    "uglify-js": "^3.0.27",
     "xmldom": "^0.1.27"
   },
-  "description": "layaair command line tool.",
   "devDependencies": {},
-  "directories": {},
-  "dist": {
-    "shasum": "4fdf914029687c011c89b0410fce438e0517d293",
-    "tarball": "https://registry.npmjs.org/layacmd/-/layacmd-2.1.15.tgz"
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "gitHead": "65b58710c72c72e661302f9d0b676fc1403e5f76",
-  "homepage": "https://github.com/Surviver/layacmd#readme",
-  "keywords": [
-    "layacmd",
-    "layaair"
-  ],
-  "license": "MIT",
-  "main": "layacmd.js",
-  "maintainers": [
-    {
-      "name": "survivor",
-      "email": "990473625@qq.com"
-    }
-  ],
-  "name": "layacmd",
-  "optionalDependencies": {},
-  "readme": "ERROR: No README data found!",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Surviver/layacmd.git"
   },
-  "scripts": {
-    "test": "layacmd --help"
+  "keywords": [
+    "layaair",
+    "layacmd"
+  ],
+  "author": "survivor",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Surviver/layacmd/issues"
   },
-  "version": "2.1.15"
+  "homepage": "https://github.com/Surviver/layacmd#readme"
 }

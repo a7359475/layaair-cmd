@@ -11,7 +11,7 @@ const
 } = require("./print.js");
 
 program
-	.version("0.0.3")
+	.version("0.1.0")
 	.option('-i --input <input>', tr("resource directory."))
 	.option('-o --output <output>', tr("output directory."))
 	.option('-n --versionName <version name>', tr("version name, default is numbers start from 1000."))
@@ -49,9 +49,9 @@ switch (os.platform())
 	// case "linux":
 	// 	executable = "guetzli_linux_x86-64";
 	// 	break;
-	// case "guetzli_linux_x86-64":
-	// 	executable = "guetzli_darwin_x86-64";
-	// 	break;
+	case "darwin":
+		executable = "web-resource-manager";
+		break;
 	default:
 		printErr("Platform does not support.");
 		exit(1);

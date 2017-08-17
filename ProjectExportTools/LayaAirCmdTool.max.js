@@ -22316,6 +22316,7 @@ var Laya=window.Laya=(function(window,document){
 			console.log("Waiting for pics packing");
 			FileManager.createDirectory(FileManager.getWorkPath(ProjectSetting.resExportPath));
 			CMDShell.execute(cmd,function(err,stdOut,stdErr){
+				console.log(stdOut);
 				if (err){
 					console.log("Error Occured: "+err);
 				}

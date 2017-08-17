@@ -61,7 +61,11 @@ let tr_list = [
 	["Generate config file.", "创建默认配置文件"],
 	["quality, more than 84.", "压缩率，大于84"],
 	["LayaNative not found. Waiting for downloading...", "未找到LayaNative，等待下载……"],
-	["Update LayaNative. Waiting for updateing...", "正在更新LayaNative，等待更新……"]
+	["Update LayaNative. Waiting for updateing...", "正在更新LayaNative，等待更新……"],
+	["do not compile project", "不重新编译项目"],
+	["do not generate ui code", "不重新生成UI代码文件"],
+	["do not generate atlas", "不重新生成图集"],
+	["no tasks.json, skip compile.", "无tasks.json，跳过编译"]
 ];
 
 /**
