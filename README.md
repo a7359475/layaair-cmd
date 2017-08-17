@@ -9,7 +9,6 @@
 | 发布             | publish         |
 | 导出UI           | ui              |
 | 资源版本控制         | resourceVersion |
-| 图集打包           | atlas           |
 | 使用guetzli压缩jpg | guetzli         |
 | 打开静态文件服务器      | open            |
 
@@ -85,9 +84,13 @@ $ layacmd publish -h
 
   Options:
 
-    -h, --help                      output usage information
     -V, --version                   output the version number
     -o --compressOptions <options>  压缩选项。留空不处理，'c'表示压缩，'cc'表示压缩并合并
+    -n --versionName <name>         version name
+    --noCompile                     不重新编译项目
+    --noUi                          不重新生成UI代码文件
+    --noAtlas                       不重新生成图集
+    -h, --help                      output usage information
 ```
 
 如果当前目录有**layaair**项目，该命令会生成发布后的**JavaScript**文件，发布的文件夹名为*release，*可以对文件进行合并压缩。
@@ -99,7 +102,6 @@ $ layacmd publish -o cc # 指定了压缩选项为合并并压缩
 ```
 
 
-
 ## 导出UI
 
 ```shell
@@ -109,10 +111,12 @@ $ layacmd ui -h
 
   Options:
 
-    -h, --help        output usage information
     -V, --version     output the version number
     -c --clear        clear will delete old ui code file.
+    -a --atlas        generate atlas
+    -d --code         generate ui code files
     -m --mode <mode>  'normal'或者'release'，指定'release'会生成除未使用资源外的UI代码文件
+    -h, --help        output usage information
 ```
 
 如果当前目录有**layaair**项目，该命令为UI页面导出代码。
@@ -213,113 +217,6 @@ $ layacmd resourceVersion -i input_dir -o output_dir -n 1.1.0
 #### 资源版本切换
 
 由于*manifest.json*保存各版本的文件版本号。所以只需要保留历史*manifest.json*即可使用对应版本的资源。
-
-
-
-## 图集打包
-
-**图集打包**根据输入目录，生成该目录下所有文件及子目录内的图片的图片集合。图片集合以文件夹为单位，同一张图片集合可能因为超出指定最大尺寸而被分为多张。
-
-该命令可以在**layaair**项目目录下执行，也可以不在，这时需要指定输入路径。
-
-| 参数                 | 说明                                       |
-| ------------------ | ---------------------------------------- |
-| version            | 打印版本信息                                   |
-| help               | 打印帮助信息                                   |
-| input, d           | 将被打包的图片集合根目录（可以                          |
-| output, o          | 打包后的图片集合和配置文件的保存目录                       |
-| resDir, r          | 无法被打包的文件的输出目录                            |
-| extrudeList, E     | 需要像素扩展的图片列表，逗号分隔                         |
-| maxAtlasWidth, W   | 允许的图集最大宽度，默认2048                         |
-| maxAtlasHeight, H  | 允许的图集最大高度，默认2048                         |
-| tileWidthLimit, w  | 允许被打包的图片的最大宽度，默认512                      |
-| tileHeightLimit, h | 允许被打包的图片的最大高度，默认512                      |
-| includeList, i     | 无论是否符合条件，都会被打包的图片列表，逗号分隔                 |
-| excludeList, x     | 无论是否符合条件，都不会被打包的图片列表，逗号分隔                |
-| shapePadding, p    | 每张图片的间距，默认为2                             |
-| force, f           | 无视是否距上次打包后修改过资源，都强制重新打包                  |
-| powerOfTwo, 2      | 开启后，会尽量以2的整次幂为前提并保持最小空间来排列（导出的图集不会是2的整次幂尺寸 |
-| cropAlpha, c       | 是否裁减掉图片的透明区域                             |
-| textureFormat      | 默认"png32"，还可选为"png8"                     |
-| config             | 使用配置文件中的参数                               |
-| init               | 生成默认配置文件                                 |
-
-#### 使用
-
-##### 使用全局的临时配置文件
-
-在**layaair**项目目录中执行图集打包：
-
-```shell
-$ layacmd atlas
-```
-
-这个命令会使用位于临时目录，如**windows**的` %userprofile%\AppData\Roaming\LayaAirIDE\`的*packParam.json*文件中指定的参数打包。这个文件在使用**IDE**打开不同的项目打包时会被改写。因此使用**layacmd**不推荐这种方式。
-
-
-
-##### 在命令行指定打包参数
-
-**图集打包**为命令提供了众多参数，可以直接在命令行指定，如：
-
-```shell
-$ layacmd atlas -d . -o ./bin/res/atlas --textFormat png8
-# 指定当前目录为输入目录
-# 指定输出目录
-# 指定导出png8格式图片
-```
-
-更多参数见上面表格。
-
-
-
-##### 使用为项目生成的配置文件
-
-使用`init`参数生成配置文件：
-
-```shell
-$ layacmd atlas --init
-```
-
-将会生成默认名为atlasConfig的json文件：
-
-```json
-{
-    "inputDir": "required.",
-    "outputDir": "",
-    "resDir": "",
-    "force": true,
-    "extrudeList": [
-        ""
-    ],
-    "includeList": [
-        ""
-    ],
-    "excludeList": [
-        ""
-    ],
-    "atlas": {
-        "width": 2048,
-        "height": 2048,
-        "powerOfTwo": false,
-        "textureFormat": "png32"
-    },
-    "sprite": {
-        "width": 512,
-        "height": 512,
-        "padding": 2,
-        "cropAlpha": true
-    }
-}
-```
-以上字段除了`inputDir`外全都有默认值，你必须指定输入目录。其余各参数的说明和上列表格所述一致。
-
-之后使用以下命令识别配置文件以及生成图片集合：
-
-```shell
-$ layacmd atlas --config atlasConfig
-```
-
 
 
 ## guetzli
