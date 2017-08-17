@@ -6,6 +6,9 @@
   "directories": {
     "test": "test"
   },
+  "bin": {
+    "layacmd": "./layacmd.js"
+  },
   "dependencies": {
     "colors": "^1.1.2",
     "commander": "^2.11.0",
