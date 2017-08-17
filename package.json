@@ -1,6 +1,6 @@
 {
   "name": "layacmd",
-  "version": "2.1.17",
+  "version": "2.1.18",
   "description": "layaair toolkit",
   "main": "layacmd.js",
   "directories": {
