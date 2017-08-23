@@ -1,10 +1,13 @@
 {
   "name": "layacmd",
-  "version": "0.1.0",
+  "version": "2.1.18",
   "description": "layaair toolkit",
   "main": "layacmd.js",
   "directories": {
     "test": "test"
+  },
+  "bin": {
+    "layacmd": "./layacmd.js"
   },
   "dependencies": {
     "anywhere": "^1.4.0",
