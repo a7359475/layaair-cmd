@@ -1,4 +1,5 @@
 # layacmd
+
 [TOC]
 
 **layacmd**是**layaair**的命令行工具，可以使用**layacmd**不打开**IDE**的情况下对**layaair**项目进行编译发布等操作。它包含以下功能，这些功能都对应一个子命令。
@@ -93,14 +94,13 @@ $ layacmd publish -h
     -h, --help                      output usage information
 ```
 
-如果当前目录有**layaair**项目，该命令会生成发布后的**JavaScript**文件，发布的文件夹名为*release，*可以对文件进行合并压缩。
+如果当前目录有**layaair**项目，该命令会生成发布后的**JavaScript**文件，发布的文件夹在*release*下面。
 
 #### 使用
 
 ```shell
 $ layacmd publish -o cc # 指定了压缩选项为合并并压缩
 ```
-
 
 ## 导出UI
 
@@ -119,12 +119,14 @@ $ layacmd ui -h
     -h, --help        output usage information
 ```
 
-如果当前目录有**layaair**项目，该命令为UI页面导出代码。
+如果当前目录有**layaair**项目，该命令为UI页面导出与UI相关的文件。
 
 #### 使用
 
 ```shell
 $ layacmd ui -c -m release # 导出前清理，并且把mode设置为release
+$ layacmd ui -d # 导出UI代码文件
+$ layacmd ui -a # 导出图集文件
 ```
 
 
