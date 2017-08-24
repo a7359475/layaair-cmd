@@ -63,7 +63,7 @@ let tr_list = [
 	["LayaNative not found. Waiting for downloading...", "未找到LayaNative，等待下载……"],
 	["Update LayaNative. Waiting for updateing...", "正在更新LayaNative，等待更新……"],
 	["do not compile project", "不重新编译项目"],
-	["do not generate ui code", "不重新生成UI代码文件"],
+	["do not generate ui files", "不重新生成UI代码文件"],
 	["do not generate atlas", "不重新生成图集"],
 	["no tasks.json, skip compile.", "无tasks.json，跳过编译"]
 ];

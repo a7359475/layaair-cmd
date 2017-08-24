@@ -12,11 +12,11 @@ const
 } = require("./print.js");
 
 program
-	.version("0.1.0")
+	.version("0.1.1")
 	.option('-o --compressOptions <options>', tr("Compress options. 'no' for no processing, 'c' for compress, 'cc' for compress and concat."), getCompressOptions)
 	.option('-n --versionName <name>', tr("version name"))
 	.option('--noCompile', tr("do not compile project"))
-	.option('--noUi', tr("do not generate ui code"))
+	.option('--noUi', tr("do not generate ui files"))
 	.option('--noAtlas', tr("do not generate atlas"))
 	.parse(process.argv);
 
@@ -53,19 +53,36 @@ else
 	compileProject();
 }
 
+let compileMessage = [];
+
 function compileProject()
 {
 	if (!program.noCompile)
 	{
 		let LayaProjectCompiler = require("./compile_project.js").LayaProjectCompiler;
 		let c = new LayaProjectCompiler();
-		c.on("compileCompleted", compressJsFiles);
+		c.on("success", compressJsFiles);
+		c.on("failed", onFailed);
+		c.on("stdout", (msg) =>
+		{
+			compileMessage.push(msg.toString());
+		});
 		c.compile(workspace);
 	}
 	else
 	{
 		compressJsFiles();
 	}
+}
+
+function onFailed()
+{
+	compileMessage.forEach((msg)=>
+	{
+		console.error(msg.red);
+	});
+	// 编译失败退出码 2
+	process.exit(2);
 }
 
 function compressJsFiles()
