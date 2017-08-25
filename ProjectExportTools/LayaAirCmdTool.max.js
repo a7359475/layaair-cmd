@@ -441,7 +441,6 @@ var Laya=window.Laya=(function(window,document){
 			SystemSetting.tempPath=FileManager.getAppPath("data");
 			console.log("appPath:",this.appPath);
 			ExportManager.isCmdVer=true;
-			TemplateManager.init();
 			CodeTplManager.initCodeTpls();
 			RenderManager.addXMLConfig(this.getAbsPath("data/laya.editorUI.xml"));
 			this.addCustomConfig(this.getAbsPath("data/custom"));
@@ -22323,6 +22322,9 @@ var Laya=window.Laya=(function(window,document){
 				else{
 					console.log(stdErr);
 				}
+				if (SystemSetting.isCMDVer){
+					console.log(stdOut);
+				}
 				ExportManager.packingEndHandler(err,stdOut,stdErr);
 			},option);
 			return true;
@@ -26942,7 +26944,6 @@ var Laya=window.Laya=(function(window,document){
 						pathtmp=dirname;
 					}
 					if (!FileTools.fs.existsSync(pathtmp)){
-						console.log("makePath:",pathtmp);
 						if (!FileTools.fs.mkdirSync(pathtmp,mode)){
 							return false;
 						}
