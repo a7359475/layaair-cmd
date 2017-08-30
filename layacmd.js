@@ -22,6 +22,7 @@ program
 	.command('native', 'placeholder')
 	.parse(process.argv);
 
+// 检查调用的子程序是否存在
 let arg0 = program.args[0];
 if (/^\w+$/.test(arg0) &&
 	!program._execs[arg0])
