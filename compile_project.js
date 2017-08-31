@@ -34,7 +34,8 @@ class LayaProjectCompiler extends EventEmitter
 		let tasksFile = path.resolve(".laya", "tasks.json");
 		if (!fs.existsSync(tasksFile))
 		{
-			console.error(tr("no tasks.json, skip compile.").green)
+			console.log(tr("no tasks.json, skip compile.").green);
+			this.emit("success");
 			return;
 		}
 
