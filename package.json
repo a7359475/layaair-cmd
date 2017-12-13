@@ -1,13 +1,13 @@
 {
-  "name": "layacmd",
-  "version": "2.1.23",
+  "name": "layaair-cmd",
+  "version": "2.2.1",
   "description": "layaair toolkit",
   "main": "layacmd.js",
   "directories": {
     "test": "test"
   },
   "bin": {
-    "layacmd": "./layacmd.js"
+    "layaair-cmd": "./layacmd.js"
   },
   "dependencies": {
     "anywhere": "^1.4.0",
@@ -23,18 +23,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Surviver/layacmd.git"
-  },
   "keywords": [
     "layaair",
-    "layacmd"
+    "layacmd",
+    "layaair-cmd"
   ],
-  "author": "survivor",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Surviver/layacmd/issues"
-  },
-  "homepage": "https://github.com/Surviver/layacmd#readme"
+  "author": "yung",
+  "license": "ISC"
 }
