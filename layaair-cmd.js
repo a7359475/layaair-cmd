@@ -26,4 +26,4 @@ program
 let arg0 = program.args[0];
 if (/^\w+$/.test(arg0) &&
 	!program._execs[arg0])
-	printErr(`'${arg0}' ` + tr("is not a layacmd command. See 'layacmd  --help'"));
+	printErr(`'${arg0}' ` + tr("is not a layaair-cmd command. See 'layaair-cmd  --help'"));

@@ -2,12 +2,12 @@
   "name": "layaair-cmd",
   "version": "2.2.1",
   "description": "layaair toolkit",
-  "main": "layacmd.js",
+  "main": "layaair-cmd.js",
   "directories": {
     "test": "test"
   },
   "bin": {
-    "layaair-cmd": "./layacmd.js"
+    "layaair-cmd": "./layaair-cmd.js"
   },
   "dependencies": {
     "anywhere": "^1.4.0",
