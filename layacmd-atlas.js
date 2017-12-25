@@ -85,9 +85,11 @@ else
 		args.push("--textureFormat", program.textureFormat);
 }
 
+const shpath = path.join(__dirname, "ProjectExportTools", "TP", "atlas-generator.sh");
 sp = spawn(
-	path.join(__dirname, "ProjectExportTools", "TP", "AtlasGenerator"),
-	args);
+   '/bin/sh',
+   ['-c', "\"" + shpath + "\""].concat(args),
+	);
 
 sp.stdout.on("data", (data) =>
 {
