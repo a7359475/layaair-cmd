@@ -163,7 +163,9 @@ function compressJsFiles()
 	console.log("compress files")
 	if (!isAsProj)
 	{
-		var result = UglifyJS.minify([path.join(workspace, "release", "layaweb", versionName, "main.min.js")]);
+		var filePath = path.join(workspace, "release", "layaweb", versionName, "main.min.js");
+		var fileContent = fs.readFileSync(filePath, "utf-8");
+		var result = UglifyJS.minify(fileContent);
 		fs.writeFileSync(path.join(workspace, "release", "layaweb", versionName, "main.min.js"), result.code);
 	}
 	else
