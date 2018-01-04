@@ -12,7 +12,7 @@ const
 } = require("./print.js");
 
 program
-	.version("0.1.0")
+	.version("0.1.1")
 	.option('-i --input <input>', tr("resource directory."))
 	.option('-q --quality <quality>', tr("quality, more than 84."))
 	.parse(process.argv);

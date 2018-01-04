@@ -13,7 +13,7 @@ const
 } = require("./print.js");
 
 program
-	.version("0.1.0")
+	.version("0.1.1")
 	.option('-d --input <input directory>',				tr("Input directory, if not specify, it will be ${cwd}/laya/assets'"))
 	.option('--init',									tr("Generate config file."))
 	.option('--config [config file]',					tr("use options define in config file. Ignore all other options if this option is on. If the input directory containes laya project, you don't need to specify config file, otherwise, you need pass a config file path."))

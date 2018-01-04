@@ -7,7 +7,7 @@ const
 } = require("./print.js");
 
 program
-	.version("0.1.0")
+	.version("0.1.1")
 	.parse(process.argv);
 
 let LayaProjectCompiler = require("./compile_project.js").LayaProjectCompiler;

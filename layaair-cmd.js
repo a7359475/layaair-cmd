@@ -11,7 +11,7 @@ const
 } = require("./print.js");
 
 program
-	.version('0.1.0')
+	.version('2.2.5')
 	.usage("[command] [args]")
 	.command('compile', 'compile project.')
 	.command('publish', 'publish project.')

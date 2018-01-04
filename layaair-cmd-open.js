@@ -11,7 +11,7 @@ const
 } = require("./print.js");
 
 program
-	.version("0.1.0")
+	.version("0.1.1")
 	.usage("[port] [args]")
 	.option('-p <port>', tr("resource directory."))
 	.option('-s', tr("don't open browser"))

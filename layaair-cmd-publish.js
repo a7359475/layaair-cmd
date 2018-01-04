@@ -12,7 +12,7 @@ const
 } = require("./print.js");
 
 program
-	.version("0.1.1")
+	.version("0.1.2")
 	.option('-o --compressOptions <options>', tr("Compress options. 'no' for no processing, 'c' for compress, 'cc' for compress and concat."), getCompressOptions)
 	.option('-n --versionName <name>', tr("version name"))
 	.option('--noCompile', tr("do not compile project"))
