@@ -25,6 +25,9 @@
   var UIConfigManager=laya.editor.manager.UIConfigManager;
   var XMLElement=laya.editor.core.Wraps.xml.XMLElement;
   var XML2ObjectNodejs=laya.debug.tools.XML2ObjectNodejs;
+  var ProjectSetting=laya.ide.config.ProjectSetting;
+  var ResManager=laya.editor.manager.ResManager;
+  var Paths=laya.ide.consts.Paths;
 
   /**
    *...
@@ -98,9 +101,11 @@
     };
 
     __proto.fixed=function() {
+      // 修复xml对象获取children.length错误，导致Script属性设置错误
       AppendPropGroupTool.readXMLPropConfig=function(path,insertRender){
         (insertRender===void 0)&& (insertRender=false);
         if(!FileTools.exist(path))return {};
+        // TODO - JunC 这里是错误的地方
         // var xmlFile;
         // xmlFile=FileTools.readFile(path);
         // var xml;
@@ -109,6 +114,7 @@
         // var obj;
         // obj=XML2Object.parse(xml);
 
+        // TODO - JunC 这里是修改的地方
         var xmlFile;
         xmlFile=FileTools.readFile(path);
         var xml;
@@ -120,6 +126,128 @@
           UIConfigManager.addNewConfig(obj.c);
         }
         return obj.cList[0];
+      }
+
+      ExportManager.exportResWork=function(release){
+        var blackList=ExportManager.getSkipRes();
+        var whilteList=ExportManager.getWhitePackList();
+        var repeatList=ExportManager.getRepeatList();
+        var scaleInfos;
+        scaleInfos=ResStyleManager.getScaledFolders();
+        console.log(scaleInfos);
+        console.log("ProjectSetting.atlasScale",ProjectSetting.atlasScale);
+        if(release)blackList=blackList.concat(ResManager.getUnUserdList());
+        var allNotPacks;
+        allNotPacks=ResFileManager.getAllUnPackLinkList(null);
+        var notPackDirs;
+        notPackDirs=ResStyleManager.getAllUnPackDir();
+        allNotPacks=allNotPacks.concat(notPackDirs);
+        var notPackFilePath;
+        notPackFilePath=FileManager.getWorkPath(ExportManager.adptCallPath(ProjectSetting.asynResExportPath)+"/unpack.json");
+        FileManager.createJSONFile(notPackFilePath,allNotPacks);
+        var oldPathPackPath="libs/TP/TileAtlasPacker";
+        var newPathPackPath="libs/TP/atlas-generator";
+        if (SystemSetting.isCMDVer){
+          oldPathPackPath=oldPathPackPath.replace("libs/","");
+          newPathPackPath=newPathPackPath.replace("libs/","");
+        };
+        var cmd="\""+FileManager.getAppPath(oldPathPackPath)+"\""+
+          " -maxAltasWidth="+ProjectSetting.textureWidth+" -maxAltasHeight="+ProjectSetting.textureHeight+
+          " -tileWidthLimit="+ProjectSetting.picWidth+" -tileHeightLimit="+ProjectSetting.picHeight+
+          " "+"\""+ExportManager.adptCallPath(SystemSetting.assetsPath)+"\""+
+          " -outputDir="+"\""+ExportManager.adptCallPath(FileManager.getWorkPath(ProjectSetting.resExportPath))+"\"";
+        if(ExportManager.clearRes){
+          cmd+=" -force=true";
+        }
+        if(ProjectSetting.power2=="true"){
+          cmd+=" -powerOfTwo=true";
+        }
+        if(ProjectSetting.trimempty=="true"){
+          cmd+=" -trim=true";
+        }else{
+          cmd+=" -trim=false";
+        }
+        cmd+=" -htmlDir="+"\""+ExportManager.adptCallPath(FileManager.getWorkPath(ProjectSetting.asynResExportPath))+"\"";
+        cmd+=" -blackList="+"\""+blackList+"\"";
+        cmd+=" -inflateList="+"\""+repeatList+"\"";
+        cmd+=" -includeList="+"\""+whilteList+"\"";
+        var packFilePath=Paths.getPackParamFile();
+        var packObj;
+        packObj={};
+        packObj["inputDir"]=ExportManager.adptCallPath(SystemSetting.assetsPath);
+        packObj["outputDir"]=ExportManager.adptCallPath(FileManager.getWorkPath(ProjectSetting.resExportPath));
+        packObj["resDir"]=ExportManager.adptCallPath(FileManager.getWorkPath(ProjectSetting.asynResExportPath));
+        packObj["force"]=ExportManager.clearRes;
+        packObj["includeList"]=ExportManager.getNewParamList(whilteList);
+        packObj["excludeList"]=ExportManager.getNewParamList(blackList);
+        packObj["extrudeList"]=ExportManager.getNewParamList(repeatList);
+        if(ProjectSetting.copyRes!="true"){
+          packObj["resDir"]="";
+        };
+        var atlas;
+        atlas={};
+        atlas["width"]=ProjectSetting.textureWidth;
+        atlas["height"]=ProjectSetting.textureHeight;
+        atlas["size"]=parseInt(ProjectSetting.textureWidth+"");
+        atlas["quality"]=-1;
+        atlas["pixelFormat"]=ProjectSetting.picType==0?"ARGB32":"Indexed8";
+        atlas["POT"]=ProjectSetting.power2=="true";
+        console.log("picType:",ProjectSetting.picType);
+        atlas["textureFormat"]="PNG";
+        packObj["atlas"]=atlas;
+        if(ProjectSetting.atlasScale>0){
+          atlas["scale"]=ProjectSetting.atlasScale;
+        }
+        packObj["scaleDir"]=scaleInfos;
+        var dataParam;
+        dataParam={};
+        dataParam["format"]=ProjectSetting.atlasType==0?"json":"atlas";
+        dataParam["compact"]=ProjectSetting.dataCompact=="true";
+        packObj["data"]=dataParam;
+        var spriteConfig;
+        spriteConfig={};
+        spriteConfig["width"]=ProjectSetting.picWidth;
+        spriteConfig["height"]=ProjectSetting.picHeight;
+        spriteConfig["size"]=parseInt(ProjectSetting.picWidth+"");
+        spriteConfig["rotation"]=false;
+        spriteConfig["extrude"]=1;
+        spriteConfig["padding"]=1;
+        spriteConfig["cropAlpha"]=ProjectSetting.trimempty=="true";
+        packObj["sprite"]=spriteConfig;
+        FileManager.createJSONFile(packFilePath,packObj);
+        var option;
+        option={encoding:"binary",maxBuffer:1024*1024*20};;
+        var newCmd;
+        newCmd="AtlasGenerator  "+"\""+ExportManager.adptCallPath(packFilePath)+"\"";
+        newCmd="\""+FileManager.adptToCommonUrl(FileManager.getAppPath(newPathPackPath))+"\""+" "+"\""+ExportManager.adptCallPath(packFilePath)+"\"";
+        newCmd="\""+FileManager.adptToCommonUrl(FileManager.getAppPath(newPathPackPath))+"\""+" "+"\""+FileManager.adptToCommonUrl(ExportManager.adptCallPath(packFilePath))+"\"";
+        // TODO - JunC 这里导致了获取atlas-generator的路径错误
+        // if(ExportManager.isCmdVer){
+        //   newCmd="\""+FileTools.path.join(__dirname,"..","..","..","out","vs","layaEditor","libs","TP","atlas-generator")+"\""+" "+"\""+FileManager.adptToCommonUrl(laya.editor.manager.ExportManager.adptCallPath(packFilePath))+"\"";
+        // }
+        console.log("newCmd:",newCmd);
+        cmd=newCmd;
+        console.log("Waiting for pics packing");
+        FileManager.createDirectory(FileManager.getWorkPath(ProjectSetting.resExportPath));
+        CMDShell.execute(cmd,function(err,stdOut,stdErr){
+          if (err){
+            console.log("Error Occured: "+err);
+            if(!ExportManager.isCmdVer){
+              MessageManager.instance.show("Export Atlas Fail");
+              Waiting.hide();
+            }
+            return;
+          }
+          else{
+            console.log(stdErr);
+          }
+          if (SystemSetting.isCMDVer){
+            console.log(stdOut);
+          }
+          if(!ExportManager.exportExcels(ExportManager.packingEndHandler,ExportManager.clearRes))
+            ExportManager.packingEndHandler(err,stdOut,stdErr);
+        },option);
+        return true;
       }
     };
 
@@ -183,8 +311,6 @@
         }
         ExportManager.clearRes=true;
       }
-      // ExportManager.export(release)
-      ExportManager.clear();
       ExportManager.doExportLater(release,ifExportCode,ifExportRes);
     };
 
