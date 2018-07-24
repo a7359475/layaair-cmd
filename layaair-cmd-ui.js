@@ -15,11 +15,13 @@ program
 	.option('-a --atlas', tr('generate atlas'))
 	.option('-d --code', tr('generate ui code files'))
 	.option('-m --mode <mode>', tr("'normal' or 'release', specify 'release' will generate UI code files exclude unused resources."))
+	.option('--customDict <path>', tr('custom ui xml directory'))
 	.parse(process.argv);
 
 let clear = program.clear || false,
 	mode  = program.mode || 'normal',
 	code  = program.code || false,
+  customDict = program.customDict || null,
 	atlas = program.atlas || false;
 
 /////////////////////////////////////////////////////////////
@@ -32,6 +34,7 @@ args.push(`clear=${clear}`);
 args.push(`releasemode=${mode}`);
 args.push(`exportUICode=${code}`);
 args.push(`exportRes=${atlas}`);
+args.push(`customDict=${customDict}`);
 
 var sp = require("child_process").fork(exe, args);
 

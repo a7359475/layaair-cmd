@@ -65,7 +65,8 @@ let tr_list = [
 	["do not compile project", "不重新编译项目"],
 	["do not generate ui files", "不重新生成UI代码文件"],
 	["do not generate atlas", "不重新生成图集"],
-	["no tasks.json, skip compile.", "无tasks.json，跳过编译"]
+	["no tasks.json, skip compile.", "无tasks.json，跳过编译"],
+	["custom ui xml directory", "自定义UI的xml路径"]
 ];
 
 /**

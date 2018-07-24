@@ -68,6 +68,7 @@
       this.scriptPath=null;
       this.exportUICode="true";
       this.exportRes="true";
+      this.customDict=null;
       LayaAirCmdTool.I=this;
       this.init();
     }
@@ -298,7 +299,8 @@
       ResFileManager.setPath(SystemSetting.assetsPath);
       ResStyleManager.init();
       // PageStyleManager.init();
-      this.addCustomConfig(FileManager.getWorkPath("laya/custom"));
+      if (this.customDict != null)
+        this.addCustomConfig(this.customDict);
       ExportManager.packingEndHandler=laya.editor.utils.Utils.bind(this.packingEnd,this);
       ExportManager.clearRes=false;
       var ifExportCode=false;
