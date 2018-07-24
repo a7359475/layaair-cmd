@@ -2,6 +2,11 @@
 
 # layaair-cmd
 
+对原本版本的修改：
+
+* 对原本的LayaAir-cmd导出UI代码及资源方面进行了修复，使得可以正常导出LayaAir:1.7.18版本的UI资源.
+* ui导出添加了新的参数：‘customDict’-自定义UI XML文件所在路径的设置
+
 [TOC]
 
 **layaair-cmd**是**layaair**的命令行工具，可以使用**layaair-cmd**不打开**IDE**的情况下对**layaair**项目进行编译发布等操作。它包含以下功能，这些功能都对应一个子命令。
@@ -117,6 +122,7 @@ $ layaair-cmd ui -h
     -c --clear        clear will delete old ui code file.
     -a --atlas        generate atlas
     -d --code         generate ui code files
+    --customDict      custom ui xml directory complete path
     -m --mode <mode>  'normal'或者'release'，指定'release'会生成除未使用资源外的UI代码文件
     -h, --help        output usage information
 ```

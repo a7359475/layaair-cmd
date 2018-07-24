@@ -15,7 +15,7 @@ program
 	.option('-a --atlas', tr('generate atlas'))
 	.option('-d --code', tr('generate ui code files'))
 	.option('-m --mode <mode>', tr("'normal' or 'release', specify 'release' will generate UI code files exclude unused resources."))
-	.option('--customDict <path>', tr('custom ui xml directory'))
+	.option('--customDict <path>', tr('custom ui xml directory complete path'))
 	.parse(process.argv);
 
 let clear = program.clear || false,
