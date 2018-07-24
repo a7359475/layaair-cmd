@@ -20,6 +20,11 @@
   var ProjectManager = laya.editor.manager.ProjectManager;
   var ResStyleManager = laya.editor.manager.ResStyleManager;
   var ResFileManager = laya.ide.managers.ResFileManager;
+  var AppendPropGroupTool = laya.editor.view.prop.AppendPropGroupTool;
+  var XML2Object=laya.debug.tools.XML2Object;
+  var UIConfigManager=laya.editor.manager.UIConfigManager;
+  var XMLElement=laya.editor.core.Wraps.xml.XMLElement;
+  var XML2ObjectNodejs=laya.debug.tools.XML2ObjectNodejs;
 
   /**
    *...
@@ -68,6 +73,7 @@
     var __proto=LayaAirCmdTool.prototype;
     __proto.init=function(){
       SystemSetting.isCMDVer=true;
+      window.DOMParser = require('xmldom').DOMParser;
       TypeManager.init();
       var argv;
       argv=process.argv;;
@@ -87,8 +93,34 @@
       CodeTplManager.initCodeTpls();
       RenderManager.addXMLConfig(this.getAbsPath("data/laya.editorUI.xml"));
       this.addCustomConfig(this.getAbsPath("data/custom"));
-      console.log("TTTT", FileTools.appPath);
+      this.fixed();
       this.openProject(this.tarProject,this.releasemode=="release");
+    };
+
+    __proto.fixed=function() {
+      AppendPropGroupTool.readXMLPropConfig=function(path,insertRender){
+        (insertRender===void 0)&& (insertRender=false);
+        if(!FileTools.exist(path))return {};
+        // var xmlFile;
+        // xmlFile=FileTools.readFile(path);
+        // var xml;
+        // xml=laya.utils.Utils.parseXMLFromString(xmlFile);
+        // console.log("[T]", "parseXMLFromString", xml);
+        // var obj;
+        // obj=XML2Object.parse(xml);
+
+        var xmlFile;
+        xmlFile=FileTools.readFile(path);
+        var xml;
+        xml=XMLElement.parseXmlFromString(xmlFile);
+        var obj;
+        obj=XML2ObjectNodejs.parse(xml);
+
+        if(insertRender){
+          UIConfigManager.addNewConfig(obj.c);
+        }
+        return obj.cList[0];
+      }
     };
 
     __proto.parseCMD=function(args){
@@ -152,6 +184,7 @@
         ExportManager.clearRes=true;
       }
       // ExportManager.export(release)
+      ExportManager.clear();
       ExportManager.doExportLater(release,ifExportCode,ifExportRes);
     };
 
@@ -165,10 +198,6 @@
   })();
 
   Laya.__init([PageExportType,ViewHook]);
-  // new LayaBuilder();
   // TODO - JunC 这里是导出UI的代码
-  argv=process.argv;
-  console.log("argv:",argv);
-  console.log("ViewHook", ViewHook);
   new LayaAirCmdTool();
 })(window,document,Laya);
