@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<uiComp>
+    <XYText className="XYText" inherit="Text" icon="text" resName="sText" defaultValue="text='text'" runClass="XYText" groups="公用,常用,宽高及位置,旋转及缩放" drag="3">
+		<prop name="underlineWidth" tips="下划线宽度" type="number" default="1" />
+		<prop name="underlineOffsetY" tips="下划线Y轴偏移值" type="number" default="0" />
+		<prop name="underline" tips="是否显示下划线" type="bool" default="false" />
+		<prop name="underlineColor" tips="下划线颜色" type="color" default="" />
+		<prop name="glowColor" tips="发光颜色" type="color" default="" />
+		<prop name="glowBlur" tips="发光-边缘模糊的大小" type="number" default="0" />
+		<prop name="glowOffX" tips="发光-X轴方向的偏移" type="number" default="0" />
+		<prop name="glowOffY" tips="发光-Y轴方向的偏移" type="number" default="0" />
+	</XYText>
+</uiComp>
