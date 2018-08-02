@@ -6,6 +6,7 @@
 
 * 对原本的LayaAir-cmd导出UI代码及资源方面进行了修复，使得可以正常导出LayaAir:1.7.18版本的UI资源.
 * ui导出添加了新的参数：‘customDict’-自定义UI XML文件所在路径的设置
+* 添加IDE 1.7.18版本的发布功能，参照：${IDE_PATH}/resources/app/out/layarepublic/publishpro2的实现来修改的
 
 [TOC]
 
@@ -92,13 +93,26 @@ $ layaair-cmd publish -h
 
   Options:
 
-    -V, --version                   output the version number
-    -o --compressOptions <options>  压缩选项。留空不处理，'c'表示压缩，'cc'表示压缩并合并
-    -n --versionName <name>         version name
-    --noCompile                     不重新编译项目
-    --noUi                          不重新生成UI代码文件
-    --noAtlas                       不重新生成图集
-    -h, --help                      output usage information
+     -V, --version               output the version number
+     --sourcePath <path>         源根目录
+     --outPath <path>            发布目录
+     --pngQualityLow <quality>   PNG 最小质量
+     --pngQualityHigh <quality>  PNG 最大质量
+     --jpgQuality <quality>      JPG 质量
+     --mergeJs                   是否合并index.html内的所有js文件（小游戏必选）
+     --compressPng               是否压缩 PNG (耗时)
+     --compressJpg               是否压缩 JPG (非常耗时，但效果很好)
+     --compressJson              是否压缩 JSON
+     --jsontypes <suffix>        JSON 文件后缀, 默认:json,atlas,ls,lh,lmat,lav,prefab
+     --compressJs                是否压缩混淆 JS (耗时)
+     --enableVersion             是否启用版本管理，启用后，会重命名变化的文件
+     --excludeFiles <files>      排除文件
+     --publishType <platform>    发布平台: webnative(默认), wxnimigame, qqwanyiwan
+     --projectType               项目类型: as, ts(默认), js
+     --copyOutFiles <files>      复制文件列表
+     --copyOutPath <path>        复制文件到
+     --userCmd <cmd>             后续执行脚本
+     -h, --help                  output usage information
 ```
 
 如果当前目录有**layaair**项目，该命令会生成发布后的**JavaScript**文件，发布的文件夹在*release*下面。
@@ -106,7 +120,7 @@ $ layaair-cmd publish -h
 #### 使用
 
 ```shell
-$ layaair-cmd publish -o cc # 指定了压缩选项为合并并压缩
+$ layaair-cmd publish --sourcePath ./bin --outPath ./release/web --excludeFiles ./src --enableVersion # 开启版本管理功能
 ```
 
 ## 导出UI
