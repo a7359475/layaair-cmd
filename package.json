@@ -14,12 +14,14 @@
     "colors": "^1.1.2",
     "commander": "^2.11.0",
     "fs-extra": "^4.0.1",
-    "iconv-lite": "^0.4.18",
+    "iconv-lite": "^0.4.23",
     "jsonc-parser": "^1.0.0",
-    "uglify-js": "^3.0.27",
+    "uglify-js": "^3.4.6",
     "xmldom": "^0.1.27"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "layaair-cmd": "https://gitee.com/junc74/layaair-cmd.git"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

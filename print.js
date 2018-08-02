@@ -66,7 +66,25 @@ let tr_list = [
 	["do not generate ui files", "不重新生成UI代码文件"],
 	["do not generate atlas", "不重新生成图集"],
 	["no tasks.json, skip compile.", "无tasks.json，跳过编译"],
-	["custom ui xml directory complete path", "自定义UI的xml文件夹的完整路径"]
+	["custom ui xml directory complete path", "自定义UI的xml文件夹的完整路径"],
+	["After execute cmd", "后续执行脚本"],
+	["Copy files target path", "复制文件到"],
+	["Copy files list", "复制文件列表"],
+  ["Project type: as, ts(default), js", "项目类型: as, ts(默认), js"],
+  ["Publishing platform: webnative(default), wxnimigame, qqwanyiwan", "发布平台: webnative(默认), wxnimigame, qqwanyiwan"],
+  ["Exclude files", "排除文件"],
+  ["Whether to enable version management, when enabled, will rename the changed file", "是否启用版本管理，启用后，会重命名变化的文件"],
+  ["Compression obfuscates JS (time consuming)", "是否压缩混淆 JS (耗时)"],
+  ["JSON suffix, default:json,atlas,ls,lh,lmat,lav,prefab", "JSON 文件后缀, 默认:json,atlas,ls,lh,lmat,lav,prefab"],
+  ["Whether or not to compress JSON", "是否压缩 JSON"],
+  ["Whether or not to compress JPG (very time-consuming but very effective)", "是否压缩 JPG (非常耗时，但效果很好)"],
+  ["Whether or not to compress PNG (time consuming)", "是否压缩 PNG (耗时)"],
+  ["Whether to merge all the js files in index.html (for mini-game only)", "是否合并index.html内的所有js文件（小游戏必选）"],
+  ["JPG quality", "JPG 质量"],
+  ["PNG Maximum quality", "PNG 最大质量"],
+  ["PNG Minimal quality", "PNG 最小质量"],
+  ["Publishing directory", "发布目录"],
+  ["Source root directory", "源根目录"],
 ];
 
 /**
