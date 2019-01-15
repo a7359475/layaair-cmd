@@ -404,26 +404,6 @@ var Laya=window.Laya=(function(window,document){
 	var LimixiuAdptTool=(function(){
 		function LimixiuAdptTool(){}
 		__class(LimixiuAdptTool,'laya.packtool.LimixiuAdptTool');
-		LimixiuAdptTool.copyLimixiuFiles=function(){
-			var dataPath;
-			dataPath=FileManager.getPath(NodeJSTools.getMyPath(),"lib/data/qqfiles");
-			var tarPath;
-			tarPath=RunConfig.outPath;
-			var files;
-			files=FileTools.getFileList(dataPath);
-			var i=0,len=0;
-			len=files.length;
-			var tFile;
-			var tarFile;
-			for (i=0;i < len;i++){
-				tFile=files[i];
-				tarFile=FileManager.getPath(tarPath,FileManager.getRelativePath(dataPath,tFile));
-				if (!FileManager.exists(tarFile)){
-					FileManager.copyFile(tFile,tarFile);
-				}
-			}
-		}
-
 		LimixiuAdptTool.copyTplFiles=function(dataFolder){
 			(dataFolder===void 0)&& (dataFolder="lib/data/qqfiles");
 			var dataPath;
@@ -612,7 +592,8 @@ var Laya=window.Laya=(function(window,document){
 			return scriptPathList;
 		}
 
-		MergeJs.mergeJS=function(htmlFile,fileDic){
+		MergeJs.mergeJS=function(htmlFile,fileDic,noFile){
+			(noFile===void 0)&& (noFile=false);
 			if (!FileTools.exist(htmlFile)){
 				PackTrace.err("MergeJS Fail, File not found :",htmlFile);
 				return;
@@ -647,7 +628,8 @@ var Laya=window.Laya=(function(window,document){
 			var tarPath;
 			tarPath=FileManager.getPath(basePath,RunConfig.mergedJS);
 			console.log("Create js:",tarPath);
-			FileManager.createTxtFile(tarPath,contentList.join("\n"));
+			if(!noFile)
+				FileManager.createTxtFile(tarPath,contentList.join("\n"));
 		}
 
 		return MergeJs;
@@ -715,6 +697,8 @@ var Laya=window.Laya=(function(window,document){
 			});
 			childP.on('close',function(code){
 				if (parseInt(code)!=0){
+					if (parseInt(code)==98){
+					}else
 					if (parseInt(code)==99){
 						PackTrace.err("compress fail pic:",filePath,"compressed quality not between "+RunConfig.pngQualityLow+"-"+RunConfig.pngQualityHigh);
 						}else{
@@ -888,6 +872,8 @@ var Laya=window.Laya=(function(window,document){
 		RunConfig.publishType="0";
 		RunConfig.copyOutPath="";
 		RunConfig.copyOutFiles="";
+		RunConfig.onlyIndexJS="false";
+		RunConfig.deleteOldVersionFile=true;
 		return RunConfig;
 	})()
 
@@ -900,6 +886,7 @@ var Laya=window.Laya=(function(window,document){
 	var LayaAirProjectPack=(function(){
 		function LayaAirProjectPack(){
 			this.enableVersion=false;
+			this.force=false;
 			this._fileDic={};
 			this._fileHashDic={};
 			this.fileTypeList=["js","json","jpg","png","other"];
@@ -911,6 +898,7 @@ var Laya=window.Laya=(function(window,document){
 			this.tempFileDic={};
 			this.noVersionDic={};
 			this.noPackDic={};
+			this.indexScriptDic=null;
 			this.noHtml=false;
 			this._next=null;
 			this.workList=null;
@@ -972,6 +960,11 @@ var Laya=window.Laya=(function(window,document){
 			PackTool.init();
 		}
 
+		/**
+		*获取文件类型
+		*@param file
+		*@return
+		*/
 		__proto.getFileSignByFile=function(file){
 			var extension;
 			extension=FileTools.getExtensionName(file).toLowerCase();
@@ -994,6 +987,7 @@ var Laya=window.Laya=(function(window,document){
 			if (!RunConfig.excludeFiles)return;
 			var fileList;
 			fileList=RunConfig.excludeFiles.split(";");
+			console.log("fileList:",fileList);
 			var i=0,len=0;
 			len=fileList.length;
 			var tPath;
@@ -1012,6 +1006,8 @@ var Laya=window.Laya=(function(window,document){
 			LayaAirProjectPack.addFileToDicData(FileManager.getPath(RunConfig.sourcePath,RunConfig.htmlFile),this.noVersionDic);
 			LayaAirProjectPack.addFileToDicData(FileManager.getPath(RunConfig.sourcePath,"code.js"),this.noVersionDic);
 			LayaAirProjectPack.addFileToDicData(FileManager.getPath(RunConfig.sourcePath,"main.js"),this.noVersionDic);
+			if(LayaAirProjectPack.isTrue(RunConfig.enableVersion))
+				LayaAirProjectPack.addFileToDicData(FileManager.getPath(RunConfig.sourcePath,RunConfig.versionFile),this.noVersionDic);
 		}
 
 		__proto.setIsCompress=function(filePath,compress){
@@ -1027,10 +1023,20 @@ var Laya=window.Laya=(function(window,document){
 			return false;
 		}
 
+		/**
+		*获取文件hash
+		*@param file
+		*@return
+		*/
 		__proto.getFileHash=function(file){
 			return this.getHashByContent(FileManager.readTxtFile(file));
 		}
 
+		/**
+		*获取文本内容的hash
+		*@param content
+		*@return
+		*/
 		__proto.getHashByContent=function(content){
 			var value;
 			value=SMD5.md5(content,null,null);
@@ -1038,15 +1044,30 @@ var Laya=window.Laya=(function(window,document){
 			return value;
 		}
 
+		/**
+		*设置文件的hash
+		*@param file
+		*@param content
+		*/
 		__proto.setFileHashByContent=function(file,content){
 			this._fileHashDic[file]=this.getHashByContent(content);
 			this.addToTarFileDic(file);
 		}
 
+		/**
+		*获取文件的目标位置
+		*@param file
+		*@return
+		*/
 		__proto.getTarFilePath=function(file){
 			return FileTools.getPath(RunConfig.outPath,this.getTarFileRelativePath(file));
 		}
 
+		/**
+		*获取文件的目标位置的相对路径
+		*@param file
+		*@return
+		*/
 		__proto.getTarFileRelativePath=function(file){
 			if (!this._fileHashDic[file]){
 				this._fileHashDic[file]=this.getFileHash(file);
@@ -1066,6 +1087,10 @@ var Laya=window.Laya=(function(window,document){
 			return FileManager.adptToCommonUrl(tarPath);
 		}
 
+		/**
+		*将文件添加到版本管理数据中
+		*@param file
+		*/
 		__proto.addToTarFileDic=function(file){
 			var rPath;
 			rPath=FileManager.adptToCommonUrl(FileTools.getRelativePath(RunConfig.sourcePath,file));
@@ -1104,48 +1129,9 @@ var Laya=window.Laya=(function(window,document){
 			}
 		}
 
-		__proto.work=function(){
-			this.initJsonTypes();
-			this.enableVersion=LayaAirProjectPack.isTrue(RunConfig.enableVersion);
-			this.initFileDic();
-			this.initCompress();
-			this.initNoCompressDic();
-			this.initNoVersionDic();
-			console.log("publishType:",RunConfig.publishType);
-			console.log("projectType:",RunConfig.projectType);
-			RunConfig.projectType=StringTool.trim(RunConfig.projectType);
-			if (RunConfig.publishType==2){
-				PackTrace.progress(1,"复制必要文件");
-				LimixiuAdptTool.copyTplFiles("lib/data/qqfiles/"+RunConfig.projectType);
-				if (RunConfig.projectType=="as"){
-					this.adptASProject();
-				}
-			}
-			if (RunConfig.publishType==1){
-				PackTrace.progress(1,"复制必要文件");
-				LimixiuAdptTool.copyTplFiles("lib/data/wxfiles");
-				this.noHtml=true;
-			}
-			if (RunConfig.projectType=="js"){
-				this.adptJSProject();
-			}
-			if (LayaAirProjectPack.isTrue(RunConfig.exportLimixiu)){
-				if (RunConfig.projectType=="as"){
-				}
-			};
-			var clearOutDir=false;
-			clearOutDir=RunConfig.clearOutDir==="true";
-			var force=false;
-			if(!this.enableVersion)RunConfig.force=true
-				force=LayaAirProjectPack.isTrue(RunConfig.force);
-			var ifMergeJS=false;
-			ifMergeJS=LayaAirProjectPack.isTrue(RunConfig.mergeJs);
-			if (clearOutDir){
-			}
-			if (ifMergeJS){
-				PackTrace.progress(7,"合并js文件");
-				this.mergeJS();
-			};
+		__proto.initFileList=function(){
+			var ifOnlyIndex=false;
+			ifOnlyIndex=LayaAirProjectPack.isTrue(RunConfig.onlyIndexJS);
 			var files;
 			files=FileTools.getFileList(RunConfig.sourcePath);
 			var i=0,len=0;
@@ -1154,8 +1140,6 @@ var Laya=window.Laya=(function(window,document){
 			var tFileTypeSign;
 			var tFileTypeList;
 			var tTarFile;
-			var allFiles;
-			allFiles=[];
 			var isCompressFile=false;
 			for (i=0;i < len;i++){
 				tFile=files[i];
@@ -1182,6 +1166,16 @@ var Laya=window.Laya=(function(window,document){
 					continue ;
 				}
 				tFileTypeSign=this.getFileSignByFile(tFile);
+				if (tFileTypeSign=="js"){
+					if (ifOnlyIndex){
+						if (!LayaAirProjectPack.isFileInDic(tFile,this.indexScriptDic)){
+							if (tFile.indexOf("/code.js")< 0){
+								console.log("Skip:",tFile);
+								continue ;
+							}
+						}
+					}
+				}
 				isCompressFile=!this.isNoCompressFile(tFile);
 				if (isCompressFile&&this.fileCompressDic[tFileTypeSign]){
 					tFileTypeList=this._fileDic[tFileTypeSign];
@@ -1192,12 +1186,67 @@ var Laya=window.Laya=(function(window,document){
 				}
 				this._fileHashDic[tFile]=this.getFileHash(tFile);
 				tTarFile=this.getTarFilePath(tFile);
-				if (force||!FileTools.exist(tTarFile)){
+				if (this.force||!FileTools.exist(tTarFile)){
 					tFileTypeList.push(tFile);
 					}else{
 				}
 				this.addToTarFileDic(tFile);
 			}
+		}
+
+		__proto.work=function(){
+			this.initJsonTypes();
+			this.enableVersion=LayaAirProjectPack.isTrue(RunConfig.enableVersion);
+			this.initFileDic();
+			this.initCompress();
+			this.initNoCompressDic();
+			this.initNoVersionDic();
+			RunConfig.projectType=StringTool.trim(RunConfig.projectType);
+			if (RunConfig.publishType==2){
+				PackTrace.progress(1,"复制必要文件");
+				LimixiuAdptTool.copyTplFiles("lib/data/qqfiles/"+RunConfig.projectType);
+				if (RunConfig.projectType=="as"){
+					this.adptASProject();
+				}
+			}
+			if (RunConfig.publishType==1){
+				PackTrace.progress(1,"复制必要文件");
+				LimixiuAdptTool.copyTplFiles("lib/data/wxfiles");
+				this.noHtml=true;
+			}
+			if (RunConfig.projectType=="js"){
+				this.adptJSProject();
+			};
+			var clearOutDir=false;
+			clearOutDir=LayaAirProjectPack.isTrue(RunConfig.clearOutDir);
+			if (clearOutDir){
+				FileTools.removeDir(RunConfig.outPath);
+			}
+			if(!this.enableVersion)RunConfig.force=true
+				this.force=LayaAirProjectPack.isTrue(RunConfig.force);
+			var ifMergeJS=false;
+			ifMergeJS=LayaAirProjectPack.isTrue(RunConfig.mergeJs);
+			if (ifMergeJS){
+				PackTrace.progress(7,"合并js文件");
+				this.mergeJS();
+			};
+			var ifOnlyIndex=false;
+			ifOnlyIndex=LayaAirProjectPack.isTrue(RunConfig.onlyIndexJS);
+			if (ifOnlyIndex){
+				this.indexScriptDic={};
+				MergeJs.mergeJS(FileManager.getPath(RunConfig.sourcePath,RunConfig.htmlFile),this.indexScriptDic,true);
+			}
+			this.initFileList();
+			this.createWorkList();
+			this.beginWorkList();
+		}
+
+		__proto.beginWorkList=function(){
+			this._next=Utils.bind(this.nextWork,this);
+			this.nextWork();
+		}
+
+		__proto.createWorkList=function(){
 			this.workList=[];
 			if (this.fileCompressDic["js"]){
 				this.workList.push(["CompressJS",Utils.bind(this.compressJS,this),[10,"压缩JS"]]);
@@ -1216,10 +1265,13 @@ var Laya=window.Laya=(function(window,document){
 				this.workList.push(["AdptHtml",Utils.bind(this.adptIndexHtml,this),[85,"修改html文件"]]);
 			}
 			if (RunConfig.publishType==2){
-				this.workList.push(["CreateLimixiuMain",Utils.bind(this.createLimixiuMain,this),[95,"创建main.js"]]);
+				this.workList.push(["CreateLimixiuMain",Utils.bind(this.createLimixiuMain,this),[90,"创建main.js"]]);
 			}
 			if (LayaAirProjectPack.isTrue(RunConfig.enableVersion)){
-				this.workList.push(["SaveFileConfig",Utils.bind(this.saveFileConfig,this),[95,"保存版本信息"]]);
+				this.workList.push(["SaveFileConfig",Utils.bind(this.saveFileConfig,this),[92,"保存版本信息"]]);
+				if (LayaAirProjectPack.isTrue(RunConfig.deleteOldVersionFile)){
+					this.workList.push(["DeleteOldVersionFile",Utils.bind(this.deleteOldVersionFile,this),[95,"删除旧文件"]]);
+				}
 			}
 			if (RunConfig.copyOutPath && RunConfig.copyOutPath !=""){
 				if (RunConfig.copyOutFiles && RunConfig.copyOutFiles !=""){
@@ -1229,8 +1281,6 @@ var Laya=window.Laya=(function(window,document){
 			if (RunConfig.userCmd && RunConfig.userCmd !=""){
 				this.workList.push(["ExecuteCmd",Utils.bind(this.executeUserCmd,this),[99,"执行自定义命令"]]);
 			}
-			this._next=Utils.bind(this.nextWork,this);
-			this.nextWork();
 		}
 
 		__proto.nextWork=function(){
@@ -1253,6 +1303,9 @@ var Laya=window.Laya=(function(window,document){
 			tTaskFun();
 		}
 
+		/**
+		*合并index.html中引用的js文件
+		*/
 		__proto.mergeJS=function(){
 			PackTrace.info("Work:MergeJS");
 			if (RunConfig.publishType==1){
@@ -1267,37 +1320,54 @@ var Laya=window.Laya=(function(window,document){
 			}
 		}
 
-		//MergeJs.mergeJS(FileManager.getPath(RunConfig.sourcePath,RunConfig.htmlFile),{});
+		/**
+		*压缩js文件
+		*/
 		__proto.compressJS=function(){
 			var fileList;
 			fileList=this._fileDic["js"];
 			PackTool.packList(fileList,PackTool.compressJS,this._next);
 		}
 
+		/**
+		*压缩json文件
+		*/
 		__proto.compressJson=function(){
 			var fileList;
 			fileList=this._fileDic["json"];
 			PackTool.packList(fileList,PackTool.compressJson,this._next);
 		}
 
+		/**
+		*压缩jpg文件
+		*/
 		__proto.compressJpg=function(){
 			var fileList;
 			fileList=this._fileDic["jpg"];
 			PackTool.packList(fileList,PackTool.compressJpg,this._next);
 		}
 
+		/**
+		*压缩png文件
+		*/
 		__proto.compressPng=function(){
 			var fileList;
 			fileList=this._fileDic["png"];
 			PackTool.packList(fileList,PackTool.compressPng,this._next);
 		}
 
+		/**
+		*复制不需要压缩的文件
+		*/
 		__proto.dealOtherFile=function(){
 			var fileList;
 			fileList=this._fileDic["other"];
 			PackTool.packListSyn(fileList,FileTools.copyFile,this._next);
 		}
 
+		/**
+		*复制发布后的文件到指定目录
+		*/
 		__proto.copyOutPublishFiles=function(){
 			var files;
 			files=RunConfig.copyOutFiles.split(";");
@@ -1342,6 +1412,9 @@ var Laya=window.Laya=(function(window,document){
 			}
 		}
 
+		/**
+		*执行用户自定义的命令行
+		*/
 		__proto.executeUserCmd=function(){
 			var userCmd;
 			userCmd=RunConfig.userCmd;
@@ -1362,6 +1435,42 @@ var Laya=window.Laya=(function(window,document){
 			}
 		}
 
+		/**
+		*删除旧版本的文件
+		*/
+		__proto.deleteOldVersionFile=function(){
+			var i=0,len=0;
+			var fileList;
+			fileList=FileTools.getFileList(RunConfig.outPath);
+			len=fileList.length;
+			var tFile;
+			var tFileName;
+			var extension;
+			var rPath;
+			var tFileVersion;
+			var rPathKey;
+			for (i=0;i < len;i++){
+				tFile=fileList[i];
+				tFileName=FileTools.getFileName(tFile);
+				rPath=FileManager.getRelativePath(RunConfig.outPath,tFile);
+				extension=FileTools.getExtensionName(tFile);
+				tFileVersion=tFileName.substr(tFileName.length-8);
+				if (rPath.indexOf("cp"+tFileVersion)> 0){
+					rPathKey=rPath.replace("cp"+tFileVersion+"."+extension,"."+extension);
+				}else
+				rPathKey=rPath.replace(tFileVersion+"."+extension,"."+extension);
+				FileManager.adptToCommonUrl(rPath);
+				if (!this._tarFileDic[rPathKey]||this._tarFileDic[rPathKey]==rPath){
+					continue ;
+				}
+				FileManager.removeFile(tFile);
+			}
+			this._next();
+		}
+
+		/**
+		*为as项目的.max.js添加玩一玩适配库
+		*/
 		__proto.adptASProject=function(){
 			var files;
 			files=FileTools.getFileList(RunConfig.sourcePath);
@@ -1377,6 +1486,9 @@ var Laya=window.Laya=(function(window,document){
 			}
 		}
 
+		/**
+		*创建玩一玩需要的main.js
+		*/
 		__proto.createLimixiuMain=function(){
 			var htmlFile;
 			htmlFile=FileManager.getPath(RunConfig.sourcePath,RunConfig.htmlFile);
@@ -1435,8 +1547,10 @@ var Laya=window.Laya=(function(window,document){
 			this._next();
 		}
 
+		/**
+		*将js项目src目录下的js文件复制到发布目录
+		*/
 		__proto.adptJSProject=function(){
-			console.log("Check Project Type");
 			var htmlFile;
 			htmlFile=FileManager.getPath(RunConfig.sourcePath,RunConfig.htmlFile);
 			if (!FileManager.exists(htmlFile)){
@@ -1469,7 +1583,9 @@ var Laya=window.Laya=(function(window,document){
 			FileManager.copyFile(oldJsPath,tarJsPath);
 		}
 
-		//htmlStr=StringTool.getReplace(htmlStr,"../src/","js/");
+		/**
+		*修改index.html 修改文件中的js文件引用
+		*/
 		__proto.adptIndexHtml=function(){
 			var htmlFile;
 			htmlFile=FileManager.getPath(RunConfig.sourcePath,RunConfig.htmlFile);
@@ -1498,6 +1614,9 @@ var Laya=window.Laya=(function(window,document){
 			this._next();
 		}
 
+		/**
+		*保存版本配置文件
+		*/
 		__proto.saveFileConfig=function(){
 			FileManager.createJSONFile(FileTools.getPath(RunConfig.outPath,RunConfig.versionFile),this._tarFileDic);
 			this._next();
@@ -1509,7 +1628,7 @@ var Laya=window.Laya=(function(window,document){
 				return;
 			};
 			var files;
-			files=FileTools.getFileList(RunConfig.sourcePath);
+			files=FileTools.getFileList(filePath);
 			var i=0,len=0;
 			len=files.length;
 			for (i=0;i < len;i++){
@@ -13303,7 +13422,6 @@ var Laya=window.Laya=(function(window,document){
 			rst=rst?rst:[];
 			if(filterFun!=null&&!filterFun(sprite))return rst;
 			if (sprite.getBounds().contains(x,y)){
-				rst.push(sprite);
 				var tS;
 				var tempP=new Point();
 				tempP.setTo(x,y);
@@ -13315,13 +13433,16 @@ var Laya=window.Laya=(function(window,document){
 					if((child instanceof laya.display.Sprite ))
 						DisControlTool.getObjectsUnderPoint(child,x,y,rst,filterFun);
 				}
+				rst.push(sprite);
 			}
 			return rst;
 		}
 
-		DisControlTool.getObjectsUnderGlobalPoint=function(sprite,filterFun){
-			var point=new Point();
-			point.setTo(Laya.stage.mouseX,Laya.stage.mouseY);
+		DisControlTool.getObjectsUnderGlobalPoint=function(sprite,filterFun,point){
+			if(!point){
+				point=new Point();
+				point.setTo(Laya.stage.mouseX,Laya.stage.mouseY);
+			}
 			if(sprite.parent)
 				point=(sprite.parent).globalToLocal(point);
 			return DisControlTool.getObjectsUnderPoint(sprite,point.x,point.y,null,filterFun);
@@ -21402,7 +21523,6 @@ var Laya=window.Laya=(function(window,document){
 		}
 
 		/**
-		*
 		*@private
 		*获取自己坐标系的显示区域多边形顶点列表
 		*@param ifRotate （可选）当前的显示对象链是否由旋转
@@ -31129,6 +31249,12 @@ var Laya=window.Laya=(function(window,document){
 		__proto._calGraphicData=function(aniData){
 			this._setUp(null,aniData);
 			this._createGraphicData();
+			if (this._nodeIDAniDic){
+				var key;
+				for (key in this._nodeIDAniDic){
+					this._nodeIDAniDic[key]=null;
+				}
+			}
 		}
 
 		/**
