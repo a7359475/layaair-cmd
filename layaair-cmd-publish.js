@@ -45,6 +45,17 @@ function getBoolean(value) {
   return value ? "true" : "false";
 }
 
+function getPublishType(value) {
+  switch (value) {
+    case "webnative":
+      return 0;
+    case  "wxnimigame":
+      return 1;
+    case "qqwanyiwan":
+      return 2;
+  }
+}
+
 function getParamObj() {
   let ret = {};
   ret.sourcePath = program.sourcePath || "";
@@ -62,7 +73,7 @@ function getParamObj() {
   ret.onlyIndexJS = getBoolean(program.onlyIndexJS); // 是否只复制index.html中引用的js文件
   ret.deleteOldVersionFile = getBoolean(program.deleteOldVersionFile); // 是否删除老版本的文件
   ret.excludeFiles = program.excludeFiles || "";
-  ret.publishType = program.publishType || "webnative";
+  ret.publishType = getPublishType(program.publishType || "webnative");
   ret.projectType = program.projectType || "ts";
   ret.copyOutFiles = program.copyOutFiles || "";
   ret.copyOutPath = program.copyOutPath || "";
